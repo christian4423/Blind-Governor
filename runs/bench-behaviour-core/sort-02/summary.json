@@ -23,13 +23,16 @@
   "behaviour": {
     "listUnchanged": true,
     "savedUnchanged": true,
+    "legacyFileLoads": true,
     "before": {
       "list": "[x] a\n[ ] b",
-      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
     },
     "after": {
       "list": "[x] a\n[ ] b",
-      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
     }
   },
   "tokens": {

@@ -30,7 +30,7 @@
         "unit": "types",
         "title": "nextId > is one past the max id",
         "kind": "modified",
-        "reason": "The test builds Todo literals with `done`. After the required rename to `completed`, those literals fail type-checking (`done` is an unknown property and `completed` is missing). The only edit is `done` \u2192 `completed` in the fixtures. The assertion and expected value (8) are the same.",
+        "reason": "The test builds Todo literals with `done`. After the required rename to `completed`, those literals fail type-checking (`done` is an unknown property and `completed` is missing). The only edit is `done` → `completed` in the fixtures. The assertion and expected value (8) are the same.",
         "round": 1
       },
       {
@@ -78,13 +78,16 @@
   "behaviour": {
     "listUnchanged": true,
     "savedUnchanged": false,
+    "legacyFileLoads": true,
     "before": {
       "list": "[x] a\n[ ] b",
-      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
     },
     "after": {
       "list": "[x] a\n[ ] b",
-      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
     }
   },
   "tokens": {

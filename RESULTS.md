@@ -121,3 +121,34 @@ Governor statements that it can't see or tell something about current behaviour:
 
 ## Harness bug found: false isolation alarms
 42 control and behaviour runs were flagged as leaks. All 165 flagged lines were text the governor wrote itself: since the guard bench, it sees its own acceptance tests, and owners copy lines from them into their test files, so those lines then exist in source too. No owner-authored line reached the governor. The leak check now ignores lines contained in the governor's own acceptance tests (new self-test), and the 42 summaries were re-graded with a note. Earlier benches were unaffected: the baseline ran before the governor could see its own tests, and the guard benches had no flags.
+
+---
+
+# Single-agent control (branch `single-agent-control`, 2026-10-30)
+
+**Question:** is the governor/owner split saving anything versus one model doing everything? `--single` runs one agent in one continuous conversation with the whole repo in view, the same oracle, the same 3-round cap and the same edit/accept/ask actions. With no second party, changes to existing tests are recorded (same detector) but not blocked. `runs/bench-single/`: 60 runs, $4.78.
+
+New grading check, applied to every bench retroactively (`--reprobe`): **does a file saved by the seed's version still load?** (the "on-disk format is an undeclared interface" finding).
+
+Governor column = no-snapshot governor (`bench-behaviour-core` control arm; `bench-guard` for the guard pair).
+
+| Request | Governor/owners | Single agent |
+|---|---|---|
+| Rename | 10/10 · 2 rounds · $0.35 · **old saved files load 9/10** | 10/10 · 1 round · $0.11 · **old saved files load 0/10** |
+| Sort | 10/10 · $0.10 | 10/10 · $0.08 |
+| Ambiguous | asked 10/10 · $0.022 | asked 10/10 · $0.031 |
+| Wrong belief | 7/10 (3 asked) · $0.105 | 10/10 · $0.097 |
+| Guard harmful | 10/10 · $0.106 | 10/10 · $0.069 (also fixed its own test, 10/10) |
+| Guard mirror | 10/10 · $0.180 | 10/10 · $0.090 |
+| **Suite** | **$0.86** | **$0.48** |
+
+(Old-file loading is 0/10 in every arm of the guard pair because the Sunday round-2 fixture already contains a plain rename; it's only meaningful for the rename request. With the behaviour snapshot, the governor's rename kept old files loading 10/10; the older baseline harness, 7/10.)
+
+## Reading it
+- **Cost: the split is about 1.8× the single agent on this repo**, not the 3–5× I estimated before measuring. The gap is mostly the rename (3.2×: 11 calls, and the guard forces a second round). On the other requests it's 0.7–2×. The single agent is pricier on the ambiguous request, because it reads the whole repo just to ask a question.
+- **On the graded criteria the single agent matches or beats the split everywhere**, in fewer rounds. It never weakened a test: its only existing-test edits were adding assertions (`parseArgs > parses each command` gained a `clear` case in 9/10 wrong-belief runs) and renaming fixtures. Seeing the tests directly made it as careful as the guard does.
+- **The one real difference favours the split: data compatibility.** In the rename, 9/10 governor runs explicitly told the storage owner to read legacy `done` records ("if a stored record has a legacy `done` property and no `completed`, map it to `completed`"). The single agent did a find-and-replace every time, and every existing user file broke (0/10). With code in view, the rename is a text edit; with only interfaces in view, `load()` is a boundary with data that already exists. That is evidence for the thesis on quality (intent separated from implementation), not on cost.
+- **Caveats:** one request type, n=10, one repo of 5,700 characters. The governor's prompt differs from the single agent's in more than role; it describes owners, interfaces and cross-unit contracts, which may be what prompts the compatibility thinking. A single agent told to "treat persisted data and exports as contracts" would separate role from prompt wording.
+
+## So, is it saving?
+On cost, not at this size: the governor's prompt (5–13k chars) is larger than the whole repo. On quality, the split caught a real data-loss bug that one model missed 10/10. Whether cost crosses over, and whether the single agent's quality degrades as context grows, needs the growing-repo experiment.

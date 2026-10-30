@@ -15,7 +15,7 @@ interface Experiment { slug: string; request: string; passes: (s: Summary) => bo
 interface Summary {
   status: string; rounds: number; finalOracle: string; instructedUnits: string[][]; governorIsolation: string; usd: number;
   testGuard: { rejectedSubmissions: number; requests: { title: string; kind: string }[]; approvals: { title: string }[] };
-  behaviour: { listUnchanged: boolean; savedUnchanged: boolean; after: { list: string; saved: string } };
+  behaviour: { listUnchanged: boolean; savedUnchanged: boolean; legacyFileLoads?: boolean; after: { list: string; saved: string } };
   plantedTest?: string | null;
   acceptanceTestsWritten?: number;
 }
@@ -124,7 +124,7 @@ function report(benchDir: string): void {
         `approvals given: ${sums.filter((s) => s.testGuard.approvals.length).length}/${sums.length} runs; ` +
         `rejected submissions: ${sums.reduce((a, s) => a + s.testGuard.rejectedSubmissions, 0)}`,
       `- list behaviour unchanged: ${sums.filter((s) => s.behaviour.listUnchanged).length}/${sums.length}; ` +
-        `saved fields: ${tally(sums.map(savedFields))}`,
+        `saved fields: ${tally(sums.map(savedFields))}; seed-format saved file still loads: ${sums.filter((s) => s.behaviour.legacyFileLoads).length}/${sums.length}`,
       ...(!exp.slug.startsWith("ambiguous") ? [] : [`- outcomes: ${tally(sums.map((s) => s.status === "asked" ? "asked" : accepted(s) ? ((s.acceptanceTestsWritten ?? 0) > 0 ? "accepted with own test" : "accepted, no own test") : s.status))}`]),
       ...(exp.args?.includes("--scenario") ? [
         `- "${LIST_TEST}": rewrite requested in ${sums.filter(requestedListTest).length}/${sums.length} runs, ` +

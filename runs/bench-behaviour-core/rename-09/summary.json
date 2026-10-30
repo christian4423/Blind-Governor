@@ -44,7 +44,7 @@
         "unit": "storage",
         "title": "storage > round-trips todos",
         "kind": "modified",
-        "reason": "Fixture used `done: false`, which no longer exists on Todo; the instruction explicitly asks to update fixtures to use `completed`. With the old fixture, load would map done\u2192completed and the round-trip equality would fail.",
+        "reason": "Fixture used `done: false`, which no longer exists on Todo; the instruction explicitly asks to update fixtures to use `completed`. With the old fixture, load would map done→completed and the round-trip equality would fail.",
         "round": 1
       },
       {
@@ -78,13 +78,16 @@
   "behaviour": {
     "listUnchanged": true,
     "savedUnchanged": false,
+    "legacyFileLoads": true,
     "before": {
       "list": "[x] a\n[ ] b",
-      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
     },
     "after": {
       "list": "[x] a\n[ ] b",
-      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
     }
   },
   "tokens": {

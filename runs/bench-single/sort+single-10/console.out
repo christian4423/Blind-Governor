@@ -1,0 +1,49 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T05-47-12-956Z/sort+single-10
+provider: anthropic (claude-opus-5-5)
+request: Items with due dates sort before items without. --single
+
+single call 0: edit -> src/commands.ts, src/commands.test.ts  (list() now does a stable sort so items with a due date come before items without one, and items in each group keep their original order. The request only asks for this split, so I did not add ordering by date within the dated group. Added a new test; no existing tests were changed.)
+round 1: oracle GREEN
+single call 1: accept  (The oracle is green: tsc passed with no errors and all 11 vitest tests passed. list() now shows items with a due date before items without one, using a stable sort that doesn't change the input array. A new test covers this, and no existing tests were changed.)
+
+{
+  "mode": "single",
+  "request": "Items with due dates sort before items without. --single",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 9353,
+    "output": 2399
+  },
+  "usd": 0.085
+}

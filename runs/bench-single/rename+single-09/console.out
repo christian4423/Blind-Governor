@@ -1,0 +1,98 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T05-47-12-956Z/rename+single-09
+provider: anthropic (claude-opus-5-5)
+request: Rename Todo.done to Todo.completed everywhere. --single
+
+single call 0: edit -> src/types.ts, src/commands.ts, src/format.ts, src/commands.test.ts, src/format.test.ts, src/storage.test.ts, src/types.test.ts  (Renamed the Todo.done field to completed in types.ts, commands.ts and format.ts, and in the test Todo literals and reads. Left the ListOptions.includeDone option and the test names alone because the request only covers the Todo field. Note: todos.json files saved before this change still have "done" keys, and nothing migrates them. They will show as not completed.)
+round 1: oracle GREEN
+single call 1: accept  (Oracle is green: tsc is clean and all 10 tests pass. Todo.done is renamed to completed in all source and test files.)
+
+{
+  "mode": "single",
+  "request": "Rename Todo.done to Todo.completed everywhere. --single",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "commands",
+      "format",
+      "storage"
+    ]
+  ],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [
+      {
+        "unit": "commands",
+        "title": "commands > adds and completes",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      },
+      {
+        "unit": "format",
+        "title": "format > formats open and done todos",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      },
+      {
+        "unit": "storage",
+        "title": "storage > round-trips todos",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      },
+      {
+        "unit": "types",
+        "title": "nextId > is one past the max id",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 1,
+        "title": "commands > adds and completes"
+      },
+      {
+        "round": 1,
+        "title": "format > formats open and done todos"
+      },
+      {
+        "round": 1,
+        "title": "storage > round-trips todos"
+      },
+      {
+        "round": 1,
+        "title": "nextId > is one past the max id"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": false,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 10417,
+    "output": 3385
+  },
+  "usd": 0.109
+}

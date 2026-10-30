@@ -481,7 +481,7 @@ function unapprovedTestChanges(unit: string, baseline: Map<string, string>, newT
 
 // ---------- behaviour probe (grading only; never shown to the governor) ----------
 
-interface Probe { list: string; saved: string }
+interface Probe { list: string; saved: string; legacy: string }
 
 /** Drives the CLI through a fixed script and records what `list` prints and what lands on disk. */
 function probe(workDir: string): Probe {
@@ -498,8 +498,11 @@ function probe(workDir: string): Probe {
   cli("complete", "1");
   const list = cli("list");
   const saved = existsSync(file) ? readFileSync(file, "utf8").trim() : "(no file)";
+  // A file saved by the seed's version: does today's build still read data users already have?
+  writeFileSync(file, JSON.stringify([{ id: 1, title: "a", done: true, due: "2026-11-01" }, { id: 2, title: "b", done: false }]));
+  const legacy = cli("list");
   rmSync(dir, { recursive: true, force: true });
-  return { list, saved };
+  return { list, saved, legacy };
 }
 
 // ---------- behaviour snapshot (governor-visible with --behaviour) ----------
@@ -924,6 +927,7 @@ async function main(
     }).join(","),
     behaviour: {
       listUnchanged: probeAfter.list === probeBefore.list,
+      legacyFileLoads: probeAfter.legacy === "[x] a\n[ ] b",
       savedUnchanged: probeAfter.saved === probeBefore.saved,
       before: probeBefore, after: probeAfter,
     },
@@ -1000,6 +1004,7 @@ if (args.includes("--selftest")) {
     const after = probe(join(runDir, "work"));
     summary.behaviour = {
       listUnchanged: after.list === seedProbe.list, savedUnchanged: after.saved === seedProbe.saved,
+      legacyFileLoads: after.legacy === "[x] a\n[ ] b",
       before: seedProbe, after,
     };
     writeFileSync(summaryPath, JSON.stringify(summary, null, 2) + "\n");

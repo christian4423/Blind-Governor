@@ -1,0 +1,49 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T05-47-12-956Z/sort+single-05
+provider: anthropic (claude-opus-5-5)
+request: Items with due dates sort before items without. --single
+
+single call 0: edit -> src/commands.ts, src/commands.test.ts  (list() now puts todos that have a due date ahead of todos that don't. Within each group, items keep their original order. Added a test for this; no existing tests changed.)
+round 1: oracle GREEN
+single call 1: accept  (Oracle is green. Todos with due dates are now listed before todos without, and items in each group keep their original order.)
+
+{
+  "mode": "single",
+  "request": "Items with due dates sort before items without. --single",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 9206,
+    "output": 2199
+  },
+  "usd": 0.081
+}

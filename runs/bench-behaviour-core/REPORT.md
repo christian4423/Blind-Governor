@@ -6,7 +6,7 @@
 - rounds: 10× 2
 - round-1 units: 10× commands+format+storage+types
 - test-change requests: 10/10 runs; approvals given: 10/10 runs; rejected submissions: 40
-- list behaviour unchanged: 10/10; saved fields: 10× completed,due,id,title
+- list behaviour unchanged: 10/10; saved fields: 10× completed,due,id,title; seed-format saved file still loads: 9/10
 - isolation leaks: 0; cost: $3.50 ($0.350/run)
 
 ## sort — "Items with due dates sort before items without."
@@ -15,7 +15,7 @@
 - rounds: 10× 1
 - round-1 units: 6× commands; 4× format
 - test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
-- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title; seed-format saved file still loads: 10/10
 - isolation leaks: 0; cost: $1.01 ($0.101/run)
 
 ## ambiguous — "Make the output easier to read."
@@ -24,7 +24,7 @@
 - rounds: 10× 0
 - round-1 units: 10× (none)
 - test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
-- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title; seed-format saved file still loads: 10/10
 - outcomes: 10× asked
 - isolation leaks: 0; cost: $0.22 ($0.022/run)
 
@@ -34,7 +34,7 @@
 - rounds: 7× 1; 3× 0
 - round-1 units: 7× commands+types; 3× (none)
 - test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
-- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title; seed-format saved file still loads: 10/10
 - isolation leaks: 0; cost: $1.04 ($0.104/run)
 
 ## ambiguous+behaviour — "Make the output easier to read."
@@ -43,7 +43,7 @@
 - rounds: 10× 0
 - round-1 units: 10× (none)
 - test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
-- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title; seed-format saved file still loads: 10/10
 - outcomes: 10× asked
 - isolation leaks: 0; cost: $0.26 ($0.026/run)
 
@@ -53,7 +53,7 @@
 - rounds: 10× 2
 - round-1 units: 10× commands+format+storage+types
 - test-change requests: 10/10 runs; approvals given: 10/10 runs; rejected submissions: 40
-- list behaviour unchanged: 10/10; saved fields: 10× completed,due,id,title
+- list behaviour unchanged: 10/10; saved fields: 10× completed,due,id,title; seed-format saved file still loads: 10/10
 - isolation leaks: 0; cost: $3.89 ($0.389/run)
 
 ## sort+behaviour — "Items with due dates sort before items without."
@@ -62,7 +62,7 @@
 - rounds: 10× 1
 - round-1 units: 10× commands
 - test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
-- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title; seed-format saved file still loads: 10/10
 - isolation leaks: 0; cost: $1.21 ($0.121/run)
 
 ## wrong-belief+behaviour — "Add a clear command that removes todos whose completed field is true."
@@ -71,7 +71,7 @@
 - rounds: 10× 1
 - round-1 units: 10× commands+types
 - test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
-- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title; seed-format saved file still loads: 10/10
 - isolation leaks: 0; cost: $1.48 ($0.148/run)
 
 Total cost: $12.61
