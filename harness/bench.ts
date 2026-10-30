@@ -130,7 +130,7 @@ function report(benchDir: string): void {
         `- "${LIST_TEST}": rewrite requested in ${sums.filter(requestedListTest).length}/${sums.length} runs, ` +
           `approved in ${sums.filter(approvedListTest).length}/${sums.length}; planted governor test: ${tally(sums.map((s) => s.plantedTest ?? "n/a"))}`,
       ] : []),
-      `- isolation leaks: ${sums.filter((s) => s.governorIsolation !== "clean").length}; cost: $${cost.toFixed(2)} ($${(cost / sums.length).toFixed(3)}/run)`,
+      `- isolation leaks: ${sums.filter((s) => s.governorIsolation === "LEAK").length}; cost: $${cost.toFixed(2)} ($${(cost / sums.length).toFixed(3)}/run)`,
       "",
     );
   }

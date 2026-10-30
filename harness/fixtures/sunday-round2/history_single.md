@@ -1,0 +1,1 @@
+Round 1 (earlier in this session): you renamed Todo.done to Todo.completed across types, format, storage and commands (source and tests), and wrote the acceptance test tests/acceptance/commands.test.ts. The oracle result after that round is below.
