@@ -1,0 +1,45 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T01-19-29-469Z/sort-04
+provider: anthropic (claude-opus-5-5)
+request: Items with due dates sort before items without.
+
+governor turn 1: plan -> commands  (Listing order is something `list` decides, so the change belongs in commands.list. I'm asking for a stable split: items with due dates first, and each group keeps its current order. No interfaces change.)
+round 1: owners commands=ok; oracle GREEN
+governor turn 2: accept  (The oracle is green: tsc exits 0 and all 15 vitest tests pass. The commands owner made a stable sort in list() that puts todos with due dates first, and added a unit test for it. No other unit needed to change.)
+
+{
+  "request": "Items with due dates sort before items without.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 7464,
+    "output": 3784
+  },
+  "usd": 0.106
+}

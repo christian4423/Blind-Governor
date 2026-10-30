@@ -1,0 +1,102 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T01-19-29-469Z/rename-09
+provider: anthropic (claude-opus-5-5)
+request: Rename Todo.done to Todo.completed everywhere.
+
+governor turn 1: plan -> types, format, storage, commands  (Changing a field in the shared types unit affects every unit that imports it. So types gets the new declaration, and format, storage and commands are told what they will receive and switch from done to completed. Behaviour stays the same otherwise. ListOptions.includeDone stays as it is, since the request only covers the Todo field.)
+round 1: owners types=rejected format=rejected storage=rejected commands=rejected; oracle RED
+governor turn 2: plan -> types, format, storage, commands  (All four owners were rejected only because their test fixtures had to change from `done` to `completed`, which is exactly what the rename requires. I'm approving those four test changes and sending the same plan again.)
+round 2: owners types=ok format=ok storage=ok commands=ok; oracle GREEN
+governor turn 3: accept  (Type-checking and tests both pass (16 tests, 0 failed). The manifest shows Todo now has `completed: boolean` instead of `done`, and all four units were updated to use it. The only test changes were the approved fixture renames from `done` to `completed`; test titles and expected values stayed the same. ListOptions.includeDone was kept on purpose because it's a list option, not the Todo field. One thing to note: todo JSON files saved before this change still have `done`, and nothing converts them to `completed`.)
+
+{
+  "request": "Rename Todo.done to Todo.completed everywhere.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "format",
+      "storage",
+      "commands"
+    ],
+    [
+      "types",
+      "format",
+      "storage",
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "testGuard": {
+    "rejectedSubmissions": 4,
+    "requests": [
+      {
+        "unit": "types",
+        "title": "nextId > is one past the max id",
+        "kind": "modified",
+        "reason": "The Todo literals used `done`, which no longer exists after the rename to `completed`, so the file would fail type-checking. I changed only the field name in the fixtures, as the instruction asks. The title and the assertion (toBe(8)) are the same.",
+        "round": 1
+      },
+      {
+        "unit": "format",
+        "title": "format > formats open and done todos",
+        "kind": "modified",
+        "reason": "The governor's instruction asked for this: Todo literals now use `completed` instead of `done` to match the renamed field in ./types. The title and expected strings are unchanged.",
+        "round": 1
+      },
+      {
+        "unit": "storage",
+        "title": "storage > round-trips todos",
+        "kind": "modified",
+        "reason": "The governor's instruction asks for this: the Todo literal changed from `done: false` to `completed: false` to match the renamed field in Todo. The title and what the test checks are unchanged.",
+        "round": 1
+      },
+      {
+        "unit": "commands",
+        "title": "commands > adds and completes",
+        "kind": "modified",
+        "reason": "The test read `t.done`, but Todo now has `completed` instead of `done`. As instructed, it now reads `t.completed`. The title and expected values are unchanged.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "nextId > is one past the max id"
+      },
+      {
+        "round": 2,
+        "title": "format > formats open and done todos"
+      },
+      {
+        "round": 2,
+        "title": "storage > round-trips todos"
+      },
+      {
+        "round": 2,
+        "title": "commands > adds and completes"
+      }
+    ]
+  },
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": false,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 27099,
+    "output": 11228
+  },
+  "usd": 0.333
+}

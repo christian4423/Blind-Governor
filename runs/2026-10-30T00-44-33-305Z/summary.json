@@ -1,0 +1,21 @@
+{
+  "request": "add a --verbose flag to list that also shows each todo's id and due date",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "format",
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "tokens": {
+    "input": 10503,
+    "output": 7086
+  },
+  "usd": 0.184
+}

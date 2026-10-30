@@ -1,0 +1,22 @@
+{
+  "request": "add a --verbose flag to list",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 1,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "format",
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "tokens": {
+    "input": 13021,
+    "output": 7425
+  },
+  "usd": 0.201
+}

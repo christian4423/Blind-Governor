@@ -1,0 +1,5 @@
+keys.txt
+node_modules
+.manifest/
+.oracle-vitest.json
+.DS_Store

@@ -1,0 +1,36 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/2026-10-30T01-03-25-727Z
+provider: anthropic (claude-opus-5-5)
+request: Rename Todo.done to Todo.completed everywhere.
+
+governor turn 1: plan -> types, format, storage, commands  (This renames the Todo field in types. The three units that use the type (format, storage, commands) are updated in parallel to use `completed`. ListOptions.includeDone keeps its name so the commands interface doesn't change.)
+round 1: owners types=ok format=ok storage=ok commands=ok; oracle RED
+governor turn 2: plan -> commands  (tsc passes. The only failure is the commands acceptance test: list() still shows completed todos by default, which means the includeDone filter is no longer working after the rename. Only commands is affected.)
+round 2: owners commands=ok; oracle GREEN
+governor turn 3: accept  (Oracle is green (tsc clean, 18/18 tests pass). The manifest shows Todo now has `completed: boolean` and no `done` field. All units were updated in round 1, and round 2 fixed the list filter to use `completed` and added a regression test. ListOptions.includeDone was kept on purpose because it's an option name, not the Todo field.)
+
+{
+  "request": "Rename Todo.done to Todo.completed everywhere.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "format",
+      "storage",
+      "commands"
+    ],
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "tokens": {
+    "input": 17928,
+    "output": 8207
+  },
+  "usd": 0.236
+}

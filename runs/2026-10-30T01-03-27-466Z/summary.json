@@ -1,0 +1,16 @@
+{
+  "request": "Make the output easier to read.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 0,
+  "status": "asked",
+  "clarifications": 0,
+  "finalOracle": "not run",
+  "instructedUnits": [],
+  "governorIsolation": "clean",
+  "tokens": {
+    "input": 1992,
+    "output": 617
+  },
+  "usd": 0.02
+}

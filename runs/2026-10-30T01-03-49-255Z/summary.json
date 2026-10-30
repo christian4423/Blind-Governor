@@ -1,0 +1,31 @@
+{
+  "request": "Add a clear command that removes completed todos.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "staleManifest": {
+    "unit": "types",
+    "from": "done: boolean",
+    "to": "completed: boolean"
+  },
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "commands"
+    ],
+    [
+      "types",
+      "format",
+      "storage"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "tokens": {
+    "input": 18111,
+    "output": 9594
+  },
+  "usd": 0.264
+}

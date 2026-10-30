@@ -1,0 +1,102 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T01-19-29-469Z/rename-01
+provider: anthropic (claude-opus-5-5)
+request: Rename Todo.done to Todo.completed everywhere.
+
+governor turn 1: plan -> types, format, storage, commands  (This is a mechanical field rename. types changes the interface. format, storage and commands switch to the new field name, and their behaviour and output text stay the same. ListOptions.includeDone is a separate name, so it is left alone. The JSON on disk uses the new key.)
+round 1: owners types=rejected format=rejected storage=rejected commands=rejected; oracle RED
+governor turn 2: plan -> types, format, storage, commands  (The request is to rename the field everywhere. Every rejected test change only renames done to completed in fixtures or property reads, and the assertions stay the same. That is exactly what the request calls for, so I'm approving all four and sending the same plan again.)
+round 2: owners types=ok format=ok storage=ok commands=ok; oracle GREEN
+governor turn 3: accept  (The oracle is green: tsc reports no errors and all 15 vitest tests pass. The manifest shows Todo now has `completed: boolean` in place of `done`. All four owners submitted. Their only test changes were the approved fixture and field-access renames, with the same assertions and expected output. ListOptions.includeDone kept its name on purpose because it's an option name, not the Todo field.)
+
+{
+  "request": "Rename Todo.done to Todo.completed everywhere.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "format",
+      "storage",
+      "commands"
+    ],
+    [
+      "types",
+      "format",
+      "storage",
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "testGuard": {
+    "rejectedSubmissions": 4,
+    "requests": [
+      {
+        "unit": "types",
+        "title": "nextId > is one past the max id",
+        "kind": "modified",
+        "reason": "Only the fixture changed: `done` became `completed` so it matches the renamed Todo field, as the instruction asks. The assertion is the same.",
+        "round": 1
+      },
+      {
+        "unit": "format",
+        "title": "format > formats open and done todos",
+        "kind": "modified",
+        "reason": "Todo.done was renamed to Todo.completed in types, so the fixtures have to build todos with `completed` or they won't type-check. The governor's instruction asks for exactly this. The expected output strings and the assertions are unchanged.",
+        "round": 1
+      },
+      {
+        "unit": "storage",
+        "title": "storage > round-trips todos",
+        "kind": "modified",
+        "reason": "Fixture used `done`, which no longer exists on Todo (renamed to `completed`); it no longer type-checks against save(path, Todo[]). Changed the fixture to `completed: false`, which the instruction asks for explicitly.",
+        "round": 1
+      },
+      {
+        "unit": "commands",
+        "title": "commands > adds and completes",
+        "kind": "modified",
+        "reason": "The governor's instruction renames Todo.done to Todo.completed and says to update test fixtures to match. The assertion read `t.done`, which no longer exists, so it now reads `t.completed`. The expected values are unchanged.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "nextId > is one past the max id"
+      },
+      {
+        "round": 2,
+        "title": "format > formats open and done todos"
+      },
+      {
+        "round": 2,
+        "title": "storage > round-trips todos"
+      },
+      {
+        "round": 2,
+        "title": "commands > adds and completes"
+      }
+    ]
+  },
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": false,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 26051,
+    "output": 11679
+  },
+  "usd": 0.338
+}

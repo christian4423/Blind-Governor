@@ -1,0 +1,45 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T01-19-29-469Z/sort-06
+provider: anthropic (claude-opus-5-5)
+request: Items with due dates sort before items without.
+
+governor turn 1: plan -> commands  (Sorting is a presentation choice made by the list command. The change is a stable partition, so todos with due dates come first and the existing order within each group stays the same. No interface changes are needed.)
+round 1: owners commands=ok; oracle GREEN
+governor turn 2: accept  (The oracle is green (tsc clean, 17/17 tests pass). The commands owner changed list() so todos with a due date come before todos without one. Within each group the order stays the same, and the owner added unit tests for it. No other units needed to change.)
+
+{
+  "request": "Items with due dates sort before items without.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 7442,
+    "output": 4208
+  },
+  "usd": 0.114
+}

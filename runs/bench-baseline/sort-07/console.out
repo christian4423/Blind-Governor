@@ -1,0 +1,45 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T01-19-29-469Z/sort-07
+provider: anthropic (claude-opus-5-5)
+request: Items with due dates sort before items without.
+
+governor turn 1: plan -> commands  (Listing order is decided in commands.list. A stable partition (due-dated items first) does exactly what was asked and changes no interfaces.)
+round 1: owners commands=ok; oracle GREEN
+governor turn 2: accept  (The commands owner changed `list` so that items with a due date come before items without one. Within each group the original order is kept. Done-filtering is unchanged, and the input array is not modified. tsc passes and all 16 vitest tests pass, including the owner's new tests.)
+
+{
+  "request": "Items with due dates sort before items without.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 7390,
+    "output": 3786
+  },
+  "usd": 0.105
+}

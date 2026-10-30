@@ -1,0 +1,45 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T01-19-29-469Z/sort-10
+provider: anthropic (claude-opus-5-5)
+request: Items with due dates sort before items without.
+
+governor turn 1: plan -> commands  (The sorting goes in commands.list, which is where the list gets ordered for display. format only renders, and no interfaces change. The acceptance test checks only that due-dated items come before undated ones and that the input is not mutated. Order within each group stays as it is now.)
+round 1: owners commands=ok; oracle GREEN
+governor turn 2: accept  (The commands owner changed list() so todos with a due date come before todos without one. The sort is stable and works on a copy of the array. The owner added unit tests for it, and both tsc and vitest pass (16 tests, 0 failed). That meets the request.)
+
+{
+  "request": "Items with due dates sort before items without.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 7460,
+    "output": 3764
+  },
+  "usd": 0.105
+}

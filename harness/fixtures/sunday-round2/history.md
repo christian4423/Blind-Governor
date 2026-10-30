@@ -1,0 +1,1 @@
+Round 1 (earlier in this session): you planned the rename of Todo.done to Todo.completed across types, format, storage and commands, with the acceptance test tests/acceptance/commands.test.ts (shown above). All four owners submitted and their changes were applied.

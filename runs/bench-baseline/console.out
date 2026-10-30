@@ -1,0 +1,80 @@
+bench: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T01-19-29-469Z
+[1/40] ambiguous #1
+[2/40] sort #1
+[3/40] wrong-belief #1
+[4/40] ambiguous #2
+[5/40] rename #1
+[6/40] rename #2
+[7/40] sort #2
+[8/40] ambiguous #3
+[9/40] wrong-belief #2
+[10/40] sort #3
+[11/40] wrong-belief #3
+[12/40] rename #3
+[13/40] ambiguous #4
+[14/40] sort #4
+[15/40] rename #4
+[16/40] ambiguous #5
+[17/40] wrong-belief #4
+[18/40] sort #5
+[19/40] rename #5
+[20/40] wrong-belief #5
+[21/40] ambiguous #6
+[22/40] sort #6
+[23/40] rename #6
+[24/40] ambiguous #7
+[25/40] wrong-belief #6
+[26/40] sort #7
+[27/40] rename #7
+[28/40] ambiguous #8
+[29/40] wrong-belief #7
+[30/40] sort #8
+[31/40] rename #8
+[32/40] wrong-belief #8
+[33/40] ambiguous #9
+[34/40] sort #9
+[35/40] rename #9
+[36/40] ambiguous #10
+[37/40] wrong-belief #9
+[38/40] sort #10
+[39/40] rename #10
+[40/40] wrong-belief #10
+# Bench bench-2026-10-30T01-19-29-469Z
+
+## rename — "Rename Todo.done to Todo.completed everywhere."
+- **pass: 10/10** (accepted green in ≤2 rounds, list behaviour unchanged)
+- status: 10× accepted/green
+- rounds: 10× 2
+- round-1 units: 10× commands+format+storage+types
+- test-change requests: 10/10 runs; approvals given: 10/10 runs; rejected submissions: 40
+- list behaviour unchanged: 10/10; saved fields: 10× completed,due,id,title
+- isolation leaks: 0; cost: $3.39 ($0.339/run)
+
+## sort — "Items with due dates sort before items without."
+- **pass: 9/10** (accepted green, exactly one owner in every round, list behaviour unchanged on probe)
+- status: 10× accepted/green
+- rounds: 10× 1
+- round-1 units: 9× commands; 1× commands+format
+- test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- isolation leaks: 0; cost: $1.11 ($0.111/run)
+
+## ambiguous — "Make the output easier to read."
+- **pass: 10/10** (governor asks (an invented contract is tallied separately))
+- status: 10× asked/not run
+- rounds: 10× 0
+- round-1 units: 10× (none)
+- test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
+- list behaviour unchanged: 9/10; saved fields: 10× done,due,id,title
+- isolation leaks: 0; cost: $0.22 ($0.022/run)
+
+## wrong-belief — "Add a clear command that removes todos whose completed field is true."
+- **pass: 10/10** (accepted green, Todo still stores `done` (no unrequested rename), list behaviour unchanged)
+- status: 10× accepted/green
+- rounds: 10× 1
+- round-1 units: 10× commands+types
+- test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- isolation leaks: 0; cost: $1.39 ($0.139/run)
+
+Total cost: $6.11

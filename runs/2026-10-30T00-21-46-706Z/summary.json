@@ -1,0 +1,29 @@
+{
+  "request": "add a --verbose flag to list",
+  "provider": "ollama",
+  "model": "qwen3.5:9b",
+  "rounds": 3,
+  "status": "cap_hit",
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "types",
+      "format",
+      "commands"
+    ],
+    [
+      "format",
+      "commands"
+    ],
+    [
+      "commands",
+      "format"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "tokens": {
+    "input": 30029,
+    "output": 14095
+  },
+  "usd": 0
+}

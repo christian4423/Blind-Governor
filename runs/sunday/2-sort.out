@@ -1,0 +1,28 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/2026-10-30T01-03-26-501Z
+provider: anthropic (claude-opus-5-5)
+request: Items with due dates sort before items without.
+
+governor turn 1: plan -> commands  (Listing is done by commands.list, so the ordering belongs there. I read the request as a stable partition: items with due dates first, and the original order kept within each group. No interface changes.)
+round 1: owners commands=ok; oracle GREEN
+governor turn 2: accept  (Oracle is green (tsc clean, 14/14 vitest passing). commands.list now puts todos with a due date ahead of those without, keeps the original order within each group, and leaves the includeDone filtering and formatting as they were. The commands owner added a unit test that covers this.)
+
+{
+  "request": "Items with due dates sort before items without.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "tokens": {
+    "input": 6648,
+    "output": 3947
+  },
+  "usd": 0.106
+}

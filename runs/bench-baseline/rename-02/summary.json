@@ -1,0 +1,92 @@
+{
+  "request": "Rename Todo.done to Todo.completed everywhere.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "format",
+      "storage",
+      "commands"
+    ],
+    [
+      "types",
+      "format",
+      "storage",
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "testGuard": {
+    "rejectedSubmissions": 4,
+    "requests": [
+      {
+        "unit": "types",
+        "title": "nextId > is one past the max id",
+        "kind": "modified",
+        "reason": "The test builds Todo objects with `done`. After the rename to `completed` that no longer type-checks, so I changed it to use `completed`. The test's logic and what it checks are the same.",
+        "round": 1
+      },
+      {
+        "unit": "format",
+        "title": "format > formats open and done todos",
+        "kind": "modified",
+        "reason": "Todo.done is renamed to Todo.completed. The fixtures used `done`, which no longer type-checks, and at runtime the done todo would render as \"[ ]\". Only the fixture field name changed. The expected output strings are the same.",
+        "round": 1
+      },
+      {
+        "unit": "storage",
+        "title": "storage > round-trips todos",
+        "kind": "modified",
+        "reason": "The fixture used `done: false`, but Todo has renamed that field to `completed`. load now turns `done` into `completed`, so the old fixture would fail the round-trip check and would also fail type-checking. I changed the fixture to `completed: false`, which the instruction asks for. The test checks the same thing as before.",
+        "round": 1
+      },
+      {
+        "unit": "commands",
+        "title": "commands > adds and completes",
+        "kind": "modified",
+        "reason": "The test reads `t.done`, and that field is now renamed to `completed` on Todo. I changed it to read `t.completed`. The assertion is otherwise unchanged, and this is the fixture update the instruction asks for.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "nextId > is one past the max id"
+      },
+      {
+        "round": 2,
+        "title": "format > formats open and done todos"
+      },
+      {
+        "round": 2,
+        "title": "storage > round-trips todos"
+      },
+      {
+        "round": 2,
+        "title": "commands > adds and completes"
+      }
+    ]
+  },
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": false,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 26784,
+    "output": 11793
+  },
+  "usd": 0.343
+}
