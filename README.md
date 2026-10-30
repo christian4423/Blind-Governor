@@ -8,7 +8,7 @@ A prototype that tests whether a **governor agent that never sees source code** 
 - **Test-change guard**: owners may add tests but not change or remove existing ones. A change rejects the owner's submission and goes to the governor as a decision, approved by test title.
 - A leak check flags any source line that reaches the governor. Every message, diff and oracle result goes to `runs/<id>/log.jsonl`.
 
-The spec is `Governor Owner Agent Prototype — Weekend Requirements.pdf`. Findings are in [`RESULTS.md`](RESULTS.md); criteria, experiment order and open items are in [`NOTES.md`](NOTES.md).
+The spec is `Governor Owner Agent Prototype — Weekend Requirements.pdf`. Start with [`NOTES.md`](NOTES.md) (where things stand, criteria, next steps); findings with numbers are in [`RESULTS.md`](RESULTS.md). The latest work is on the `single-agent-control` branch.
 
 ## Layout
 
@@ -30,7 +30,10 @@ cd harness
 npx tsx harness.ts --selftest                          # offline checks, no model calls
 npx tsx harness.ts "add a --verbose flag to list"      # one run (claude-opus-5-5)
 npx tsx harness.ts "make the output easier to read" --interactive   # answer the governor's questions
+npx tsx harness.ts "<request>" --behaviour            # governor also sees an oracle-run CLI snapshot
+npx tsx harness.ts "<request>" --single               # control: one agent sees and edits the whole repo
 npx tsx bench.ts --n 10                                # every experiment 10×
+npx tsx bench.ts --n 10 --arms control,behaviour,single   # same experiments under several setups
 npx tsx bench.ts --report ../runs/bench-baseline       # re-tally an existing bench
 ```
 

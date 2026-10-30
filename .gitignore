@@ -3,3 +3,4 @@ node_modules
 .manifest/
 .oracle-vitest.json
 .DS_Store
+PRIVATE_PLAN.md
