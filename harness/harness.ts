@@ -1,9 +1,10 @@
 // Governor/owner prototype harness. Plain functions in one file, per the weekend spec.
 // Usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama] [--model <id>] [--out <runDir>]
 //        add --interactive to answer the governor's clarifying questions from stdin
+//        add --behaviour to show the governor the CLI's observed behaviour (start of run vs now) every turn
 //        npx tsx harness.ts --selftest
 import Anthropic from "@anthropic-ai/sdk";
-import { createTwoFilesPatch } from "diff";
+import { createTwoFilesPatch, diffLines } from "diff";
 import { spawnSync } from "node:child_process";
 import {
   appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync,
@@ -220,10 +221,15 @@ Existing tests are the specification of current behaviour. Owners may add tests 
 
 acceptanceTest (optional) is a complete vitest file that tests a unit through its exports. It lives at tests/acceptance/<unit>.test.ts, so import the unit from "../../src/<unit>" and import describe/it/expect from "vitest" (there are no globals). It replaces any earlier acceptance test for that unit. Use it to pin down the behaviour you asked for. Your acceptance tests currently in place are shown to you each turn; to delete one, list its unit in retractAcceptanceTests.`;
 
+const BEHAVIOUR_SYSTEM = `
+
+The oracle also runs the CLI through a fixed script on fixture data, in a fresh directory, and shows you the transcript (commands, output, exit codes, the saved todo file) as it was at the start of this run and as it is now, with a line diff. It is observed program output, not source code.`;
+
 async function runGovernor(
   cfg: Config, request: string, clarifications: string[], units: Unit[], oracle: OracleResult | null, history: string[],
-  knownTests: Set<string>,
+  knownTests: Set<string>, behaviour: { start: string; now: string } | null,
 ): Promise<Decision> {
+  const system = GOVERNOR_SYSTEM + (behaviour ? BEHAVIOUR_SYSTEM : "");
   const manifest = units.map((u) =>
     `## unit: ${u.name} (${u.path}, tests in ${u.testPath})\npurpose: ${u.purpose}\nimports: ${u.imports.join(", ") || "(none)"}\n\`\`\`ts\n${u.exports}\n\`\`\``,
   ).join("\n\n");
@@ -231,21 +237,22 @@ async function runGovernor(
     `# Request\n${request}`,
     ...(clarifications.length ? [`# Clarifications from the human\n${clarifications.join("\n\n")}`] : []),
     `# Manifest\n${manifest}`,
+    ...(behaviour ? [`# Observed behaviour\n${formatBehaviour(behaviour.start, behaviour.now)}`] : []),
     `# Your acceptance tests in place\n${acceptanceTestsText(cfg.workDir)}`,
     `# Previous rounds\n${history.length ? history.join("\n\n") : "(none - this is the first round)"}`,
     `# Last oracle result\n${oracle ? formatOracle(oracle) : "(not run yet - the seed repo is green)"}`,
   ].join("\n\n");
 
-  const leaks = findLeaks(cfg.workDir, units, GOVERNOR_SYSTEM + prompt);
+  const leaks = findLeaks(cfg.workDir, units, system + prompt);
   if (leaks.length) {
     console.error(`!! GOVERNOR ISOLATION LEAK: ${leaks.length} source line(s) in governor prompt`);
     log(cfg, "governor_leak", { lines: leaks });
   }
-  log(cfg, "governor_input", { system: GOVERNOR_SYSTEM, prompt, leaked: leaks.length > 0 });
+  log(cfg, "governor_input", { system, prompt, leaked: leaks.length > 0 });
 
   const messages: Msg[] = [{ role: "user", content: prompt }];
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await callModel(cfg, GOVERNOR_SYSTEM, messages, [DECISION_TOOL]);
+    const res = await callModel(cfg, system, messages, [DECISION_TOOL]);
     log(cfg, "governor_output", { content: res.content });
     const call = toolUses(res).find((t) => t.name === "submit_decision");
     const problem = call ? validateDecision(call.input, units, knownTests) : "You must call submit_decision.";
@@ -494,6 +501,48 @@ function probe(workDir: string): Probe {
   return { list, saved };
 }
 
+// ---------- behaviour snapshot (governor-visible with --behaviour) ----------
+// Executed truth about the CLI: deterministic, and the governor can't be misled by it. It only covers what the
+// fixed script reaches. Kept separate from the grading probe, so the grader isn't the very check the governor sees.
+
+const SNAPSHOT_SCRIPT: string[][] = [
+  ["list"],
+  ["add", "buy milk", "2026-11-01"],
+  ["add", "walk dog"],
+  ["add", "pay rent", "2026-10-31"],
+  ["complete", "2"],
+  ["list"],
+  ["complete", "99"],
+];
+
+function snapshot(workDir: string): string {
+  const dir = mkdtempSync(join(tmpdir(), "snapshot-"));
+  const file = join(dir, "todos.json");
+  const lines: string[] = [];
+  for (const argv of SNAPSHOT_SCRIPT) {
+    const r = spawnSync(join(workDir, "node_modules/.bin/tsx"), ["src/cli.ts", ...argv],
+      { cwd: workDir, encoding: "utf8", env: { ...process.env, TODO_FILE: file } });
+    lines.push(`$ todo ${argv.map((a) => (a.includes(" ") ? JSON.stringify(a) : a)).join(" ")}`);
+    if (r.error) { lines.push(`(could not run: ${r.error.message})`); continue; }
+    if (r.stdout.trim()) lines.push(r.stdout.trimEnd());
+    // Only the "SomeError: message" line: Node also prints the throwing source line and a stack trace.
+    if (r.status !== 0) {
+      const message = r.stderr.split("\n").find((l) => /^\w*Error: /.test(l))?.trim() ?? "(no error message)";
+      lines.push(`[exit ${r.status}] ${message}`);
+    }
+  }
+  lines.push("$ cat todos.json", existsSync(file) ? readFileSync(file, "utf8").trimEnd() : "(no file)");
+  rmSync(dir, { recursive: true, force: true });
+  return lines.join("\n");
+}
+
+function formatBehaviour(start: string, now: string): string {
+  if (start === now) return `## At the start of this run (unchanged since)\n\`\`\`\n${start}\n\`\`\``;
+  const diff = diffLines(start, now).flatMap((part) =>
+    part.value.replace(/\n$/, "").split("\n").map((l) => `${part.added ? "+" : part.removed ? "-" : " "} ${l}`));
+  return `## At the start of this run\n\`\`\`\n${start}\n\`\`\`\n\n## Now\n\`\`\`\n${now}\n\`\`\`\n\n## Diff (start → now)\n\`\`\`diff\n${diff.join("\n")}\n\`\`\``;
+}
+
 // ---------- oracle ----------
 
 interface OracleResult {
@@ -562,11 +611,12 @@ function lineReader(): () => Promise<string | null> {
 
 async function main(
   request: string, provider: Config["provider"], model: string, interactive: boolean, out?: string, scenario?: string,
+  showBehaviour = false,
 ): Promise<void> {
   const runDir = out ? resolve(out) : join(ROOT, "runs", new Date().toISOString().replace(/[:.]/g, "-"));
   mkdirSync(runDir, { recursive: true });
   const cfg: Config = { provider, model, runDir, workDir: copySeed(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 } };
-  log(cfg, "run_start", { request, provider, model, interactive, scenario });
+  log(cfg, "run_start", { request, provider, model, interactive, scenario, showBehaviour });
 
   // --scenario <dir>: start mid-session. src/ overlays the seed's source and tests (so they become the existing
   // tests the guard protects), acceptance/ holds governor acceptance tests already in place, history.md is what
@@ -593,6 +643,8 @@ async function main(
   const approvals: { round: number; title: string }[] = [];
   let rejectedSubmissions = 0;
   const probeBefore = probe(cfg.workDir);
+  const behaviour = showBehaviour ? { start: snapshot(cfg.workDir), now: "" } : null;
+  if (behaviour) { behaviour.now = behaviour.start; log(cfg, "behaviour_snapshot", { round: 0, snapshot: behaviour.start }); }
   let oracle: OracleResult | null = null;
   const history: string[] = [];
   if (scenarioDir) {
@@ -611,7 +663,7 @@ async function main(
   for (let turn = 1; turn <= MAX_ROUNDS + 1; turn++) {
     let decision: Decision;
     try {
-      decision = await runGovernor(cfg, request, clarifications, units, oracle, history, knownTests);
+      decision = await runGovernor(cfg, request, clarifications, units, oracle, history, knownTests, behaviour);
     } catch (e) {
       status = `error: ${(e as Error).message}`;
       log(cfg, "governor_error", { turn, error: String(e) });
@@ -672,6 +724,10 @@ async function main(
     oracle = runOracle(cfg.workDir);
     log(cfg, "oracle", { round: rounds, ...oracle });
     units = buildManifest(cfg.workDir);
+    if (behaviour) {
+      behaviour.now = snapshot(cfg.workDir);
+      log(cfg, "behaviour_snapshot", { round: rounds, snapshot: behaviour.now });
+    }
     console.log(`round ${rounds}: owners ${results.map((r) => `${r.unit}=${!r.ok ? "fail" : ownerReport.some((l) => l.startsWith(`- ${r.unit}: REJECTED`)) ? "rejected" : "ok"}`).join(" ")}; oracle ${oracle.pass ? "GREEN" : "RED"}`);
     history.push(`Round ${rounds}: your plan was\n${JSON.stringify(decision.steps.map(({ unit, instruction, interfaceChange }) => ({ unit, instruction, interfaceChange })), null, 2)}\nOwner outcomes:\n${ownerReport.join("\n")}`);
   }
@@ -682,6 +738,8 @@ async function main(
     request, provider, model, rounds, status, clarifications: clarifications.length,
     finalOracle: oracle ? (oracle.pass ? "green" : "red") : "not run",
     instructedUnits, governorIsolation: leaked ? "LEAK" : "clean",
+    showBehaviour,
+    acceptanceTestsWritten: readFileSync(join(runDir, "log.jsonl"), "utf8").split("\n").filter((l) => l.includes('"type":"acceptance_test"')).length,
     testGuard: { rejectedSubmissions, requests: testRequests, approvals },
     plantedTest: plantedSources.size === 0 ? null : [...plantedSources].map(([f, source]) => {
       const path = join(cfg.workDir, "tests/acceptance", f);
@@ -742,6 +800,10 @@ function selftest(): void {
   const removed = unapprovedTestChanges("commands", base, seedTest.replace(/  it\("runs commands[\s\S]*?\n  \}\);\n/, ""), new Set());
   check("removed test is caught", removed.length === 1 && removed[0].kind === "removed");
   check("behaviour probe runs the CLI", probe(cfg.workDir).list === "[x] a\n[ ] b");
+  const snap = snapshot(join(runDir, "work"));
+  check("snapshot shows completed todos and the error exit", snap.includes("[x] walk dog") && snap.includes("[exit 1]") && snap.includes('"title": "pay rent"'));
+  check("snapshot carries no source lines", findLeaks(cfg.workDir, units, snap).length === 0);
+  check("snapshot is deterministic", snapshot(join(runDir, "work")) === snap);
 }
 
 // ---------- entry ----------
@@ -772,9 +834,11 @@ if (args.includes("--selftest")) {
   if (interactive) args.splice(args.indexOf("--interactive"), 1);
   const request = args.join(" ").trim();
   if (!request) {
-    console.error('usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama] [--model id] [--interactive] [--out runDir] [--scenario dir]');
+    console.error('usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama] [--model id] [--interactive] [--out runDir] [--scenario dir] [--behaviour]');
     process.exit(2);
   }
-  await main(request, provider, model, interactive, out, scenario);
+  const showBehaviour = args.includes("--behaviour");
+  if (showBehaviour) args.splice(args.indexOf("--behaviour"), 1);
+  await main(request, provider, model, interactive, out, scenario, showBehaviour);
   process.exit(process.exitCode ?? 0); // the stdin reader would otherwise keep the process alive
 }
