@@ -1,0 +1,36 @@
+{
+  "request": "Make the output easier to read. --behaviour",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 0,
+  "status": "asked",
+  "clarifications": 0,
+  "finalOracle": "not run",
+  "instructedUnits": [],
+  "governorIsolation": "clean",
+  "showBehaviour": true,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 2790,
+    "output": 785
+  },
+  "usd": 0.027
+}

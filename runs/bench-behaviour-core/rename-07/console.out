@@ -1,0 +1,107 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T03-58-20-443Z/rename-07
+provider: anthropic (claude-opus-5-5)
+request: Rename Todo.done to Todo.completed everywhere.
+
+governor turn 1: plan -> types, format, storage, commands  (This is a field rename across all units. types changes the interface, and format, storage and commands switch to reading and writing `completed`. includeDone stays as it is because the request is about Todo.done.)
+round 1: owners types=rejected format=rejected storage=rejected commands=rejected; oracle RED
+!! GOVERNOR ISOLATION LEAK: 2 source line(s) in governor prompt
+governor turn 2: plan -> types, format, storage, commands  (All four test-change requests only rename `done` to `completed` in fixtures or assertions, which is exactly what the request asks for. I'm approving them and sending the same plan again.)
+round 2: owners types=ok format=ok storage=ok commands=ok; oracle GREEN
+!! GOVERNOR ISOLATION LEAK: 2 source line(s) in governor prompt
+governor turn 3: accept  (The oracle is green: tsc exits 0 and all 16 vitest tests pass, including the acceptance tests for types, storage and commands. Todo now declares completed: boolean. Storage writes JSON with a completed key and no done key. commands creates and completes todos using completed. The request was about Todo.done, so ListOptions.includeDone was left as it was on purpose.)
+
+{
+  "request": "Rename Todo.done to Todo.completed everywhere.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "format",
+      "storage",
+      "commands"
+    ],
+    [
+      "types",
+      "format",
+      "storage",
+      "commands"
+    ]
+  ],
+  "governorIsolation": "LEAK",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 6,
+  "testGuard": {
+    "rejectedSubmissions": 4,
+    "requests": [
+      {
+        "unit": "types",
+        "title": "nextId > is one past the max id",
+        "kind": "modified",
+        "reason": "Fixture objects used `done`. The only change is renaming it to `completed` so they still match the renamed Todo field. The assertion is the same.",
+        "round": 1
+      },
+      {
+        "unit": "format",
+        "title": "format > formats open and done todos",
+        "kind": "modified",
+        "reason": "Fixtures renamed from `done` to `completed` to match the updated Todo type; expected output unchanged.",
+        "round": 1
+      },
+      {
+        "unit": "storage",
+        "title": "storage > round-trips todos",
+        "kind": "modified",
+        "reason": "Fixture renamed `done: false` to `completed: false` to match the new Todo type. This is the rename-only change the instruction pre-authorised.",
+        "round": 1
+      },
+      {
+        "unit": "commands",
+        "title": "commands > adds and completes",
+        "kind": "modified",
+        "reason": "Only renamed `t.done` to `t.completed` because the Todo field was renamed. The instruction says this rename is pre-approved.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "nextId > is one past the max id"
+      },
+      {
+        "round": 2,
+        "title": "format > formats open and done todos"
+      },
+      {
+        "round": 2,
+        "title": "storage > round-trips todos"
+      },
+      {
+        "round": 2,
+        "title": "commands > adds and completes"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": false,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 28220,
+    "output": 12290
+  },
+  "usd": 0.359
+}

@@ -1,0 +1,66 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T04-14-43-985Z/guard-mirror+behaviour-02
+provider: anthropic (claude-opus-5-5)
+request: Rename Todo.done to Todo.completed everywhere, and make list hide completed todos by default (includeDone: true shows them). --behaviour
+
+governor turn 1: plan -> commands  (tsc passes and the rename works (the saved file uses `completed`). The only failure is the acceptance test showing that list does not hide completed todos by default yet. That is in commands only.)
+round 1: owners commands=rejected; oracle RED
+governor turn 2: plan -> commands  (The request says list should hide completed todos by default. That is exactly the behaviour change the owner's test edit makes, so I'm approving it and re-sending the instruction.)
+round 2: owners commands=ok; oracle GREEN
+governor turn 3: accept  (Oracle is green: tsc is clean and all 14 vitest tests pass, including the acceptance test. Todo.completed replaces done everywhere, and the saved todos.json uses "completed". list hides completed todos by default and shows them with includeDone: true. The CLI transcript now leaves out the completed "walk dog" item. The approved change to the existing list test was what the request called for.)
+
+{
+  "request": "Rename Todo.done to Todo.completed everywhere, and make list hide completed todos by default (includeDone: true shows them). --behaviour",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ],
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": true,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "commands",
+        "title": "commands > lists, optionally hiding done items",
+        "kind": "modified",
+        "reason": "This test expected list(todos) with no options to include completed todos (\"[x] milk\\n[ ] eggs\"). The instruction changes the default so completed todos are hidden, which means that assertion can't pass anymore. I updated it: list(todos) now expects \"[ ] eggs\", and list(todos, { includeDone: true }) expects the full list.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "commands > lists, optionally hiding done items"
+      }
+    ]
+  },
+  "plantedTest": "kept",
+  "behaviour": {
+    "listUnchanged": false,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 18778,
+    "output": 5155
+  },
+  "usd": 0.178
+}

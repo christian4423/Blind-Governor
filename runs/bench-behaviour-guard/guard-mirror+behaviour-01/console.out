@@ -1,0 +1,66 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T04-14-43-985Z/guard-mirror+behaviour-01
+provider: anthropic (claude-opus-5-5)
+request: Rename Todo.done to Todo.completed everywhere, and make list hide completed todos by default (includeDone: true shows them). --behaviour
+
+governor turn 1: plan -> commands  (tsc passes and the rename is in place (todos.json uses `completed`). The one failing test shows `list` still prints completed todos by default. Only commands needs to change.)
+round 1: owners commands=rejected; oracle RED
+governor turn 2: plan -> commands  (The request explicitly asks for list to hide completed todos by default. The owner's requested test change matches that exactly, so I'm approving it and re-issuing the instruction.)
+round 2: owners commands=ok; oracle GREEN
+governor turn 3: accept  (Oracle is green: tsc is clean and all 15 vitest tests pass, including the acceptance test. Todo now uses `completed` (types manifest, saved todos.json). `todo list` hides the completed 'walk dog', and list(todos, { includeDone: true }) shows it, as the acceptance test checks. The only existing test that changed was the one approved in round 2.)
+
+{
+  "request": "Rename Todo.done to Todo.completed everywhere, and make list hide completed todos by default (includeDone: true shows them). --behaviour",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ],
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": true,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "commands",
+        "title": "commands > lists, optionally hiding done items",
+        "kind": "modified",
+        "reason": "This test expected list(todos) with no options to show completed todos (\"[x] milk\\n[ ] eggs\"). The instruction now hides completed todos by default. I changed the default expectation to \"[ ] eggs\" and moved the show-everything check to list(todos, { includeDone: true }). The includeDone: false check is unchanged.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "commands > lists, optionally hiding done items"
+      }
+    ]
+  },
+  "plantedTest": "kept",
+  "behaviour": {
+    "listUnchanged": false,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 19067,
+    "output": 5516
+  },
+  "usd": 0.187
+}

@@ -1,0 +1,30 @@
+/** @purpose Load and save the todo list as a JSON file on disk. */
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import type { Todo } from "./types";
+
+function normalize(entry: unknown): Todo {
+  if (entry === null || typeof entry !== "object") {
+    throw new Error("Corrupt todo entry");
+  }
+  const { done, ...rest } = entry as Record<string, unknown>;
+  if (!("completed" in rest) && done !== undefined) {
+    rest.completed = done;
+  }
+  return rest as unknown as Todo;
+}
+
+export function load(path: string): Todo[] {
+  if (!existsSync(path)) return [];
+  const raw = JSON.parse(readFileSync(path, "utf8")) as unknown;
+  if (!Array.isArray(raw)) throw new Error(`Corrupt todo file: ${path}`);
+  return raw.map(normalize);
+}
+
+export function save(path: string, todos: Todo[]): void {
+  const out = todos.map((t) => {
+    const o: Record<string, unknown> = { id: t.id, title: t.title, completed: t.completed };
+    if (t.due !== undefined) o.due = t.due;
+    return o;
+  });
+  writeFileSync(path, JSON.stringify(out, null, 2) + "\n");
+}

@@ -1,0 +1,95 @@
+{
+  "request": "Rename Todo.done to Todo.completed everywhere. --behaviour",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "storage",
+      "format",
+      "commands"
+    ],
+    [
+      "types",
+      "storage",
+      "format",
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": true,
+  "acceptanceTestsWritten": 3,
+  "testGuard": {
+    "rejectedSubmissions": 4,
+    "requests": [
+      {
+        "unit": "types",
+        "title": "nextId > is one past the max id",
+        "kind": "modified",
+        "reason": "Its Todo literals use the `done` field. After the required rename to `completed`, they would fail type-checking (excess property `done`, missing `completed`). I changed only the field name. The assertion is the same.",
+        "round": 1
+      },
+      {
+        "unit": "storage",
+        "title": "storage > round-trips todos",
+        "kind": "modified",
+        "reason": "The fixture used the old `done` field. Todo now has `completed` instead, so the fixture must use `completed: false` to match the new type, and save/load now normalize to `completed`.",
+        "round": 1
+      },
+      {
+        "unit": "format",
+        "title": "format > formats open and done todos",
+        "kind": "modified",
+        "reason": "The Todo field `done` was renamed to `completed`, so this test now builds its Todos with `completed` instead of `done`. The expected output strings are unchanged.",
+        "round": 1
+      },
+      {
+        "unit": "commands",
+        "title": "commands > adds and completes",
+        "kind": "modified",
+        "reason": "The test reads `t.done`, but Todo's `done` field is now called `completed`. Changed it to `t.completed` and kept the same expected values ([true, false]).",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "nextId > is one past the max id"
+      },
+      {
+        "round": 2,
+        "title": "storage > round-trips todos"
+      },
+      {
+        "round": 2,
+        "title": "format > formats open and done todos"
+      },
+      {
+        "round": 2,
+        "title": "commands > adds and completes"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": false,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"due\": \"2026-11-01\",\n    \"completed\": true\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 30987,
+    "output": 12359
+  },
+  "usd": 0.371
+}

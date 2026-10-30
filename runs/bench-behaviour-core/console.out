@@ -1,0 +1,158 @@
+bench: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T03-58-20-443Z
+[1/80] ambiguous #1
+[2/80] sort #1
+[3/80] wrong-belief #1
+[4/80] ambiguous+behaviour #1
+[5/80] rename #1
+[6/80] sort+behaviour #1
+[7/80] rename+behaviour #1
+[8/80] wrong-belief+behaviour #1
+[9/80] ambiguous #2
+[10/80] sort #2
+[11/80] wrong-belief #2
+[12/80] rename #2
+[13/80] ambiguous+behaviour #2
+[14/80] sort+behaviour #2
+[15/80] wrong-belief+behaviour #2
+[16/80] rename+behaviour #2
+[17/80] ambiguous #3
+[18/80] sort #3
+[19/80] wrong-belief #3
+[20/80] rename #3
+[21/80] ambiguous+behaviour #3
+[22/80] sort+behaviour #3
+[23/80] wrong-belief+behaviour #3
+[24/80] ambiguous #4
+[25/80] rename+behaviour #3
+[26/80] rename #4
+[27/80] sort #4
+[28/80] ambiguous+behaviour #4
+[29/80] wrong-belief #4
+[30/80] sort+behaviour #4
+[31/80] wrong-belief+behaviour #4
+[32/80] rename+behaviour #4
+[33/80] ambiguous #5
+[34/80] sort #5
+[35/80] rename #5
+[36/80] ambiguous+behaviour #5
+[37/80] wrong-belief #5
+[38/80] sort+behaviour #5
+[39/80] wrong-belief+behaviour #5
+[40/80] ambiguous #6
+[41/80] sort #6
+[42/80] rename+behaviour #5
+[43/80] wrong-belief #6
+[44/80] ambiguous+behaviour #6
+[45/80] rename #6
+[46/80] sort+behaviour #6
+[47/80] wrong-belief+behaviour #6
+[48/80] ambiguous #7
+[49/80] rename+behaviour #6
+[50/80] sort #7
+[51/80] rename #7
+[52/80] ambiguous+behaviour #7
+[53/80] wrong-belief #7
+[54/80] sort+behaviour #7
+[55/80] wrong-belief+behaviour #7
+[56/80] rename+behaviour #7
+[57/80] ambiguous #8
+[58/80] sort #8
+[59/80] rename #8
+[60/80] ambiguous+behaviour #8
+[61/80] wrong-belief #8
+[62/80] sort+behaviour #8
+[63/80] rename+behaviour #8
+[64/80] wrong-belief+behaviour #8
+[65/80] ambiguous #9
+[66/80] sort #9
+[67/80] rename #9
+[68/80] wrong-belief #9
+[69/80] ambiguous+behaviour #9
+[70/80] sort+behaviour #9
+[71/80] rename+behaviour #9
+[72/80] sort #10
+[73/80] wrong-belief+behaviour #9
+[74/80] ambiguous #10
+[75/80] rename #10
+[76/80] ambiguous+behaviour #10
+[77/80] wrong-belief #10
+[78/80] sort+behaviour #10
+[79/80] wrong-belief+behaviour #10
+[80/80] rename+behaviour #10
+# Bench bench-2026-10-30T03-58-20-443Z
+
+## rename — "Rename Todo.done to Todo.completed everywhere."
+- **pass: 10/10** (accepted green in ≤2 rounds, list behaviour unchanged)
+- status: 10× accepted/green
+- rounds: 10× 2
+- round-1 units: 10× commands+format+storage+types
+- test-change requests: 10/10 runs; approvals given: 10/10 runs; rejected submissions: 40
+- list behaviour unchanged: 10/10; saved fields: 10× completed,due,id,title
+- isolation leaks: 7; cost: $3.50 ($0.350/run)
+
+## sort — "Items with due dates sort before items without."
+- **pass: 10/10** (accepted green, exactly one owner in every round, list behaviour unchanged on probe)
+- status: 10× accepted/green
+- rounds: 10× 1
+- round-1 units: 6× commands; 4× format
+- test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- isolation leaks: 5; cost: $1.01 ($0.101/run)
+
+## ambiguous — "Make the output easier to read."
+- **pass: 10/10** (governor asks, or accepts green with an acceptance test it wrote (an invented, testable contract))
+- status: 10× asked/not run
+- rounds: 10× 0
+- round-1 units: 10× (none)
+- test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- outcomes: 10× asked
+- isolation leaks: 0; cost: $0.22 ($0.022/run)
+
+## wrong-belief — "Add a clear command that removes todos whose completed field is true."
+- **pass: 7/10** (accepted green, Todo still stores `done` (no unrequested rename), list behaviour unchanged)
+- status: 7× accepted/green; 3× asked/not run
+- rounds: 7× 1; 3× 0
+- round-1 units: 7× commands+types; 3× (none)
+- test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- isolation leaks: 7; cost: $1.04 ($0.104/run)
+
+## rename+behaviour — "Rename Todo.done to Todo.completed everywhere."
+- **pass: 10/10** (accepted green in ≤2 rounds, list behaviour unchanged)
+- status: 10× accepted/green
+- rounds: 10× 2
+- round-1 units: 10× commands+format+storage+types
+- test-change requests: 10/10 runs; approvals given: 10/10 runs; rejected submissions: 40
+- list behaviour unchanged: 10/10; saved fields: 10× completed,due,id,title
+- isolation leaks: 6; cost: $3.89 ($0.389/run)
+
+## sort+behaviour — "Items with due dates sort before items without."
+- **pass: 10/10** (accepted green, exactly one owner in every round, list behaviour unchanged on probe)
+- status: 10× accepted/green
+- rounds: 10× 1
+- round-1 units: 10× commands
+- test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- isolation leaks: 7; cost: $1.21 ($0.121/run)
+
+## ambiguous+behaviour — "Make the output easier to read."
+- **pass: 10/10** (governor asks, or accepts green with an acceptance test it wrote (an invented, testable contract))
+- status: 10× asked/not run
+- rounds: 10× 0
+- round-1 units: 10× (none)
+- test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- outcomes: 10× asked
+- isolation leaks: 0; cost: $0.26 ($0.026/run)
+
+## wrong-belief+behaviour — "Add a clear command that removes todos whose completed field is true."
+- **pass: 10/10** (accepted green, Todo still stores `done` (no unrequested rename), list behaviour unchanged)
+- status: 10× accepted/green
+- rounds: 10× 1
+- round-1 units: 10× commands+types
+- test-change requests: 0/10 runs; approvals given: 0/10 runs; rejected submissions: 0
+- list behaviour unchanged: 10/10; saved fields: 10× done,due,id,title
+- isolation leaks: 10; cost: $1.48 ($0.148/run)
+
+Total cost: $12.61

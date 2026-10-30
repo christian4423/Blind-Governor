@@ -93,3 +93,31 @@ What carried the decision: **the oracle's split (existing tests green, own test 
 - Whether the guard *refuses* a harmful rewrite. That path was reached 0 times. Testing it needs a case where the governor can't settle the conflict from the oracle alone (e.g. both tests red, or a request that half-implies the change).
 - Why this differs from Sunday, where the governor instructed the owner to hide completed todos instead. Three things changed since then: the governor now sees its own acceptance tests, the prompt says existing tests are the specification, and retraction exists. Removing them one at a time would attribute it.
 - In 10/10 harmful runs it chose to *revise* rather than use `retractAcceptanceTests` (0 uses). Revising keeps a check on the rename, which is reasonable.
+
+---
+
+# Behaviour snapshot bench (branch `behaviour-snapshot`, 2026-10-30)
+
+**Change under test:** `--behaviour`. Each turn, the oracle runs the CLI through a fixed script (list empty; add three todos, two with due dates; complete one; list; complete a missing id; print the saved JSON) in a fresh temp dir, and the governor sees the transcript at the start of the run and now, with a diff. Control and treatment ran in the same bench on the same harness code; only the flag differs. The guard pair's control is `runs/bench-guard` (same harness minus the flag's code path).
+
+`runs/bench-behaviour-core/` (80 runs, $12.61) · `runs/bench-behaviour-guard/` (20 runs, $2.83)
+
+| Request | Control | + behaviour | Difference |
+|---|---|---|---|
+| Rename | 10/10, 2 rounds, $0.35 | 10/10, 2 rounds, $0.39 | none; old-format saved files still load in 9/10 vs 10/10 |
+| Sort | 10/10; routed 6× commands, 4× format | 10/10; routed 10× commands | more consistent routing |
+| Ambiguous | 10/10 asked | 10/10 asked | questions slightly more grounded (quote real output); both offer the real gaps (ids, due dates) |
+| Wrong belief | **7/10**; 3× asked "Todo has no `completed` field; did you mean `done`?" | **10/10**; never asked | the saved JSON in the snapshot settled the field question |
+| Guard harmful | 10/10 (bench-guard) | 10/10 | none; same self-correction |
+| Guard mirror | 10/10 (bench-guard) | 10/10 | none |
+
+Governor statements that it can't see or tell something about current behaviour: 2/40 control, 0/40 behaviour. Cost: +10–40% per run (bigger prompt).
+
+## Reading it
+- **A modest, consistent gain, not a rescue.** The snapshot never made a run worse, removed all 3 clarifying round-trips on the wrong-belief request, and made routing more consistent. But control already passed almost everything, so there were few failures to fix.
+- **Its headline benefit couldn't be shown here.** The case for the snapshot is that it would have caught both Sunday failures (the `list` default change and the saved-file break). On the current harness, control no longer produces those failures: it self-corrects the bad test (guard bench) and kept old files loading in 9/10 renames. To measure what the snapshot is worth, it needs a case where control fails: e.g. Sunday's original conditions (governor can't see its own acceptance tests, no "existing tests are the specification" line), or behaviour no test covers.
+- **Owner query channel:** no run in either arm showed a question that owners, rather than the human, would have had to answer. The 3 control asks were about the request's wording, and the snapshot answered them. On this evidence the escalation path isn't needed yet; it needs a harder repo to show up.
+- **Ambiguous request:** the snapshot changed the questions' wording more than their content. Without it, the governor already inferred the likely gaps from the declarations.
+
+## Harness bug found: false isolation alarms
+42 control and behaviour runs were flagged as leaks. All 165 flagged lines were text the governor wrote itself: since the guard bench, it sees its own acceptance tests, and owners copy lines from them into their test files, so those lines then exist in source too. No owner-authored line reached the governor. The leak check now ignores lines contained in the governor's own acceptance tests (new self-test), and the 42 summaries were re-graded with a note. Earlier benches were unaffected: the baseline ran before the governor could see its own tests, and the guard benches had no flags.

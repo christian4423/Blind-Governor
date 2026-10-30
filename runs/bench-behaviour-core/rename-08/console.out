@@ -1,0 +1,105 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T03-58-20-443Z/rename-08
+provider: anthropic (claude-opus-5-5)
+request: Rename Todo.done to Todo.completed everywhere.
+
+governor turn 1: plan -> types, format, storage, commands  (Renaming a field in a shared type means every unit that reads or writes it has to change. Interface declared in types; other units only update how they use it.)
+round 1: owners types=rejected format=rejected storage=rejected commands=rejected; oracle RED
+governor turn 2: plan -> types, format, storage, commands  (Each of the four requested test changes only renames the field, which is exactly what the request asks for, so I approve them all and send the same plan again.)
+round 2: owners types=ok format=ok storage=ok commands=ok; oracle GREEN
+governor turn 3: accept  (The oracle is green: tsc exits 0 and all 14 vitest tests pass, including the acceptance tests for types and commands. All four units were updated so Todo.completed replaces Todo.done. The test changes I approved only renamed the field; values and assertions stayed the same.)
+
+{
+  "request": "Rename Todo.done to Todo.completed everywhere.",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "format",
+      "storage",
+      "commands"
+    ],
+    [
+      "types",
+      "format",
+      "storage",
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 4,
+    "requests": [
+      {
+        "unit": "types",
+        "title": "nextId > is one past the max id",
+        "kind": "modified",
+        "reason": "The Todo literals in this test used `done`, which no longer exists on Todo after the rename and would fail the excess-property type check. I changed only the field name to `completed`. The assertion and the values are unchanged.",
+        "round": 1
+      },
+      {
+        "unit": "format",
+        "title": "format > formats open and done todos",
+        "kind": "modified",
+        "reason": "Todo literals used `done`, which was renamed to `completed` in the types unit; updated only the field name. Expected output strings are unchanged.",
+        "round": 1
+      },
+      {
+        "unit": "storage",
+        "title": "storage > round-trips todos",
+        "kind": "modified",
+        "reason": "Todo literal used `done: false`; renamed to `completed: false` to match the new Todo type (rename only, no behavioral change).",
+        "round": 1
+      },
+      {
+        "unit": "commands",
+        "title": "commands > adds and completes",
+        "kind": "modified",
+        "reason": "The test reads t.done, but Todo.done is now Todo.completed. The only change is t.done -> t.completed; the expected values stay the same.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "nextId > is one past the max id"
+      },
+      {
+        "round": 2,
+        "title": "format > formats open and done todos"
+      },
+      {
+        "round": 2,
+        "title": "storage > round-trips todos"
+      },
+      {
+        "round": 2,
+        "title": "commands > adds and completes"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": false,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 28111,
+    "output": 9521
+  },
+  "usd": 0.303
+}

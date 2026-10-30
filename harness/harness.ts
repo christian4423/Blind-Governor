@@ -243,7 +243,7 @@ async function runGovernor(
     `# Last oracle result\n${oracle ? formatOracle(oracle) : "(not run yet - the seed repo is green)"}`,
   ].join("\n\n");
 
-  const leaks = findLeaks(cfg.workDir, units, system + prompt);
+  const leaks = findLeaks(cfg.workDir, units, system + prompt, acceptanceTestsText(cfg.workDir));
   if (leaks.length) {
     console.error(`!! GOVERNOR ISOLATION LEAK: ${leaks.length} source line(s) in governor prompt`);
     log(cfg, "governor_leak", { lines: leaks });
@@ -590,9 +590,12 @@ function formatOracle(o: OracleResult): string {
 
 // ---------- isolation check ----------
 
-/** Source lines (>= 25 chars, not part of the manifest's declarations) that appear in text sent to the governor. */
-function findLeaks(workDir: string, units: Unit[], governorText: string): string[] {
-  const manifestText = units.map((u) => u.exports).join("\n");
+/**
+ * Source lines (>= 25 chars) that appear in text sent to the governor, excluding lines found in the manifest's
+ * declarations or in text the governor wrote itself (its acceptance tests): owners often copy those into their tests.
+ */
+function findLeaks(workDir: string, units: Unit[], governorText: string, governorAuthored = ""): string[] {
+  const manifestText = units.map((u) => u.exports).join("\n") + "\n" + governorAuthored;
   const files = readdirSync(join(workDir, "src")).map((f) => join(workDir, "src", f));
   const lines = new Set(files.flatMap((f) => readFileSync(f, "utf8").split("\n").map((l) => l.trim())));
   return [...lines].filter((l) => l.length >= 25 && !manifestText.includes(l) && governorText.includes(l));
@@ -804,6 +807,9 @@ function selftest(): void {
   check("snapshot shows completed todos and the error exit", snap.includes("[x] walk dog") && snap.includes("[exit 1]") && snap.includes('"title": "pay rent"'));
   check("snapshot carries no source lines", findLeaks(cfg.workDir, units, snap).length === 0);
   check("snapshot is deterministic", snapshot(join(runDir, "work")) === snap);
+  const copied = source.split("\n").find((l) => l.includes("map(formatTodo)"))!.trim();
+  check("lines the governor wrote itself are not leaks", findLeaks(cfg.workDir, units, copied, copied).length === 0
+    && findLeaks(cfg.workDir, units, copied).length === 1);
 }
 
 // ---------- entry ----------

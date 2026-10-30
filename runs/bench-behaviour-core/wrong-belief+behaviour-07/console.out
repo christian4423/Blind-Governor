@@ -1,0 +1,50 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T03-58-20-443Z/wrong-belief+behaviour-07
+provider: anthropic (claude-opus-5-5)
+request: Add a clear command that removes todos whose completed field is true. --behaviour
+
+governor turn 1: plan -> types, commands  (The Command union needs a new "clear" variant in types. Commands needs the clear logic, argument parsing and the run wiring. I read "completed field" as the existing `done` field.)
+round 1: owners types=ok commands=ok; oracle GREEN
+!! GOVERNOR ISOLATION LEAK: 1 source line(s) in governor prompt
+governor turn 2: accept  (Oracle is green (tsc clean, 19/19 tests pass, including the acceptance tests for clear). clear() removes todos with done === true without changing order or ids and without mutating its input. parseArgs recognises "clear". run saves the result and reports "Cleared N todo(s)". Existing CLI behaviour in the transcript is unchanged.)
+
+{
+  "request": "Add a clear command that removes todos whose completed field is true. --behaviour",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "commands"
+    ]
+  ],
+  "governorIsolation": "LEAK",
+  "showBehaviour": true,
+  "acceptanceTestsWritten": 1,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 11419,
+    "output": 5079
+  },
+  "usd": 0.147
+}

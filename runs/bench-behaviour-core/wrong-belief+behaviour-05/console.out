@@ -1,0 +1,50 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T03-58-20-443Z/wrong-belief+behaviour-05
+provider: anthropic (claude-opus-5-5)
+request: Add a clear command that removes todos whose completed field is true. --behaviour
+
+governor turn 1: plan -> types, commands  (The codebase has no `completed` field. A todo counts as completed when its `done` field is true, which is the field `todo complete` sets, so clear removes todos with done === true. This needs a new Command variant in types, plus clear(), parseArgs and run support in commands.)
+round 1: owners types=ok commands=ok; oracle GREEN
+!! GOVERNOR ISOLATION LEAK: 9 source line(s) in governor prompt
+governor turn 2: accept  (Oracle is green: tsc is clean and all 18 vitest tests pass, including the acceptance tests for clear. Those tests cover: removing done todos without mutating the input or renumbering ids, the empty list, parseArgs(["clear"]), and run reporting "Cleared N" and saving the result. Todo has no 'completed' field, so the request's 'completed' was read as the existing `done` field. The fixed CLI transcript doesn't exercise clear, so its unchanged output is expected.)
+
+{
+  "request": "Add a clear command that removes todos whose completed field is true. --behaviour",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "commands"
+    ]
+  ],
+  "governorIsolation": "LEAK",
+  "showBehaviour": true,
+  "acceptanceTestsWritten": 1,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]"
+    }
+  },
+  "tokens": {
+    "input": 11276,
+    "output": 4826
+  },
+  "usd": 0.142
+}
