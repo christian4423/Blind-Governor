@@ -1,6 +1,6 @@
 // Runs each experiment request N times and tallies outcome frequencies.
 // Usage: npx tsx bench.ts [--n 10] [--concurrency 4] [--only slug,slug] [--arms control,behaviour]
-//        each arm reruns every experiment; "behaviour" adds --behaviour (slug suffix +behaviour)
+//        each arm reruns every experiment with the arm's flags (slug suffix +<arm>); see ARM_ARGS
 //        npx tsx bench.ts --report runs/bench-<ts>      (re-tally an existing bench without running anything)
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -92,6 +92,13 @@ async function runAll(benchDir: string, exps: Experiment[], n: number, concurren
   await Promise.all(Array.from({ length: concurrency }, worker));
 }
 
+const ARM_ARGS: Record<string, string[]> = {
+  behaviour: ["--behaviour"],
+  single: ["--single"],
+  "single-interfaces": ["--single", "--frame", "interfaces"],
+  "single-data": ["--single", "--frame", "data"],
+};
+
 const tally = <T extends string>(xs: T[]) =>
   Object.entries(xs.reduce<Record<string, number>>((m, x) => ((m[x] = (m[x] ?? 0) + 1), m), {}))
     .sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v}× ${k}`).join("; ");
@@ -105,7 +112,7 @@ function report(benchDir: string): void {
     if (EXPERIMENTS.some((e) => e.slug === slug)) continue;
     const [baseSlug, arm] = slug.split("+");
     const baseExp = EXPERIMENTS.find((e) => e.slug === baseSlug);
-    if (baseExp && arm) EXPERIMENTS.push({ ...baseExp, slug, args: [...(baseExp.args ?? []), `--${arm}`] });
+    if (baseExp && arm) EXPERIMENTS.push({ ...baseExp, slug, args: [...(baseExp.args ?? []), ...(ARM_ARGS[arm] ?? [`--${arm}`])] });
   }
   for (const exp of EXPERIMENTS) {
     const sums = runs.filter((d) => d.replace(/-\d+$/, "") === exp.slug)
@@ -150,7 +157,7 @@ if (existing) {
   const base = only ? EXPERIMENTS.filter((e) => only.includes(e.slug.split("+")[0])) : EXPERIMENTS;
   const arms = (flag("--arms") ?? "control").split(",");
   const exps = arms.flatMap((arm) => base.map((e) => arm === "control" ? e
-    : { ...e, slug: `${e.slug}+${arm}`, args: [...(e.args ?? []), `--${arm}`] }));
+    : { ...e, slug: `${e.slug}+${arm}`, args: [...(e.args ?? []), ...(ARM_ARGS[arm] ?? [`--${arm}`])] }));
   EXPERIMENTS.push(...exps.filter((e) => !EXPERIMENTS.includes(e)));
   const benchDir = join(ROOT, "runs", `bench-${new Date().toISOString().replace(/[:.]/g, "-")}`);
   console.log(`bench: ${benchDir}`);

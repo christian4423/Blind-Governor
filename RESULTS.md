@@ -152,3 +152,21 @@ Governor column = no-snapshot governor (`bench-behaviour-core` control arm; `ben
 
 ## So, is it saving?
 On cost, not at this size: the governor's prompt (5–13k chars) is larger than the whole repo. On quality, the split caught a real data-loss bug that one model missed 10/10. Whether cost crosses over, and whether the single agent's quality degrades as context grows, needs the growing-repo experiment.
+
+## Wording control (`runs/bench-wording/`, 20 runs, $2.55)
+
+Is the split's data-compatibility advantage the governor's *role*, or its prompt *wording*? Rename only, 10× each, single agent with one extra system-prompt line (`--frame`):
+
+| Rename | Old saved files still load | $/run |
+|---|---|---|
+| Single agent, plain | 0/10 | $0.11 |
+| + governor's contract framing ("exports are a contract with the files that import them…"; no mention of data) | 5/10 | $0.12 |
+| + one explicit line ("existing saved files and existing callers must keep working unless the request explicitly says otherwise") | 10/10 | $0.13 |
+| Governor/owners (no snapshot) | 9/10 | $0.35 |
+
+All 30 single-agent runs passed the graded criteria in 1 round.
+
+**Reading it:**
+- **Wording explains about half of it.** Contract framing alone moved the single agent from 0/10 to 5/10. The remaining gap to the governor (5 vs 9 out of 10) points to the role adding something, but at n=10 it isn't conclusive (Fisher exact p≈0.14).
+- **One explicit line beats the whole split, at about a third of the cost.** For this failure, the cheapest fix is to say the requirement, not to restructure the agents.
+- **Caveat:** that line was written knowing the failure. The split found the data boundary unprompted, without anyone naming it. On a problem nobody has anticipated, an explicit line isn't available. That's the version of the thesis still standing: separating intent from implementation surfaces contracts that nobody wrote down. It needs a test whose hidden contract we didn't design the prompt around.

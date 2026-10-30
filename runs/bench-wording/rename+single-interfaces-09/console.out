@@ -1,0 +1,102 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T06-03-26-562Z/rename+single-interfaces-09
+provider: anthropic (claude-opus-5-5)
+request: Rename Todo.done to Todo.completed everywhere. --single --frame interfaces
+
+single call 0: edit -> src/types.ts, src/commands.ts, src/format.ts, src/storage.ts, src/commands.test.ts, src/format.test.ts, src/storage.test.ts, src/types.test.ts  (Renamed Todo.done to Todo.completed in types.ts and updated every place that reads or writes it (commands.ts, format.ts) and the tests. Existing todos.json files store `done`, so load() now converts that to `completed`. Without this, callers would get objects that don't match Todo, and completed items would quietly show as open. ListOptions.includeDone is left as is because the request only covers the Todo field.)
+round 1: oracle GREEN
+single call 1: accept  (The oracle is green (tsc clean, 11/11 tests pass). Todo.done is now Todo.completed everywhere, and existing files that use `done` still load correctly.)
+
+{
+  "mode": "single",
+  "frame": "interfaces",
+  "request": "Rename Todo.done to Todo.completed everywhere. --single --frame interfaces",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "commands",
+      "format",
+      "storage"
+    ]
+  ],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [
+      {
+        "unit": "commands",
+        "title": "commands > adds and completes",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      },
+      {
+        "unit": "format",
+        "title": "format > formats open and done todos",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      },
+      {
+        "unit": "storage",
+        "title": "storage > round-trips todos",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      },
+      {
+        "unit": "types",
+        "title": "nextId > is one past the max id",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 1,
+        "title": "commands > adds and completes"
+      },
+      {
+        "round": 1,
+        "title": "format > formats open and done todos"
+      },
+      {
+        "round": 1,
+        "title": "storage > round-trips todos"
+      },
+      {
+        "round": 1,
+        "title": "nextId > is one past the max id"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "legacyFileLoads": true,
+    "savedUnchanged": false,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    }
+  },
+  "tokens": {
+    "input": 11577,
+    "output": 4441
+  },
+  "usd": 0.135
+}

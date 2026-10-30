@@ -617,6 +617,14 @@ Each round, make your changes and call submit once. The harness writes your file
 Existing tests are the specification of current behaviour. If you change or remove an existing test, say why in testChangeReasons; change only what the request actually calls for.
 You have at most ${MAX_ROUNDS} edit rounds.`;
 
+// --frame: wording controls for the single agent, to separate the governor's role from its prompt wording.
+const SINGLE_FRAMES: Record<string, string> = {
+  // The governor's own contract framing (see GOVERNOR_SYSTEM), with no mention of stored data.
+  interfaces: "\nTreat each file's exports as a contract with the files that import it: when an export changes, decide exactly what callers will receive, and keep every caller consistent with it.",
+  // An explicit hint the governor never had.
+  data: "\nExisting saved files and existing callers must keep working unless the request explicitly says otherwise.",
+};
+
 const SINGLE_TOOLS: Tool[] = [
   {
     name: "read_file",
@@ -681,15 +689,16 @@ function repoText(workDir: string): string {
 
 async function runSingle(
   cfg: Config, request: string, history: string[], startOracle: OracleResult | null,
-  baselineTests: Map<string, Map<string, string>>,
+  baselineTests: Map<string, Map<string, string>>, frame?: string,
 ): Promise<SingleResult> {
+  const system = SINGLE_SYSTEM + (frame ? SINGLE_FRAMES[frame] : "");
   const prompt = [
     `# Request\n${request}`,
     ...(history.length ? [`# Earlier in this session\n${history.join("\n\n")}`] : []),
     `# Repository\n${repoText(cfg.workDir)}`,
     `# Oracle\n${startOracle ? formatOracle(startOracle) : "(not run yet - the repo is green)"}`,
   ].join("\n\n");
-  log(cfg, "single_input", { system: SINGLE_SYSTEM, prompt });
+  log(cfg, "single_input", { system, prompt, frame });
 
   const result: SingleResult = { status: "turn_limit", rounds: 0, oracle: startOracle, touched: [], testChanges: [] };
   const seen = new Set<string>();
@@ -697,7 +706,7 @@ async function runSingle(
   const pathOk = (p: string) => /^(src|tests)\/[\w./-]+\.ts$/.test(p) && !p.includes("..");
 
   for (let call = 0; call < 40; call++) {
-    const res = await callModel(cfg, SINGLE_SYSTEM, messages, SINGLE_TOOLS);
+    const res = await callModel(cfg, system, messages, SINGLE_TOOLS);
     log(cfg, "single_output", { call, content: res.content });
     messages.push({ role: "assistant", content: res.content });
     const calls = toolUses(res);
@@ -776,12 +785,13 @@ function lineReader(): () => Promise<string | null> {
 
 async function main(
   request: string, provider: Config["provider"], model: string, interactive: boolean, out?: string, scenario?: string,
-  showBehaviour = false, single = false,
+  showBehaviour = false, single = false, frame?: string,
 ): Promise<void> {
   const runDir = out ? resolve(out) : join(ROOT, "runs", new Date().toISOString().replace(/[:.]/g, "-"));
   mkdirSync(runDir, { recursive: true });
   const cfg: Config = { provider, model, runDir, workDir: copySeed(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 } };
-  log(cfg, "run_start", { request, provider, model, interactive, scenario, showBehaviour, single });
+  log(cfg, "run_start", { request, provider, model, interactive, scenario, showBehaviour, single, frame });
+  if (frame && (!single || !(frame in SINGLE_FRAMES))) throw new Error(`--frame needs --single and one of: ${Object.keys(SINGLE_FRAMES).join(", ")}`);
   if (single && (interactive || showBehaviour)) throw new Error("--single does not support --interactive or --behaviour");
 
   // --scenario <dir>: start mid-session. src/ overlays the seed's source and tests (so they become the existing
@@ -827,7 +837,7 @@ async function main(
 
   if (single) {
     try {
-      const r = await runSingle(cfg, request, history, oracle, baselineTests);
+      const r = await runSingle(cfg, request, history, oracle, baselineTests, frame);
       ({ status, rounds, oracle } = r);
       instructedUnits.push(...r.touched);
       testRequests.push(...r.testChanges);
@@ -914,7 +924,7 @@ async function main(
   const leaked = readFileSync(join(runDir, "log.jsonl"), "utf8").includes('"type":"governor_leak"');
   const probeAfter = probe(cfg.workDir);
   const summary = {
-    mode: single ? "single" : "governor",
+    mode: single ? "single" : "governor", frame: frame ?? null,
     request, provider, model, rounds, status, clarifications: clarifications.length,
     finalOracle: oracle ? (oracle.pass ? "green" : "red") : "not run",
     instructedUnits, governorIsolation: single ? "n/a" : leaked ? "LEAK" : "clean",
@@ -1019,13 +1029,14 @@ if (args.includes("--selftest")) {
   if (interactive) args.splice(args.indexOf("--interactive"), 1);
   const request = args.join(" ").trim();
   if (!request) {
-    console.error('usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama] [--model id] [--interactive] [--out runDir] [--scenario dir] [--behaviour] [--single]');
+    console.error('usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama] [--model id] [--interactive] [--out runDir] [--scenario dir] [--behaviour] [--single [--frame interfaces|data]]');
     process.exit(2);
   }
   const showBehaviour = args.includes("--behaviour");
   if (showBehaviour) args.splice(args.indexOf("--behaviour"), 1);
+  const frame = flag("--frame");
   const single = args.includes("--single");
   if (single) args.splice(args.indexOf("--single"), 1);
-  await main(request, provider, model, interactive, out, scenario, showBehaviour, single);
+  await main(request, provider, model, interactive, out, scenario, showBehaviour, single, frame);
   process.exit(process.exitCode ?? 0); // the stdin reader would otherwise keep the process alive
 }

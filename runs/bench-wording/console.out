@@ -1,0 +1,42 @@
+bench: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-10-30T06-03-26-562Z
+[1/20] rename+single-interfaces #1
+[2/20] rename+single-interfaces #2
+[3/20] rename+single-data #2
+[4/20] rename+single-data #1
+[5/20] rename+single-interfaces #3
+[6/20] rename+single-data #3
+[7/20] rename+single-interfaces #4
+[8/20] rename+single-data #4
+[9/20] rename+single-interfaces #5
+[10/20] rename+single-interfaces #6
+[11/20] rename+single-data #5
+[12/20] rename+single-data #6
+[13/20] rename+single-interfaces #7
+[14/20] rename+single-data #7
+[15/20] rename+single-interfaces #8
+[16/20] rename+single-data #8
+[17/20] rename+single-interfaces #9
+[18/20] rename+single-data #9
+[19/20] rename+single-interfaces #10
+[20/20] rename+single-data #10
+# Bench bench-2026-10-30T06-03-26-562Z
+
+## rename+single-interfaces — "Rename Todo.done to Todo.completed everywhere."
+- **pass: 10/10** (accepted green in ≤2 rounds, list behaviour unchanged)
+- status: 10× accepted/green
+- rounds: 10× 1
+- round-1 units: 10× commands+format+storage+types
+- test-change requests: 10/10 runs; approvals given: 10/10 runs; rejected submissions: 0
+- list behaviour unchanged: 10/10; saved fields: 10× completed,due,id,title; seed-format saved file still loads: 5/10
+- isolation leaks: 0; cost: $1.23 ($0.123/run)
+
+## rename+single-data — "Rename Todo.done to Todo.completed everywhere."
+- **pass: 10/10** (accepted green in ≤2 rounds, list behaviour unchanged)
+- status: 10× accepted/green
+- rounds: 10× 1
+- round-1 units: 10× commands+format+storage+types
+- test-change requests: 10/10 runs; approvals given: 10/10 runs; rejected submissions: 0
+- list behaviour unchanged: 10/10; saved fields: 10× completed,due,id,title; seed-format saved file still loads: 10/10
+- isolation leaks: 0; cost: $1.32 ($0.132/run)
+
+Total cost: $2.55
