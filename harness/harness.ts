@@ -410,15 +410,25 @@ async function runGovernor(
   const manifest = units.map((u) =>
     `## unit: ${u.name} (files: ${u.files.filter((f) => f !== u.testPath).join(", ")}; tests in ${u.testPath})\npurpose: ${u.purpose || "(none given)"}\nimports: ${u.imports.join(", ") || "(none)"}\n\`\`\`ts\n${u.exports}\n\`\`\``,
   ).join("\n\n");
-  const prompt = [
+  // Under a budget the governor gets the same kind of context management as owners and the single agent: the
+  // oldest detail goes first. Level 1 shrinks earlier rounds to their first line; level 2 also shows its own
+  // acceptance tests as titles only. The latest round, the manifest and the (capped) oracle output stay whole.
+  const build = (level: number) => [
     `# Request\n${request}`,
     ...(clarifications.length ? [`# Clarifications from the human\n${clarifications.join("\n\n")}`] : []),
     `# Manifest\n${manifest}`,
     ...(behaviour ? [`# Observed behaviour\n${formatBehaviour(behaviour.start, behaviour.now)}`] : []),
-    `# Your acceptance tests in place\n${acceptanceTestsText(cfg.workDir)}`,
-    `# Previous rounds\n${history.length ? history.join("\n\n") : "(none - this is the first round)"}`,
+    `# Your acceptance tests in place\n${level >= 2 ? acceptanceTitles(cfg.workDir) : acceptanceTestsText(cfg.workDir)}`,
+    `# Previous rounds\n${!history.length ? "(none - this is the first round)" : history.map((h, i) =>
+      level >= 1 && i < history.length - 1 ? `${h.split("\n")[0]} [details dropped to fit the context budget]` : h).join("\n\n")}`,
     `# Last oracle result\n${oracle ? formatOracle(oracle, cfg.budget) : "(not run yet - the starting repo is green)"}`,
   ].join("\n\n");
+  let level = 0;
+  let prompt = build(0);
+  while (cfg.budget && level < 2 && estimateTokens(system, [{ role: "user", content: prompt }], [DECISION_TOOL]) > cfg.budget * 0.9) {
+    prompt = build(++level);
+  }
+  if (level) log(cfg, "governor_compaction", { level });
 
   const leaks = findLeaks(cfg.workDir, units, system + prompt, acceptanceTestsText(cfg.workDir));
   if (leaks.length) {
@@ -427,20 +437,20 @@ async function runGovernor(
   }
   log(cfg, "governor_input", { system, prompt, leaked: leaks.length > 0 });
 
-  const messages: Msg[] = [{ role: "user", content: prompt }];
+  let messages: Msg[] = [{ role: "user", content: prompt }];
   for (let attempt = 0; attempt < 3; attempt++) {
     const res = await callWithRetry(cfg, system, messages, [DECISION_TOOL], "governor");
     log(cfg, "governor_output", { content: res.content, usage: res.usage });
     const call = toolUses(res).find((t) => t.name === "submit_decision");
     const problem = call ? validateDecision(call.input, units, knownTests) : "You must call submit_decision.";
     if (typeof problem !== "string") return problem;
-    messages.push({ role: "assistant", content: res.content });
-    messages.push({
-      role: "user",
-      content: call
-        ? [{ type: "tool_result", tool_use_id: call.id, is_error: true, content: problem }]
-        : problem,
-    });
+    // A retry shows the rejected decision and the error, not the previous attempt's thinking: carrying that
+    // (often ~69k characters) made 7 of 18 watchlist governor runs overflow a 12k budget (2026-11-01).
+    messages = [
+      { role: "user", content: prompt },
+      { role: "assistant", content: call ? [call] : [{ type: "text", text: "(I did not call submit_decision.)" }] },
+      { role: "user", content: call ? [{ type: "tool_result", tool_use_id: call.id, is_error: true, content: problem }] : problem },
+    ];
     log(cfg, "governor_retry", { problem });
   }
   throw new Error("Governor failed to produce a valid decision after 3 attempts");
@@ -604,6 +614,13 @@ function acceptanceTestsText(workDir: string): string {
   const dir = join(workDir, target.acceptanceDir);
   const files = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(target.testSuffix)).sort() : [];
   return files.map((f) => `## ${target.acceptanceDir}/${f}\n\`\`\`ts\n${readFileSync(join(dir, f), "utf8").trim()}\n\`\`\``).join("\n\n") || "(none)";
+}
+
+function acceptanceTitles(workDir: string): string {
+  const dir = join(workDir, target.acceptanceDir);
+  const files = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(target.testSuffix)).sort() : [];
+  return files.map((f) => `## ${target.acceptanceDir}/${f} (test titles only; code dropped to fit the context budget)\n` +
+    [...testsIn(readFileSync(join(dir, f), "utf8")).keys()].map((t) => `- ${t}`).join("\n")).join("\n\n") || "(none)";
 }
 
 function retractAcceptanceTests(cfg: Config, units: string[]): void {

@@ -236,3 +236,11 @@ Early hints from the 8 clean runs (one per setup, not results):
 - The **governor ran over budget in its own seat** in 4 of 6 runs, at 12k as well as 6k: its prompt grows each round with plans, owner reports and oracle output. I had predicted the owners would be the bottleneck.
 - The single agent at 12k hit the 40-call limit in 1 of 3 runs without editing anything (wrong-belief), and turned the rename green in 1 round elsewhere.
 - No setup kept old saved watchlists loading on the rename (0/3 clean rename runs), consistent with glm's calibration.
+
+## Watchlist bench: governor runs redone (2026-11-01)
+
+The first pass finished at 08:35 (36/36 runs), but 15 of 18 governor runs ended `over_budget` for two reasons:
+1. **Bug: a validation retry resent the previous attempt's thinking.** When the governor's decision was rejected (e.g. approving a test title that doesn't exist), the retry carried the whole previous answer, often ~69k characters of thinking, so the prompt jumped to 12.9k–36.9k tokens. All 7 overflows at 12k (and 1 at 6k) were this. Fixed: a retry now shows only the rejected decision and the error.
+2. **Asymmetry: the governor had no context management.** Without retries, its prompt reached 6.2k–6.9k tokens after 2–4 rounds (manifest ~1.4k, growing history of plans and owner reports up to ~2.4k, capped oracle output, its own acceptance tests up to ~1.3k), so 7 runs overflowed 6k. Owners and the single agent drop their oldest detail; the governor now does too, under a budget: earlier rounds shrink to their first line, then its acceptance tests to titles only. The latest round, the manifest and the capped oracle output stay whole.
+
+The 18 governor runs were moved to `bench-watchlist/_dropped/governor-retry-bug/` and are being rerun with the fixes. The 18 single-agent runs stand.
