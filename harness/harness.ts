@@ -232,7 +232,7 @@ function client(cfg: Config): Anthropic {
       // Ollama's cloud accepts the key only as a bearer token; an x-api-key header is rejected.
       : cfg.provider === "ollama-cloud" ? new Anthropic({
           baseURL: env("OLLAMA_API_URL", "ollama-cloud"), apiKey: null, authToken: env("OLLAMA_API_KEY", "ollama-cloud"),
-          timeout: 15 * 60_000,
+          timeout: 5 * 60_000, maxRetries: 2, // a cloud call once hung for ~7 minutes, then died
         })
       : new Anthropic());
   }
@@ -1043,6 +1043,7 @@ async function main(
   request: string, provider: Config["provider"], model: string, interactive: boolean, out?: string, scenario?: string,
   showBehaviour = false, single = false, frame?: string, budget?: number, targetName: Target["name"] = "todo", heldout?: string,
 ): Promise<void> {
+  const started = Date.now();
   target = TARGETS[targetName];
   if (!target.hasCli && showBehaviour) throw new Error(`--behaviour needs a CLI target; ${target.name} has none`);
   if (target.name !== "todo" && scenario) throw new Error("--scenario fixtures exist only for the todo target");
@@ -1091,6 +1092,7 @@ async function main(
     if (existsSync(historyFile)) history.push(readFileSync(historyFile, "utf8").trim());
     log(cfg, "scenario_start", { scenario: scenarioDir, planted: Object.fromEntries(plantedSources), history, oracle });
   }
+  log(cfg, "setup_done", { seconds: Number(((Date.now() - started) / 1000).toFixed(1)) });
   const clarifications: string[] = [];
   const readAnswer = interactive ? lineReader() : null;
   let status = "cap_hit";
