@@ -300,8 +300,14 @@ async function callModel(cfg: Config, system: string, messages: Msg[], tools: To
 
 class MaxTokens extends Error {}
 
-/** Provider quota errors end the run with a status the bench recognises, so it can stop and resume later. */
-const isRateLimit = (e: unknown) => /rate_limit_error|usage limit|\b429\b/.test(String((e as Error)?.message ?? e));
+/**
+ * Provider quota errors and lost connections end the run with a status the bench recognises ("rate_limited"), so it
+ * stops and a later --resume reruns the run. Without this, a machine going offline would mark every remaining run
+ * as finished-with-error.
+ */
+const isRateLimit = (e: unknown) =>
+  /rate_limit_error|usage limit|\b429\b|Connection error|fetch failed|ECONNREFUSED|ECONNRESET|ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ENETUNREACH|socket hang up|terminated/i
+    .test(String((e as Error)?.message ?? e) + String((e as { cause?: unknown })?.cause ?? ""));
 const errorStatus = (e: unknown) => (e instanceof OverBudget ? "over_budget" : isRateLimit(e) ? "rate_limited" : `error: ${(e as Error).message}`);
 
 /** callModel, retrying a response that ran out of output tokens (the prompt is unchanged, so this is just another draw). */
