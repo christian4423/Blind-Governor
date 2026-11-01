@@ -1,0 +1,54 @@
+{
+  "target": "todo",
+  "mode": "governor",
+  "frame": null,
+  "request": "Items with due dates sort before items without.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 1,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "legacyFileLoads": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    }
+  },
+  "heldout": null,
+  "tokens": {
+    "input": 5639,
+    "output": 14433
+  },
+  "budget": null,
+  "budgetStats": {
+    "maxPromptTokens": 2301,
+    "maxEstimate": 2662,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

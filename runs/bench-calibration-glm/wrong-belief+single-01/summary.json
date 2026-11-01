@@ -1,0 +1,68 @@
+{
+  "target": "todo",
+  "mode": "single",
+  "frame": null,
+  "request": "Add a clear command that removes todos whose completed field is true.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "commands"
+    ]
+  ],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [
+      {
+        "unit": "commands",
+        "title": "parseArgs > parses each command",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 1,
+        "title": "parseArgs > parses each command"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "legacyFileLoads": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    }
+  },
+  "heldout": null,
+  "tokens": {
+    "input": 16726,
+    "output": 5782
+  },
+  "budget": null,
+  "budgetStats": {
+    "maxPromptTokens": 8043,
+    "maxEstimate": 8235,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

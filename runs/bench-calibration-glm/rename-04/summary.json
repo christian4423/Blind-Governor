@@ -1,0 +1,112 @@
+{
+  "target": "todo",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename Todo.done to Todo.completed everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "commands",
+      "format",
+      "storage"
+    ],
+    [
+      "types",
+      "commands",
+      "format",
+      "storage"
+    ],
+    [
+      "types"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 8,
+  "testGuard": {
+    "rejectedSubmissions": 4,
+    "requests": [
+      {
+        "unit": "types",
+        "title": "nextId > is one past the max id",
+        "kind": "modified",
+        "reason": "This test constructs Todo literals with `done: false` / `done: true`, which no longer type-check after the requested rename of Todo.done to Todo.completed. I changed the field name to `completed` in both literals; assertions and all other logic are unchanged. This is the mechanical rename explicitly anticipated by the instruction.",
+        "round": 1
+      },
+      {
+        "unit": "commands",
+        "title": "commands > adds and completes",
+        "kind": "modified",
+        "reason": "Mechanical rename following the Todo type change: the test reads the todo field via `todos.map((t) => t.done)`, which must become `t.completed` for the test to compile and pass. No assertion values or semantics changed.",
+        "round": 1
+      },
+      {
+        "unit": "format",
+        "title": "format > formats open and done todos",
+        "kind": "modified",
+        "reason": "Mechanical rename of the `done:` literals in the test's Todo fixtures to `completed:`, required by the Todo interface rename. Assertions and test logic are unchanged.",
+        "round": 1
+      },
+      {
+        "unit": "storage",
+        "title": "storage > round-trips todos",
+        "kind": "modified",
+        "reason": "Mechanical field rename in the test's todo literal: `done: false` -> `completed: false`, required by the Todo type change from ./types. No assertion or behavior changed.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "nextId > is one past the max id"
+      },
+      {
+        "round": 2,
+        "title": "commands > adds and completes"
+      },
+      {
+        "round": 2,
+        "title": "format > formats open and done todos"
+      },
+      {
+        "round": 2,
+        "title": "storage > round-trips todos"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "legacyFileLoads": false,
+    "savedUnchanged": false,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]",
+      "legacy": "[ ] a\n[ ] b"
+    }
+  },
+  "heldout": null,
+  "tokens": {
+    "input": 35552,
+    "output": 31828
+  },
+  "budget": null,
+  "budgetStats": {
+    "maxPromptTokens": 4234,
+    "maxEstimate": 5037,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

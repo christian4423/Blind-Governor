@@ -1,0 +1,124 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T03-45-09-559Z/rename-02
+provider: ollama-cloud (glm-5.3)
+request: Rename Todo.done to Todo.completed everywhere.
+
+governor turn 1: plan -> types, commands, format, storage  (Pure rename of the Todo.done field to Todo.completed. The Todo interface is owned by types, and commands, format, and storage all consume it, so all four must switch their references in the same round — including the persisted JSON key in storage. ListOptions.includeDone and the Command type are not Todo.done and stay untouched. Acceptance tests pin the new field name and the on-disk key.)
+round 1: owners types=rejected commands=rejected format=rejected storage=rejected; oracle RED
+governor turn 2: plan -> types, commands, format, storage  (Round 1 was rejected only because each owner's required test edits awaited approval; those edits are exactly what this rename demands, so I approve all four titles and re-issue the same plan.)
+round 2: owners types=ok commands=ok format=ok storage=fail; oracle RED
+governor turn 3: plan -> storage  (Only storage is implicated: its last submission was not applied (owner run error), leaving one tsc error in src/storage.test.ts where a todo literal still uses the old `done` field. types, commands, and format are green. Re-instructing storage with the previously requested test change approved.)
+round 3: owners storage=ok; oracle GREEN
+governor turn 4: accept  (Rename of Todo.done to Todo.completed is complete across all units: types exports `completed: boolean`, and commands/format/storage all use the new field name. Oracle is green (tsc exit 0, 15/15 tests pass), and the acceptance tests verify the new field name end-to-end, including storage persisting the `completed` JSON key with no `done` key.)
+
+{
+  "target": "todo",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename Todo.done to Todo.completed everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "commands",
+      "format",
+      "storage"
+    ],
+    [
+      "types",
+      "commands",
+      "format",
+      "storage"
+    ],
+    [
+      "storage"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 4,
+  "testGuard": {
+    "rejectedSubmissions": 4,
+    "requests": [
+      {
+        "unit": "types",
+        "title": "nextId > is one past the max id",
+        "kind": "modified",
+        "reason": "This test constructs Todo objects with the old field name (`done: false`, `done: true`). After renaming `Todo.done` to `Todo.completed` as this round's instruction requires, those literals would no longer typecheck against the interface. I renamed the field to `completed` in the literals only; assertions, ids, and expected values are unchanged. This is exactly the modification the instruction says you would approve.",
+        "round": 1
+      },
+      {
+        "unit": "commands",
+        "title": "commands > adds and completes",
+        "kind": "modified",
+        "reason": "The Todo type from ./types renamed `done` to `completed`. The test asserted `t.done` on Todo values returned by `add`/`complete`, which no longer compiles against the new type. Changed only the field name to `t.completed`; the expected values and behaviour are unchanged. Requesting approval per instruction.",
+        "round": 1
+      },
+      {
+        "unit": "format",
+        "title": "format > formats open and done todos",
+        "kind": "modified",
+        "reason": "This test constructs Todo literals with `done: false` / `done: true`, which no longer exist on the renamed Todo type (now `completed`). Property accesses in formatTodo were switched to `completed` per the instruction, so the literals were updated to `completed: false` / `completed: true` while keeping the asserted output text byte-identical (`[ ] milk`, `[x] eggs`). This is the modification the instruction anticipated; requesting your approval.",
+        "round": 1
+      },
+      {
+        "unit": "storage",
+        "title": "storage > round-trips todos",
+        "kind": "modified",
+        "reason": "This test constructs a todo with the old `done: false` field, which no longer matches the new Todo type (missing required `completed`, and `done` is now a foreign key). Since todos must persist and round-trip under the `completed` JSON key, I updated the constructed todo to `completed: false`. The test's assertions are otherwise unchanged. Requesting approval per your instruction.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "nextId > is one past the max id"
+      },
+      {
+        "round": 2,
+        "title": "commands > adds and completes"
+      },
+      {
+        "round": 2,
+        "title": "format > formats open and done todos"
+      },
+      {
+        "round": 2,
+        "title": "storage > round-trips todos"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "legacyFileLoads": false,
+    "savedUnchanged": false,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]",
+      "legacy": "[ ] a\n[ ] b"
+    }
+  },
+  "heldout": null,
+  "tokens": {
+    "input": 37874,
+    "output": 55978
+  },
+  "budget": null,
+  "budgetStats": {
+    "maxPromptTokens": 4252,
+    "maxEstimate": 5299,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

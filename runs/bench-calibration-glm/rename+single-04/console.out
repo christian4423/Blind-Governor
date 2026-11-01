@@ -1,0 +1,111 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T03-45-09-559Z/rename+single-04
+provider: ollama-cloud (glm-5.3)
+request: Rename Todo.done to Todo.completed everywhere.
+
+single call 1: edit -> src/types.ts, src/commands.ts, src/format.ts, src/commands.test.ts, src/format.test.ts, src/storage.test.ts, src/types.test.ts  (Renamed the Todo.done field to Todo.completed across the codebase: the interface in src/types.ts, the construction/completion/filtering logic in src/commands.ts, the checkbox rendering in src/format.ts, and all test fixtures referencing the field. I deliberately left ListOptions.includeDone untouched since the request names only Todo.done and that option is a distinct identifier; behaviour is unchanged. Note the persisted JSON key also changes from "done" to "completed", which is an inherent consequence of the rename.)
+round 1: oracle GREEN
+single call 2: accept  (Todo.done is now Todo.completed everywhere it appears: the Todo interface (src/types.ts), todo construction/completion/filtering (src/commands.ts), checkbox rendering (src/format.ts), and all test fixtures. ListOptions.includeDone was left as-is because the request only names Todo.done. The oracle output is green: tsc --noEmit exit 0 and vitest 10/10 passing.)
+
+{
+  "target": "todo",
+  "mode": "single",
+  "frame": null,
+  "request": "Rename Todo.done to Todo.completed everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "commands",
+      "format",
+      "storage"
+    ]
+  ],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [
+      {
+        "unit": "commands",
+        "title": "commands > adds and completes",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      },
+      {
+        "unit": "format",
+        "title": "format > formats open and done todos",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      },
+      {
+        "unit": "storage",
+        "title": "storage > round-trips todos",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      },
+      {
+        "unit": "types",
+        "title": "nextId > is one past the max id",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 1,
+        "title": "commands > adds and completes"
+      },
+      {
+        "round": 1,
+        "title": "format > formats open and done todos"
+      },
+      {
+        "round": 1,
+        "title": "storage > round-trips todos"
+      },
+      {
+        "round": 1,
+        "title": "nextId > is one past the max id"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "legacyFileLoads": false,
+    "savedUnchanged": false,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]",
+      "legacy": "[ ] a\n[ ] b"
+    }
+  },
+  "heldout": null,
+  "tokens": {
+    "input": 15273,
+    "output": 5403
+  },
+  "budget": null,
+  "budgetStats": {
+    "maxPromptTokens": 7637,
+    "maxEstimate": 7862,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

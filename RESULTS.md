@@ -182,3 +182,39 @@ All 30 single-agent runs passed the graded criteria in 1 round.
 Fixed: every flag is removed before the remaining words become the request, and unknown flags are rejected.
 
 **Stale test results on the Angular target (caught before any agent run).** Angular's vitest runner keeps a transform cache in `node_modules/.vitest-cache`. With `node_modules` symlinked to a shared install, a test run after an edit could execute code compiled earlier, and the cache was written into the user's own `watchlist` repo. The watchlist self-test caught it: a rename with no migration graded exactly like the unrenamed code. Fixed: each watchlist run gets its own `node_modules` folder of per-package links, and `.angular/` plus `node_modules/.vitest-cache` are cleared before every test run. The 46 cache entries these checks had written into the user's repo were removed; the user's own 20 pre-existing entries were left alone. The todo target uses plain vitest, which keeps no transform cache, and its self-test shows the oracle reacting to an edit in the same folder, so earlier todo benches are unaffected.
+
+---
+
+# Calibration on `glm-5.3` (Ollama cloud), todo repo, 2026-11-01
+
+`runs/bench-calibration-glm/`: rename, sort and wrong-belief, governor vs single, 5× each (30 runs). The model choice came from a tool-call check: `glm-5.3`, `gpt-oss:120b`, `kimi-k2.7-code` and local `qwen3.5:9b` answered correctly with a tool call; `deepseek-v4.1-flash` answered wrongly; the local Gemma 4 12B used all its output tokens without calling the tool.
+
+| Request | Governor | Single | (Opus, earlier: governor / single) |
+|---|---|---|---|
+| Rename | 2/5: 4 ended green, 2 needed 3 rounds, 1 ran out of output tokens | 5/5 | 10/10 / 10/10 |
+| Sort | 2/5: all green, but 3/5 sent the change to both `format` and `commands` "to be safe" | 5/5 | 10/10 / 10/10 |
+| Wrong belief | 5/5 | 5/5 | 7/10 / 10/10 |
+| Rename: old saved files still load | 1/5 | 0/5 | 9/10 / 0/10 |
+
+**Gate passed:** the governor ended green in 14/15 runs and met the stricter criteria in 9/15 (60%, above the ~50% bar), so comparisons on this model mean something. Two differences from Opus to keep in mind: glm's governor over-routes (instructs extra units), and it mostly **doesn't** protect old saved data (1/5 vs Opus 9/10). So the split's data-compatibility edge seen with Opus came from the model, at least partly, not only from the architecture. Runs take 2–6 min (governor) and ~1.5 min (single); setup is 10–34 s.
+
+---
+
+# Watchlist bench: predictions (written before running)
+
+**Setup.** Target: `../watchlist` (Angular 22, ~700 lines TS, ~9k tokens with templates) at commit `6af7d35`, model `glm-5.3`. Arms: governor vs single, each at a **12k** and a **6k** token budget (same cap for every agent, enforced by the harness), 5× per request. Grading: the app's own tests (oracle) plus held-out specs the agents never see.
+
+Requests:
+1. **wl-rename:** "Rename the `watched` field of watchlist items to `seen` everywhere." Held-out: saves `seen`, and a watchlist saved before the rename still shows what was watched (`localStorage`).
+2. **wl-sort:** "In the watchlist, show movies I haven't watched yet before the ones I've watched." Held-out: order, stable. Plus: one unit per round.
+3. **wl-ambiguous:** "Make the watchlist easier to use." Pass: asks, or ships with its own test.
+4. **wl-wrong-belief:** "Add a button that clears every movie whose `seen` flag is true from the watchlist." (The field is `watched`.) Held-out: the button clears watched movies and the saved field stays `watched`.
+
+Note on fairness: `WatchItem` carries a comment, "Optional so items saved before these fields existed still load". The single agent sees it; the governor doesn't (declaration emit drops `//` comments).
+
+**Predictions (Claude):**
+- **At 12k** the whole repo fits the single agent's first prompt, so it behaves like the todo runs: high pass rates, 1 round, and old saved watchlists break on the rename (it saw the comment, but the todo data says it does find-and-replace).
+- **At 6k** the single agent starts from a file list and must read selectively. I expect its rename pass rate to drop (missed files: the template and the spec reference `watched` too), and more rounds.
+- **The governor at 6k** has a different problem: owner prompts include the unit's full files. The largest unit (`movie-detail`: ts + html + scss + spec) may not fit, so I expect some `over_budget` failures for the split too. Which setup degrades more at 6k is the real question; I lean towards the single agent degrading more on the rename and the governor more on anything touching `movie-detail`.
+- **Old saved data** (rename): low for both on this model, given calibration (1/5 vs 0/5).
+- **wl-sort routing:** glm's governor over-routes (3/5 on todo), so expect it to instruct both `watchlist` and `watchlist-store` often.

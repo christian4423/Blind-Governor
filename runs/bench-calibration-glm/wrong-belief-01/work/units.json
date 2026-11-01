@@ -1,0 +1,58 @@
+[
+  {
+    "name": "commands",
+    "path": "src/commands.ts",
+    "testPath": "src/commands.test.ts",
+    "files": [
+      "src/commands.ts",
+      "src/commands.test.ts"
+    ],
+    "purpose": "Execute CLI commands against the todo store and return output text.",
+    "exports": "import { type Command, type Todo } from \"./types\";\nexport interface ListOptions {\n    includeDone?: boolean;\n}\nexport declare function add(todos: Todo[], title: string, due?: string): Todo[];\nexport declare function complete(todos: Todo[], id: number): Todo[];\nexport declare function list(todos: Todo[], opts?: ListOptions): string;\nexport declare function clear(todos: Todo[]): Todo[];\nexport declare function parseArgs(argv: string[]): Command;\nexport declare function run(path: string, cmd: Command): string;",
+    "imports": [
+      "storage",
+      "format",
+      "types"
+    ]
+  },
+  {
+    "name": "format",
+    "path": "src/format.ts",
+    "testPath": "src/format.test.ts",
+    "files": [
+      "src/format.ts",
+      "src/format.test.ts"
+    ],
+    "purpose": "Render todos as human-readable terminal text.",
+    "exports": "/** @purpose Render todos as human-readable terminal text. */\nimport type { Todo } from \"./types\";\nexport declare function formatTodo(todo: Todo): string;\nexport declare function formatList(todos: Todo[]): string;",
+    "imports": [
+      "types"
+    ]
+  },
+  {
+    "name": "storage",
+    "path": "src/storage.ts",
+    "testPath": "src/storage.test.ts",
+    "files": [
+      "src/storage.ts",
+      "src/storage.test.ts"
+    ],
+    "purpose": "Load and save the todo list as a JSON file on disk.",
+    "exports": "import type { Todo } from \"./types\";\nexport declare function load(path: string): Todo[];\nexport declare function save(path: string, todos: Todo[]): void;",
+    "imports": [
+      "types"
+    ]
+  },
+  {
+    "name": "types",
+    "path": "src/types.ts",
+    "testPath": "src/types.test.ts",
+    "files": [
+      "src/types.ts",
+      "src/types.test.ts"
+    ],
+    "purpose": "Shared domain types for todos and CLI commands.",
+    "exports": "/** @purpose Shared domain types for todos and CLI commands. */\nexport interface Todo {\n    id: number;\n    title: string;\n    done: boolean;\n    due?: string;\n}\nexport type Command = {\n    kind: \"add\";\n    title: string;\n    due?: string;\n} | {\n    kind: \"complete\";\n    id: number;\n} | {\n    kind: \"list\";\n} | {\n    kind: \"clear\";\n};\nexport declare function nextId(todos: Todo[]): number;",
+    "imports": []
+  }
+]

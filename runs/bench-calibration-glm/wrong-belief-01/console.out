@@ -1,0 +1,63 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T03-45-09-559Z/wrong-belief-01
+provider: ollama-cloud (glm-5.3)
+request: Add a clear command that removes todos whose completed field is true.
+
+governor turn 1: plan -> types, commands  (The request adds a "clear" command; the completion field in this codebase is Todo.done. Two units need changes: types gains a new Command variant { kind: "clear" }, and commands gains the clear export plus parseArgs/run wiring. format and storage are unaffected.)
+round 1: owners types=ok commands=ok; oracle GREEN
+governor turn 2: accept  (Oracle is green (tsc exit 0; 18 tests, 0 failed) and the request is satisfied: types exports the { kind: "clear" } Command variant, and commands exports clear(todos) which filters out done todos, parseArgs recognizes "clear", and run loads, filters, saves, and reports "Cleared N completed todos." The acceptance tests pin down filtering order, non-mutation, preservation of optional fields, parsing, and persistence.)
+
+{
+  "target": "todo",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a clear command that removes todos whose completed field is true.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "commands"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 1,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "legacyFileLoads": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    }
+  },
+  "heldout": null,
+  "tokens": {
+    "input": 7017,
+    "output": 13367
+  },
+  "budget": null,
+  "budgetStats": {
+    "maxPromptTokens": 2599,
+    "maxEstimate": 3017,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

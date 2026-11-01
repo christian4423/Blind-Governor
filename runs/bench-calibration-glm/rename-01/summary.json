@@ -1,0 +1,109 @@
+{
+  "target": "todo",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename Todo.done to Todo.completed everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "types",
+      "commands",
+      "format",
+      "storage"
+    ],
+    [
+      "types",
+      "commands",
+      "format",
+      "storage"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 4,
+    "requests": [
+      {
+        "unit": "types",
+        "title": "nextId > is one past the max id",
+        "kind": "modified",
+        "reason": "The instruction renames the Todo interface's `done` field to `completed`. This test constructs two Todo literals using `done: false` / `done: true`, which no longer compile after the rename. Mechanical rename only: assertions and expected values are unchanged.",
+        "round": 1
+      },
+      {
+        "unit": "commands",
+        "title": "commands > adds and completes",
+        "kind": "modified",
+        "reason": "The types unit renamed Todo.done to Todo.completed; the test asserted `t.done`, which no longer compiles against the updated Todo interface. Updated the assertion to `t.completed` with identical expected values and behavior. No shim added, per instruction.",
+        "round": 1
+      },
+      {
+        "unit": "format",
+        "title": "format > formats open and done todos",
+        "kind": "modified",
+        "reason": "The Todo.done field is being renamed to Todo.completed by the types unit. This test constructs todos with `done: false` / `done: true`, which no longer type-checks against the new interface. Only the field name was changed (done -> completed); expected output strings and assertions are unchanged, per the instruction's explicit request to update test constructions of the field and submit them as a test-change request.",
+        "round": 1
+      },
+      {
+        "unit": "storage",
+        "title": "storage > round-trips todos",
+        "kind": "modified",
+        "reason": "The test's inline Todo fixture used the field name `done`. Renamed it to `completed` to match the updated Todo interface (Todo.done → Todo.completed), as the instruction directed. No storage behavior is affected; the round-trip assertion still verifies the same data.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "nextId > is one past the max id"
+      },
+      {
+        "round": 2,
+        "title": "commands > adds and completes"
+      },
+      {
+        "round": 2,
+        "title": "format > formats open and done todos"
+      },
+      {
+        "round": 2,
+        "title": "storage > round-trips todos"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "legacyFileLoads": false,
+    "savedUnchanged": false,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"completed\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"completed\": false\n  }\n]",
+      "legacy": "[ ] a\n[ ] b"
+    }
+  },
+  "heldout": null,
+  "tokens": {
+    "input": 25663,
+    "output": 27409
+  },
+  "budget": null,
+  "budgetStats": {
+    "maxPromptTokens": 3517,
+    "maxEstimate": 4381,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

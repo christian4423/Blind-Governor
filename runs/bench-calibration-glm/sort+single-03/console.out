@@ -1,0 +1,62 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T03-45-09-559Z/sort+single-03
+provider: ollama-cloud (glm-5.3)
+request: Items with due dates sort before items without.
+
+single call 1: edit -> src/commands.ts, src/commands.test.ts  (list() now sorts todos so items with a due date appear before items without one (stable within each group, and composed with the includeDone filter). The comparator only distinguishes presence of a due date, per the request; it doesn't reorder items by their actual dates.)
+round 1: oracle GREEN
+single call 2: accept  (Oracle is green (tsc --noEmit clean; 11 tests pass). The list command now sorts items with due dates before items without, covered by a new test, and no existing behaviour changed.)
+
+{
+  "target": "todo",
+  "mode": "single",
+  "frame": null,
+  "request": "Items with due dates sort before items without.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "legacyFileLoads": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    }
+  },
+  "heldout": null,
+  "tokens": {
+    "input": 20697,
+    "output": 7630
+  },
+  "budget": null,
+  "budgetStats": {
+    "maxPromptTokens": 9864,
+    "maxEstimate": 10630,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

@@ -1,0 +1,62 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T03-45-09-559Z/sort+single-05
+provider: ollama-cloud (glm-5.3)
+request: Items with due dates sort before items without.
+
+single call 0: edit -> src/commands.ts, src/commands.test.ts  (Items with due dates now sort before items without in `list`: after the includeDone filter, the visible todos are copied and sorted with a `hasDue(b) - hasDue(a)` comparator, so dated items come first while Array.prototype.sort's stability preserves the existing relative order in each group. Since `run`'s list case delegates to `list`, the CLI output is sorted too, and `format` stays a pure renderer. Added a test in commands.test.ts covering the new ordering (dated item listed before two undated items, whose relative order is kept); existing tests are untouched and still pass because undated-only lists are unaffected by the stable sort.)
+round 1: oracle GREEN
+single call 1: accept  (Items with due dates now sort before items without: `list` sorts the visible todos (after the includeDone filter) with a `hasDue(b) - hasDue(a)` comparator, whose stability preserves relative order within each group, and the CLI `run` list path inherits this via `list`. A new test in commands.test.ts asserts a dated item is listed before undated items while their relative order is kept; tsc --noEmit and all 11 vitest tests pass.)
+
+{
+  "target": "todo",
+  "mode": "single",
+  "frame": null,
+  "request": "Items with due dates sort before items without.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "legacyFileLoads": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    }
+  },
+  "heldout": null,
+  "tokens": {
+    "input": 14147,
+    "output": 9703
+  },
+  "budget": null,
+  "budgetStats": {
+    "maxPromptTokens": 11843,
+    "maxEstimate": 13464,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

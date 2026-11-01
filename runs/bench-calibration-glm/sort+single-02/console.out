@@ -1,0 +1,62 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T03-45-09-559Z/sort+single-02
+provider: ollama-cloud (glm-5.3)
+request: Items with due dates sort before items without.
+
+single call 1: edit -> src/commands.ts, src/commands.test.ts  (Items with due dates now sort before items without, implemented in `list` in src/commands.ts. The sort is a stable partition on `due !== undefined`, applied after the done-item filtering, so relative order within each group (and `includeDone` behavior) is unchanged — all existing tests still describe the current behavior. Since `run`'s list case goes through `list`, the CLI output is sorted too. I added one new test in commands.test.ts covering the new ordering, both with and without done items hidden.)
+round 1: oracle GREEN
+single call 2: accept  (Implementation complete and oracle green: `list` in src/commands.ts now applies a stable sort putting todos with a due date before those without (after done-item filtering, preserving relative order otherwise), `run`'s list case inherits it, and a new test covers the ordering with and without done items hidden. All 11 tests pass and tsc is clean.)
+
+{
+  "target": "todo",
+  "mode": "single",
+  "frame": null,
+  "request": "Items with due dates sort before items without.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "commands"
+    ]
+  ],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": {
+    "listUnchanged": true,
+    "legacyFileLoads": true,
+    "savedUnchanged": true,
+    "before": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    },
+    "after": {
+      "list": "[x] a\n[ ] b",
+      "saved": "[\n  {\n    \"id\": 1,\n    \"title\": \"a\",\n    \"done\": true,\n    \"due\": \"2026-11-01\"\n  },\n  {\n    \"id\": 2,\n    \"title\": \"b\",\n    \"done\": false\n  }\n]",
+      "legacy": "[x] a\n[ ] b"
+    }
+  },
+  "heldout": null,
+  "tokens": {
+    "input": 14623,
+    "output": 4648
+  },
+  "budget": null,
+  "budgetStats": {
+    "maxPromptTokens": 6877,
+    "maxEstimate": 7300,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}
