@@ -227,3 +227,12 @@ Four smoke rounds (`runs/smoke-watchlist-v1` … `-v4`) exposed problems that wo
 3. **The single agent's tools were a caricature.** It could only read whole files and submit whole files in one go, so under a budget it re-read the same files over and over (one spec 11 times) and never submitted. Real coding agents search and make targeted edits. The single agent now has `search` (matching lines across the repo) and `edit_file` (replace one exact snippet, applied immediately), plus a `check` action that runs the oracle on the current files; a round is one oracle run. Changes to existing tests are detected from disk at every round. **Earlier single-agent benches (todo) used the old tools**, so watchlist single-agent results aren't directly comparable with them.
 4. Owners keep their full unit files in the prompt (units are small); they now also get compaction.
 5. **Oracle output is capped under a budget** at a quarter of the budget, for every agent (governor and single), with a "[truncated]" marker. Angular test failures are long; without the cap the single agent's latest test result alone could exceed 6k. Real agent tools truncate long output too.
+
+# Watchlist bench: status (2026-11-01, in progress)
+
+`runs/bench-watchlist/`. The first attempt hit the Ollama cloud session usage limit 45 minutes in: 10 of 80 runs finished cleanly, 70 ended on HTTP 429. `glm-5.3`'s governor thinks heavily (80k–200k output tokens per run, about 10× the single agent), which is what used the quota. Scope was then cut (user, 2026-11-01) to **rename, sort and wrong-belief, 3 runs per setup** (36 runs; 8 already clean). Out-of-scope runs are kept in `bench-watchlist/_dropped/`. The bench now stops at the first rate-limited run and `harness/resume-loop.sh` retries `--resume` hourly until all 36 are clean.
+
+Early hints from the 8 clean runs (one per setup, not results):
+- The **governor ran over budget in its own seat** in 4 of 6 runs, at 12k as well as 6k: its prompt grows each round with plans, owner reports and oracle output. I had predicted the owners would be the bottleneck.
+- The single agent at 12k hit the 40-call limit in 1 of 3 runs without editing anything (wrong-belief), and turned the rename green in 1 round elsewhere.
+- No setup kept old saved watchlists loading on the rename (0/3 clean rename runs), consistent with glm's calibration.

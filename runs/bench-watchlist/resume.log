@@ -1,0 +1,3 @@
+pid 39118 started Sun Nov  1 01:46:00 EST 2026
+resuming /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist with: --target watchlist --only wl-rename,wl-sort,wl-wrong-belief --arms governor@12000,single@12000,governor@6000,single@6000 --n 3 --concurrency 3 --extra --provider ollama-cloud --model glm-5.3
+bench: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist

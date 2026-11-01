@@ -2,10 +2,12 @@
   "args": [
     "--target",
     "watchlist",
+    "--only",
+    "wl-rename,wl-sort,wl-wrong-belief",
     "--arms",
     "governor@12000,single@12000,governor@6000,single@6000",
     "--n",
-    "5",
+    "3",
     "--concurrency",
     "3",
     "--extra",
@@ -22,5 +24,6 @@
     "single@12000",
     "governor@6000",
     "single@6000"
-  ]
+  ],
+  "scopeNote": "2026-11-01: scope cut by the user to 3 runs per arm, ambiguous dropped; out-of-scope runs moved to _dropped/"
 }

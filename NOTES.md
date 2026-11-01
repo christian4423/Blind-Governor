@@ -21,6 +21,10 @@ Start here. Findings with numbers are in [`RESULTS.md`](RESULTS.md); this file h
 
 **Where the thesis stands.** On a 5,700-character repo the split costs more and graded quality is the same. Its one real edge is noticing contracts nobody wrote down (the on-disk format), and about half of that comes from wording. The claim that remains untested is the one about scale: one model's context grows with the codebase while the governor's grows with interfaces. That needs a bigger codebase.
 
+## In progress (2026-11-01)
+
+- **Watchlist bench** on branch `watchlist-budget`: governor vs single on `../watchlist`, `glm-5.3` via Ollama cloud, 12k and 6k token budgets, 3 runs × 3 requests × 4 setups. Quota-limited, so `harness/resume-loop.sh` resumes it hourly. Check progress: `tail runs/bench-watchlist/resume.log`. Stop it: `kill <pid from the first line of that log>`. When it says DONE: `cd harness && npx tsx bench.ts --report ../runs/bench-watchlist`, then write up against the predictions in RESULTS.md.
+
 ## Success criteria (revised 2026-10-29)
 
 The original criteria passed a run that did the wrong thing (RESULTS.md, finding 1), so these were fixed before anything else:
