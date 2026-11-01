@@ -48,11 +48,13 @@ interface Config {
   runDir: string;
   workDir: string;
   cost: { inputTokens: number; outputTokens: number; usd: number };
+  byRole: Record<string, { calls: number; input: number; output: number }>; // instrumentation: where tokens go
   budget?: number; // max prompt tokens per call; see --budget
   budgetStats: { maxPromptTokens: number; maxEstimate: number; overBudget: number; violations: number };
 }
 
 const newStats = (): Config["budgetStats"] => ({ maxPromptTokens: 0, maxEstimate: 0, overBudget: 0, violations: 0 });
+type Role = "governor" | "owner" | "single";
 
 function log(cfg: Config, type: string, data: Record<string, unknown>): void {
   appendFileSync(join(cfg.runDir, "log.jsonl"), JSON.stringify({ ts: new Date().toISOString(), type, ...data }) + "\n");
@@ -263,7 +265,7 @@ function estimateTokens(system: string, messages: Msg[], tools: Tool[]): number 
   return Math.ceil((system.length + JSON.stringify(messages).length + JSON.stringify(tools).length) / 3.5);
 }
 
-async function callModel(cfg: Config, system: string, messages: Msg[], tools: Tool[]): Promise<Anthropic.Beta.BetaMessage> {
+async function callModel(cfg: Config, system: string, messages: Msg[], tools: Tool[], role: Role): Promise<Anthropic.Beta.BetaMessage> {
   const estimate = estimateTokens(system, messages, tools);
   cfg.budgetStats.maxEstimate = Math.max(cfg.budgetStats.maxEstimate, estimate);
   if (cfg.budget && estimate > cfg.budget) {
@@ -286,6 +288,8 @@ async function callModel(cfg: Config, system: string, messages: Msg[], tools: To
   if (cfg.budget && input > cfg.budget) cfg.budgetStats.violations++; // the estimate undercounted
   cfg.cost.inputTokens += input;
   cfg.cost.outputTokens += res.usage.output_tokens;
+  const r = (cfg.byRole[role] ??= { calls: 0, input: 0, output: 0 });
+  r.calls++; r.input += input; r.output += res.usage.output_tokens;
   if (cfg.provider === "anthropic") {
     cfg.cost.usd += (input * PRICE_PER_MTOK.input + res.usage.output_tokens * PRICE_PER_MTOK.output) / 1e6;
   }
@@ -301,10 +305,10 @@ const isRateLimit = (e: unknown) => /rate_limit_error|usage limit|\b429\b/.test(
 const errorStatus = (e: unknown) => (e instanceof OverBudget ? "over_budget" : isRateLimit(e) ? "rate_limited" : `error: ${(e as Error).message}`);
 
 /** callModel, retrying a response that ran out of output tokens (the prompt is unchanged, so this is just another draw). */
-async function callWithRetry(cfg: Config, system: string, messages: Msg[], tools: Tool[]): Promise<Anthropic.Beta.BetaMessage> {
+async function callWithRetry(cfg: Config, system: string, messages: Msg[], tools: Tool[], role: Role): Promise<Anthropic.Beta.BetaMessage> {
   for (let attempt = 0; ; attempt++) {
     try {
-      return await callModel(cfg, system, messages, tools);
+      return await callModel(cfg, system, messages, tools, role);
     } catch (e) {
       if (!(e instanceof MaxTokens) || attempt >= MAX_TOKEN_RETRIES) throw e;
       log(cfg, "max_tokens_retry", { attempt: attempt + 1 });
@@ -425,8 +429,8 @@ async function runGovernor(
 
   const messages: Msg[] = [{ role: "user", content: prompt }];
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await callWithRetry(cfg, system, messages, [DECISION_TOOL]);
-    log(cfg, "governor_output", { content: res.content });
+    const res = await callWithRetry(cfg, system, messages, [DECISION_TOOL], "governor");
+    log(cfg, "governor_output", { content: res.content, usage: res.usage });
     const call = toolUses(res).find((t) => t.name === "submit_decision");
     const problem = call ? validateDecision(call.input, units, knownTests) : "You must call submit_decision.";
     if (typeof problem !== "string") return problem;
@@ -535,8 +539,8 @@ async function runOwner(cfg: Config, unit: Unit, units: Unit[], steps: Step[], p
   for (let turn = 0; turn < MAX_OWNER_TURNS; turn++) {
     const dropped = compact(cfg, ownerSystem(), messages, ownerTools(unit), readIds);
     if (dropped) log(cfg, "owner_compaction", { unit: unit.name, turn, dropped });
-    const res = await callWithRetry(cfg, ownerSystem(), messages, ownerTools(unit));
-    log(cfg, "owner_output", { unit: unit.name, turn, content: res.content });
+    const res = await callWithRetry(cfg, ownerSystem(), messages, ownerTools(unit), "owner");
+    log(cfg, "owner_output", { unit: unit.name, turn, content: res.content, usage: res.usage });
     const calls = toolUses(res);
     const submit = calls.find((c) => c.name === "submit_files");
     if (submit) {
@@ -1001,14 +1005,14 @@ async function runSingle(
     dropped += compact(cfg, system, messages, SINGLE_TOOLS, readIds);
     let res: Anthropic.Beta.BetaMessage;
     try {
-      res = await callWithRetry(cfg, system, messages, SINGLE_TOOLS);
+      res = await callWithRetry(cfg, system, messages, SINGLE_TOOLS, "single");
     } catch (e) {
       if (!(e instanceof OverBudget)) throw e;
       result.status = "over_budget";
       log(cfg, "single_over_budget", { call, error: e.message, dropped });
       break;
     }
-    log(cfg, "single_output", { call, content: res.content });
+    log(cfg, "single_output", { call, content: res.content, usage: res.usage });
     messages.push({ role: "assistant", content: res.content });
     const calls = toolUses(res);
     if (calls.length === 0) { messages.push({ role: "user", content: "Call submit to make your changes, accept, or ask." }); continue; }
@@ -1161,7 +1165,7 @@ async function main(
   const runDir = out ? resolve(out) : join(ROOT, "runs", new Date().toISOString().replace(/[:.]/g, "-"));
   mkdirSync(runDir, { recursive: true });
   const cfg: Config = {
-    provider, model, runDir, workDir: target.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, budget, budgetStats: newStats(),
+    provider, model, runDir, workDir: target.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, byRole: {}, budget, budgetStats: newStats(),
   };
   log(cfg, "run_start", { request, provider, model, interactive, scenario, showBehaviour, single, frame, budget, target: target.name, heldout });
   if (frame && (!single || !(frame in SINGLE_FRAMES))) throw new Error(`--frame needs --single and one of: ${Object.keys(SINGLE_FRAMES).join(", ")}`);
@@ -1202,7 +1206,8 @@ async function main(
     if (existsSync(historyFile)) history.push(readFileSync(historyFile, "utf8").trim());
     log(cfg, "scenario_start", { scenario: scenarioDir, planted: Object.fromEntries(plantedSources), history, oracle });
   }
-  log(cfg, "setup_done", { seconds: Number(((Date.now() - started) / 1000).toFixed(1)) });
+  const repoTokens = Math.ceil(repoFiles(cfg.workDir).reduce((n, f) => n + readFileSync(join(cfg.workDir, f), "utf8").length, 0) / 3.5);
+  log(cfg, "setup_done", { seconds: Number(((Date.now() - started) / 1000).toFixed(1)), repoTokens });
   const clarifications: string[] = [];
   const readAnswer = interactive ? lineReader() : null;
   let status = "cap_hit";
@@ -1318,6 +1323,8 @@ async function main(
     } : null,
     heldout: heldoutResult,
     tokens: { input: cfg.cost.inputTokens, output: cfg.cost.outputTokens },
+    tokensByRole: cfg.byRole,
+    repoTokens, // estimated size of every editable source file at the start (chars / 3.5)
     budget: budget ?? null, budgetStats: cfg.budgetStats,
     usd: Number(cfg.cost.usd.toFixed(3)),
   };
@@ -1335,7 +1342,7 @@ function selftest(): void {
   rmSync(runDir, { recursive: true, force: true });
   mkdirSync(runDir, { recursive: true });
   const cfg: Config = {
-    provider: "anthropic", model: "-", runDir, workDir: TARGETS.todo.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, budgetStats: newStats(),
+    provider: "anthropic", model: "-", runDir, workDir: TARGETS.todo.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, byRole: {}, budgetStats: newStats(),
   };
   const check = (name: string, ok: boolean, detail = "") => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}${ok || !detail ? "" : `  (${detail})`}`); if (!ok) process.exitCode = 1; };
 
@@ -1408,7 +1415,7 @@ function selftestWatchlist(): void {
   rmSync(runDir, { recursive: true, force: true });
   mkdirSync(runDir, { recursive: true });
   const workDir = target.prepare(runDir);
-  const cfg: Config = { provider: "anthropic", model: "-", runDir, workDir, cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, budgetStats: newStats() };
+  const cfg: Config = { provider: "anthropic", model: "-", runDir, workDir, cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, byRole: {}, budgetStats: newStats() };
   const check = (name: string, ok: boolean, detail = "") => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}${ok || !detail ? "" : `  (${detail})`}`); if (!ok) process.exitCode = 1; };
   const edit = (path: string, from: string | RegExp, to: string) => {
     const abs = join(workDir, path);

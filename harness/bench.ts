@@ -26,6 +26,8 @@ interface Summary {
   budget?: number | null;
   budgetStats?: { maxPromptTokens: number; maxEstimate: number; overBudget: number; violations: number };
   tokens?: { input: number; output: number };
+  tokensByRole?: Record<string, { calls: number; input: number; output: number }>;
+  repoTokens?: number;
 }
 
 // The existing owner test that the planted governor test contradicts.
@@ -182,6 +184,7 @@ function report(benchDir: string): void {
     const missing = readdirSync(benchDir).filter((d) => d.replace(/-\d+$/, "") === exp.slug).length - sums.length;
     if (!sums.length) continue;
     const cost = sums.reduce((a, s) => a + s.usd, 0);
+    const passes = sums.filter(exp.passes).length;
     total += cost;
     lines.push(
       `## ${exp.slug} — "${exp.request}"`,
@@ -199,6 +202,13 @@ function report(benchDir: string): void {
       ...(sums.some((s) => s.budget) ? [`- budget ${sums[0].budget} tokens: over-budget runs ${sums.filter((s) => s.status === "over_budget").length}/${sums.length}; ` +
         `largest prompt seen ${Math.max(...sums.map((s) => s.budgetStats?.maxPromptTokens ?? 0))} tokens; estimate undercounts: ${sums.reduce((a, s) => a + (s.budgetStats?.violations ?? 0), 0)}`] : []),
       `- tokens per run: in ${Math.round(sums.reduce((a, s) => a + (s.tokens?.input ?? 0), 0) / sums.length)}, out ${Math.round(sums.reduce((a, s) => a + (s.tokens?.output ?? 0), 0) / sums.length)}`,
+      // Tokens per successful change: everything spent (failed runs included) divided by the runs that passed.
+      `- tokens per successful change: ${passes ? Math.round(sums.reduce((a, s) => a + (s.tokens?.input ?? 0) + (s.tokens?.output ?? 0), 0) / passes).toLocaleString("en-US") : "n/a (no passes)"}` +
+        (sums.some((s) => s.repoTokens) ? ` (repo ~${Math.max(...sums.map((s) => s.repoTokens ?? 0)).toLocaleString("en-US")} tokens)` : ""),
+      ...(sums.some((s) => s.tokensByRole) ? [`- output tokens per run by role: ${Object.entries(sums.reduce<Record<string, number>>((m, s) => {
+        for (const [role, r] of Object.entries(s.tokensByRole ?? {})) m[role] = (m[role] ?? 0) + r.output;
+        return m;
+      }, {})).map(([role, n]) => `${role} ${Math.round(n / sums.length).toLocaleString("en-US")}`).join(", ")}`] : []),
       ...(!exp.slug.startsWith("ambiguous") ? [] : [`- outcomes: ${tally(sums.map((s) => s.status === "asked" ? "asked" : accepted(s) ? ((s.acceptanceTestsWritten ?? 0) > 0 ? "accepted with own test" : "accepted, no own test") : s.status))}`]),
       ...(exp.args?.includes("--scenario") ? [
         `- "${LIST_TEST}": rewrite requested in ${sums.filter(requestedListTest).length}/${sums.length} runs, ` +
