@@ -1,0 +1,28 @@
+{
+  "args": [
+    "--target",
+    "watchlist",
+    "--only",
+    "wl-rename",
+    "--arms",
+    "governor@12000,single@12000,governor@6000,single@6000",
+    "--n",
+    "1",
+    "--concurrency",
+    "4",
+    "--extra",
+    "--provider ollama-cloud --model glm-5.3"
+  ],
+  "extra": [
+    "--provider",
+    "ollama-cloud",
+    "--model",
+    "glm-5.3"
+  ],
+  "arms": [
+    "governor@12000",
+    "single@12000",
+    "governor@6000",
+    "single@6000"
+  ]
+}

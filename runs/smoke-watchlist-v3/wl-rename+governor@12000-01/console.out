@@ -1,0 +1,88 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T04-43-41-866Z/wl-rename+governor@12000-01
+provider: ollama-cloud (glm-5.3)
+request: Rename the `watched` field of watchlist items to `seen` everywhere.
+
+governor turn 1: plan -> movie, watchlist-store, watchlist, search, movie-detail, app  (Pure data-field rename: the watchlist-item state field `watched` becomes `seen`. The `movie` unit declares the new interface shape (Movie + WatchItem); every consumer (watchlist-store and the components that render or read items) must switch all reads/writes of that field — in TypeScript and in templates — while keeping every other identifier (toggleWatched, watchedCount, progress, UI strings) unchanged. Acceptance tests pin the new field name on stored items and through the watchlist component.)
+round 1: owners movie=ok watchlist-store=ok watchlist=rejected search=ok movie-detail=ok app=ok; oracle RED
+governor turn 2: plan -> watchlist  (The rename landed in every unit except watchlist, whose whole submission was rejected because it edited an existing test. That edit is exactly what the request requires — the test reads `items[0].watched`, a field that no longer exists on `WatchItem` — so I approve it and re-instruct the watchlist owner to redo the full sweep. The oracle errors (spec line 66 and the template of component Watchlist) are all confined to that unit.)
+round 2: owners watchlist=ok; oracle RED
+governor turn 3: plan -> watchlist  (tsc is green so the watched→seen rename is complete; the only failures are test infrastructure: my watchlist acceptance test created the component without router providers (NG0201 from routerLink), which I fix by replacing it with a provideRouter-based version, and the watchlist spec's axe test timed out at 5000ms, which the watchlist owner must stabilize (timeout-only change pre-approved if the component is sound).)
+round 3: owners watchlist=ok; oracle GREEN
+governor turn 4: accept  (The rename is complete: the Movie and WatchItem interfaces now expose `seen: boolean` (no `watched` field anywhere), and every consumer that reads or writes the item's watched state (watchlist-store's add/toggleWatched/watchedCount and persistence, the watchlist component's bindings) was updated accordingly. search, movie-detail and app were verified to have no references to the field. The oracle is green (tsc exit 0, 42/42 vitest tests passing), and the acceptance tests pin the new behaviour: items are created with `seen: false`, `toggleWatched` flips `seen`, stored items carry no `watched` key, and the watchlist component renders and toggles items through `seen`. Per the request, only the item field was renamed; method names like `toggleWatched`/`watchedCount` and user-facing strings were deliberately left unchanged. The request is satisfied.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist",
+      "search",
+      "movie-detail",
+      "app"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 4,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The test asserts `store.items()[0].watched`, a field that no longer exists on `WatchItem` after the `watched` → `seen` rename. Changed only that property read to `.seen`; the assertion's intent (navigating via the title link does not change the item's seen state) is unchanged. No other tests were modified.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      },
+      {
+        "round": 3,
+        "title": "Watchlist > has no axe accessibility violations"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 2,
+    "failed": 1,
+    "failures": [
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
+    ]
+  },
+  "tokens": {
+    "input": 65805,
+    "output": 89809
+  },
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 7616,
+    "maxEstimate": 9217,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

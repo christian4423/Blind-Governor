@@ -1,0 +1,26 @@
+{
+  "args": [
+    "--target",
+    "watchlist",
+    "--only",
+    "wl-rename",
+    "--arms",
+    "single@12000,single@6000",
+    "--n",
+    "1",
+    "--concurrency",
+    "2",
+    "--extra",
+    "--provider ollama-cloud --model glm-5.3"
+  ],
+  "extra": [
+    "--provider",
+    "ollama-cloud",
+    "--model",
+    "glm-5.3"
+  ],
+  "arms": [
+    "single@12000",
+    "single@6000"
+  ]
+}

@@ -222,7 +222,8 @@ function env(name: string, provider: string): string {
 }
 
 // Output cap per call. The local Ollama server runs a 16k context, which output also counts against.
-const MAX_OUTPUT: Record<Config["provider"], number> = { anthropic: 32000, ollama: 4000, "ollama-cloud": 16000 };
+const MAX_OUTPUT: Record<Config["provider"], number> = { anthropic: 32000, ollama: 4000, "ollama-cloud": 32000 };
+const MAX_TOKEN_RETRIES = 2; // glm-5.3 sometimes thinks past any cap; retry the same call rather than end the run
 
 const clients = new Map<string, Anthropic>();
 function client(cfg: Config): Anthropic {
@@ -289,8 +290,22 @@ async function callModel(cfg: Config, system: string, messages: Msg[], tools: To
     cfg.cost.usd += (input * PRICE_PER_MTOK.input + res.usage.output_tokens * PRICE_PER_MTOK.output) / 1e6;
   }
   if (res.stop_reason === "refusal") throw new Error(`Model refused: ${JSON.stringify(res.stop_details)}`);
-  if (res.stop_reason === "max_tokens") throw new Error("Model hit max_tokens");
+  if (res.stop_reason === "max_tokens") throw new MaxTokens("Model hit max_tokens");
   return res;
+}
+
+class MaxTokens extends Error {}
+
+/** callModel, retrying a response that ran out of output tokens (the prompt is unchanged, so this is just another draw). */
+async function callWithRetry(cfg: Config, system: string, messages: Msg[], tools: Tool[]): Promise<Anthropic.Beta.BetaMessage> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await callModel(cfg, system, messages, tools);
+    } catch (e) {
+      if (!(e instanceof MaxTokens) || attempt >= MAX_TOKEN_RETRIES) throw e;
+      log(cfg, "max_tokens_retry", { attempt: attempt + 1 });
+    }
+  }
 }
 
 function toolUses(res: Anthropic.Beta.BetaMessage): Anthropic.Beta.BetaToolUseBlock[] {
@@ -394,7 +409,7 @@ async function runGovernor(
     ...(behaviour ? [`# Observed behaviour\n${formatBehaviour(behaviour.start, behaviour.now)}`] : []),
     `# Your acceptance tests in place\n${acceptanceTestsText(cfg.workDir)}`,
     `# Previous rounds\n${history.length ? history.join("\n\n") : "(none - this is the first round)"}`,
-    `# Last oracle result\n${oracle ? formatOracle(oracle) : "(not run yet - the starting repo is green)"}`,
+    `# Last oracle result\n${oracle ? formatOracle(oracle, cfg.budget) : "(not run yet - the starting repo is green)"}`,
   ].join("\n\n");
 
   const leaks = findLeaks(cfg.workDir, units, system + prompt, acceptanceTestsText(cfg.workDir));
@@ -406,7 +421,7 @@ async function runGovernor(
 
   const messages: Msg[] = [{ role: "user", content: prompt }];
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await callModel(cfg, system, messages, [DECISION_TOOL]);
+    const res = await callWithRetry(cfg, system, messages, [DECISION_TOOL]);
     log(cfg, "governor_output", { content: res.content });
     const call = toolUses(res).find((t) => t.name === "submit_decision");
     const problem = call ? validateDecision(call.input, units, knownTests) : "You must call submit_decision.";
@@ -512,8 +527,11 @@ async function runOwner(cfg: Config, unit: Unit, units: Unit[], steps: Step[], p
   log(cfg, "owner_input", { unit: unit.name, prompt });
 
   const messages: Msg[] = [{ role: "user", content: prompt }];
+  const readIds = new Set<string>();
   for (let turn = 0; turn < MAX_OWNER_TURNS; turn++) {
-    const res = await callModel(cfg, ownerSystem(), messages, ownerTools(unit));
+    const dropped = compact(cfg, ownerSystem(), messages, ownerTools(unit), readIds);
+    if (dropped) log(cfg, "owner_compaction", { unit: unit.name, turn, dropped });
+    const res = await callWithRetry(cfg, ownerSystem(), messages, ownerTools(unit));
     log(cfg, "owner_output", { unit: unit.name, turn, content: res.content });
     const calls = toolUses(res);
     const submit = calls.find((c) => c.name === "submit_files");
@@ -537,6 +555,7 @@ async function runOwner(cfg: Config, unit: Unit, units: Unit[], steps: Step[], p
       role: "user",
       content: calls.map((c): Anthropic.Beta.BetaToolResultBlockParam => {
         const path = (c.input as { path?: string }).path ?? "";
+        readIds.add(c.id);
         if (c.name !== "read_own_file" || !unit.files.includes(path)) {
           return { type: "tool_result", tool_use_id: c.id, is_error: true, content: `Unknown tool call ${c.name} or not your file: ${path}` };
         }
@@ -765,8 +784,11 @@ function runOracle(workDir: string, testArgs = target.testArgs): OracleResult {
   };
 }
 
-function formatOracle(o: OracleResult): string {
-  return `status: ${o.pass ? "GREEN" : "RED"}\n\n## tsc --noEmit (exit ${o.tsc.exitCode})\n${o.tsc.output || "(no output)"}\n\n## vitest run (exit ${o.vitest.exitCode})\n${o.vitest.failures}`;
+function formatOracle(o: OracleResult, budget?: number): string {
+  const text = `status: ${o.pass ? "GREEN" : "RED"}\n\n## tsc --noEmit (exit ${o.tsc.exitCode})\n${o.tsc.output || "(no output)"}\n\n## vitest run (exit ${o.vitest.exitCode})\n${o.vitest.failures}`;
+  // Under a budget, oracle output is capped at a quarter of it for every agent, as agent tools truncate long output.
+  const max = budget ? Math.floor(budget * 3.5 * 0.25) : Infinity;
+  return text.length <= max ? text : `${text.slice(0, max)}\n[... oracle output truncated to fit the context budget]`;
 }
 
 // ---------- isolation check ----------
@@ -787,12 +809,14 @@ function findLeaks(workDir: string, units: Unit[], governorText: string, governo
 // governor. There is no second party to approve test changes, so they are recorded (same detector), not blocked.
 
 const singleSystem = () => `You are a coding agent working alone on a small TypeScript codebase (${target.description}). You can see and edit every source file (paths matching ${target.editable.source}).
-Each round, make your changes and call submit once. The harness writes your files, runs the oracle (tsc --noEmit and vitest), and returns its raw output to you.
-- action "edit": in files, give the full new contents of every file you change (paths relative to the repo root; empty content deletes a file under ${target.acceptanceDir}/).
+Tools: read_file reads a file; search finds lines matching a pattern across the repo; edit_file replaces one exact snippet in one file, applied immediately. Use search to find where something is used instead of reading every file.
+A round is one oracle run (tsc --noEmit and the tests), triggered by submit:
+- action "check": run the oracle on the files as they are now (after your edit_file changes).
+- action "edit": write the full new contents of the files given in files (paths relative to the repo root; empty content deletes a file under ${target.acceptanceDir}/), then run the oracle.
 - action "accept": only when the oracle output is green and the request is satisfied.
 - action "ask": when the request is too ambiguous to implement and test; put the question in "question".
 Existing tests are the specification of current behaviour. If you change or remove an existing test, say why in testChangeReasons; change only what the request actually calls for.
-You have at most ${MAX_ROUNDS} edit rounds.`;
+You have at most ${MAX_ROUNDS} rounds (oracle runs).`;
 
 // --frame: wording controls for the single agent, to separate the governor's role from its prompt wording.
 const SINGLE_FRAMES: Record<string, string> = {
@@ -810,6 +834,21 @@ const SINGLE_TOOLS: Tool[] = [
     input_schema: { type: "object", additionalProperties: false, required: ["path"], properties: { path: { type: "string" } } },
   },
   {
+    name: "search",
+    description: "Find lines matching a regular expression (case-sensitive) across all source files. Returns path:line: text, up to 50 matches.",
+    strict: true,
+    input_schema: { type: "object", additionalProperties: false, required: ["pattern"], properties: { pattern: { type: "string" } } },
+  },
+  {
+    name: "edit_file",
+    description: "Replace one exact occurrence of old_string with new_string in a file. Applied immediately; does not run the oracle.",
+    strict: true,
+    input_schema: {
+      type: "object", additionalProperties: false, required: ["path", "old_string", "new_string"],
+      properties: { path: { type: "string" }, old_string: { type: "string" }, new_string: { type: "string" } },
+    },
+  },
+  {
     name: "submit",
     description: "Submit this round's decision. Call exactly once per round.",
     strict: true,
@@ -818,7 +857,7 @@ const SINGLE_TOOLS: Tool[] = [
       additionalProperties: false,
       required: ["action", "files", "testChangeReasons", "reason", "question"],
       properties: {
-        action: { type: "string", enum: ["edit", "accept", "ask"] },
+        action: { type: "string", enum: ["check", "edit", "accept", "ask"] },
         files: {
           type: "array",
           items: {
@@ -841,7 +880,7 @@ const SINGLE_TOOLS: Tool[] = [
 ];
 
 const SubmitSchema = z.object({
-  action: z.enum(["edit", "accept", "ask"]),
+  action: z.enum(["check", "edit", "accept", "ask"]),
   files: z.array(z.object({ path: z.string(), content: z.string() })),
   testChangeReasons: z.array(z.object({ title: z.string(), reason: z.string() })),
   reason: z.string(),
@@ -875,19 +914,53 @@ function repoListing(workDir: string): string {
 }
 
 const DROPPED = "[dropped to fit the context budget; read the file again if you need it]";
+const DROPPED_RESULT = "[earlier result dropped to fit the context budget]";
+const DROPPED_CONTENT = "[earlier submitted content dropped to fit the context budget]";
+const NOT_RETURNED = "[not returned: it would exceed your context budget. Read fewer files at a time.]";
 
-/** Under a budget, replaces the oldest read_file results with a placeholder until the conversation fits. */
+/**
+ * Under a budget, frees context until the conversation fits, the way a coding agent's context management does.
+ * Never touched: the opening prompt (request and repo view or unit files). In order, until it fits:
+ *   1. file reads from earlier turns          2. thinking, in any turn (it has served its purpose)
+ *   3. earlier oracle / tool results           4. bodies of applied edits and submissions, in any turn
+ *   5. the latest batch of file reads, newest first: "not returned; read fewer files at a time"
+ * Used identically for the single agent and for owners.
+ */
 function compact(cfg: Config, system: string, messages: Msg[], tools: Tool[], readIds: Set<string>): number {
-  let dropped = 0;
-  for (const m of messages) {
-    if (!cfg.budget || estimateTokens(system, messages, tools) <= cfg.budget * 0.9) break;
-    if (m.role !== "user" || typeof m.content === "string") continue;
-    for (const b of m.content) {
-      if (b.type === "tool_result" && readIds.has(b.tool_use_id) && b.content !== DROPPED) {
-        b.content = DROPPED;
-        dropped++;
-        if (estimateTokens(system, messages, tools) <= cfg.budget * 0.9) break;
+  if (!cfg.budget) return 0;
+  const fits = () => estimateTokens(system, messages, tools) <= cfg.budget! * 0.9;
+  if (fits()) return 0;
+  const blocks = (ms: Msg[]) => ms.flatMap((m) => (typeof m.content === "string" ? [] : m.content as Anthropic.Beta.BetaContentBlockParam[]));
+  const latest = messages.length > 1 ? messages[messages.length - 1] : undefined;
+  const earlier = messages.slice(1, latest?.role === "user" ? -1 : undefined);
+  const isRead = (b: Anthropic.Beta.BetaContentBlockParam) => b.type === "tool_result" && readIds.has(b.tool_use_id);
+  const steps: [Anthropic.Beta.BetaContentBlockParam[], (b: Anthropic.Beta.BetaContentBlockParam) => boolean][] = [
+    [blocks(earlier), (b) => isRead(b) && b.type === "tool_result" && b.content !== DROPPED && ((b.content = DROPPED), true)],
+    [blocks(messages.slice(1)), (b) => b.type === "thinking" && b.thinking !== "" && ((b.thinking = ""), true)],
+    [blocks(earlier), (b) => b.type === "tool_result" && !isRead(b) && b.content !== DROPPED_RESULT && ((b.content = DROPPED_RESULT), true)],
+    // Tool calls in history have already been executed, so their bulky inputs can go (the latest turn's too).
+    [blocks(messages.slice(1)), (b) => {
+      if (b.type !== "tool_use") return false;
+      const input = b.input as { files?: { path: string; content: string }[]; old_string?: string; new_string?: string };
+      if (input.files?.some((f) => f.content !== DROPPED_CONTENT)) {
+        input.files = input.files.map((f) => ({ path: f.path, content: DROPPED_CONTENT }));
+        return true;
       }
+      if (b.name === "edit_file" && input.new_string !== DROPPED_CONTENT) {
+        input.old_string = DROPPED_CONTENT;
+        input.new_string = DROPPED_CONTENT;
+        return true;
+      }
+      return false;
+    }],
+    [latest?.role === "user" ? blocks([latest]).reverse() : [],
+      (b) => isRead(b) && b.type === "tool_result" && b.content !== NOT_RETURNED && ((b.content = NOT_RETURNED), true)],
+  ];
+  let dropped = 0;
+  for (const [candidates, drop] of steps) {
+    for (const b of candidates) {
+      if (fits()) return dropped;
+      if (drop(b)) dropped++;
     }
   }
   return dropped;
@@ -902,7 +975,7 @@ async function runSingle(
     `# Request\n${request}`,
     ...(history.length ? [`# Earlier in this session\n${history.join("\n\n")}`] : []),
     repo,
-    `# Oracle\n${startOracle ? formatOracle(startOracle) : "(not run yet - the repo is green)"}`,
+    `# Oracle\n${startOracle ? formatOracle(startOracle, cfg.budget) : "(not run yet - the repo is green)"}`,
   ].join("\n\n");
   let prompt = build(`# Repository\n${repoText(cfg.workDir)}`);
   // Under a budget the whole repo may not fit next to a working conversation: then start from a file list.
@@ -917,13 +990,14 @@ async function runSingle(
   const messages: Msg[] = [{ role: "user", content: prompt }];
   const pathOk = (p: string) => target.editable.test(p) && !p.includes("..");
   const readIds = new Set<string>();
+  const pendingTouched = new Set<string>(); // files changed since the last oracle run
   let dropped = 0;
 
   for (let call = 0; call < 40; call++) {
     dropped += compact(cfg, system, messages, SINGLE_TOOLS, readIds);
     let res: Anthropic.Beta.BetaMessage;
     try {
-      res = await callModel(cfg, system, messages, SINGLE_TOOLS);
+      res = await callWithRetry(cfg, system, messages, SINGLE_TOOLS);
     } catch (e) {
       if (!(e instanceof OverBudget)) throw e;
       result.status = "over_budget";
@@ -938,6 +1012,35 @@ async function runSingle(
     const results: Anthropic.Beta.BetaToolResultBlockParam[] = [];
     let stop = false;
     for (const c of calls) {
+      if (c.name === "search") {
+        readIds.add(c.id); // search results are droppable like reads
+        const pattern = (c.input as { pattern?: string }).pattern ?? "";
+        let re: RegExp | null = null;
+        try { re = new RegExp(pattern); } catch { /* reported below */ }
+        const hits = re ? repoFiles(cfg.workDir).flatMap((f) => readFileSync(join(cfg.workDir, f), "utf8").split("\n")
+          .flatMap((line, i) => (re!.test(line) ? [`${f}:${i + 1}: ${line.trim().slice(0, 160)}`] : []))) : [];
+        results.push(re
+          ? { type: "tool_result", tool_use_id: c.id, content: hits.length ? hits.slice(0, 50).join("\n") + (hits.length > 50 ? `\n(${hits.length - 50} more)` : "") : "(no matches)" }
+          : { type: "tool_result", tool_use_id: c.id, is_error: true, content: `Invalid regular expression: ${pattern}` });
+        continue;
+      }
+      if (c.name === "edit_file") {
+        const { path = "", old_string = "", new_string = "" } = c.input as Record<string, string>;
+        const abs = join(cfg.workDir, path);
+        const before = pathOk(path) && existsSync(abs) ? readFileSync(abs, "utf8") : null;
+        const count = before === null || !old_string ? 0 : before.split(old_string).length - 1;
+        if (before === null || count !== 1) {
+          results.push({ type: "tool_result", tool_use_id: c.id, is_error: true,
+            content: before === null ? `No such source file: ${path}` : `old_string must occur exactly once in ${path}; found ${count}` });
+          continue;
+        }
+        const after = before.replace(old_string, () => new_string);
+        writeFileSync(abs, after);
+        pendingTouched.add(path);
+        log(cfg, "diff", { unit: "single", path, diff: createTwoFilesPatch(`a/${path}`, `b/${path}`, before, after) });
+        results.push({ type: "tool_result", tool_use_id: c.id, content: `Edited ${path}.` });
+        continue;
+      }
       if (c.name === "read_file") {
         readIds.add(c.id);
         const path = (c.input as { path?: string }).path ?? "";
@@ -953,6 +1056,7 @@ async function runSingle(
         continue;
       }
       const d = parsed.data;
+      if (d.action === "check") d.files = [];
       console.log(`single call ${call}: ${d.action}${d.action === "edit" ? ` -> ${d.files.map((f) => f.path).join(", ")}` : ""}  (${d.reason})`);
       if (d.action === "ask") { result.status = "asked"; log(cfg, "single_ask", { question: d.question }); stop = true; break; }
       if (d.action === "accept") {
@@ -967,16 +1071,6 @@ async function runSingle(
         continue;
       }
       result.rounds++;
-      const reasons = Object.fromEntries(d.testChangeReasons.map((r) => [r.title, r.reason]));
-      for (const [unit, base] of baselineTests) {
-        const testPath = units.find((u) => u.name === unit)?.testPath;
-        const f = d.files.find((x) => x.path === testPath);
-        if (!f) continue;
-        for (const change of unapprovedTestChanges(unit, base, f.content, seen, reasons)) {
-          seen.add(change.title);
-          result.testChanges.push({ ...change, round: result.rounds });
-        }
-      }
       for (const f of d.files) {
         const abs = join(cfg.workDir, f.path);
         const before = existsSync(abs) ? readFileSync(abs, "utf8") : "";
@@ -985,11 +1079,23 @@ async function runSingle(
         log(cfg, "diff", { unit: "single", path: f.path, diff: createTwoFilesPatch(`a/${f.path}`, `b/${f.path}`, before, f.content) });
         if (f.path.startsWith(`${target.acceptanceDir}/`) && f.content) log(cfg, "acceptance_test", { unit: "single", path: f.path, source: f.content });
       }
-      result.touched.push([...new Set(d.files.map((f) => basename(f.path).replace(/(\.spec|\.test)?\.(ts|html|scss)$/, "")))]);
+      // Changes to existing tests, however they were made (edit_file or full files), are read from disk at each round.
+      const reasons = Object.fromEntries(d.testChangeReasons.map((r) => [r.title, r.reason]));
+      for (const [unit, base] of baselineTests) {
+        const testPath = units.find((u) => u.name === unit)?.testPath;
+        if (!testPath) continue;
+        for (const change of unapprovedTestChanges(unit, base, readOr(join(cfg.workDir, testPath)), seen, reasons)) {
+          seen.add(change.title);
+          result.testChanges.push({ ...change, round: result.rounds });
+        }
+      }
+      d.files.forEach((f) => pendingTouched.add(f.path));
+      result.touched.push([...new Set([...pendingTouched].map((f) => basename(f).replace(/(\.spec|\.test)?\.(ts|html|scss)$/, "")))]);
+      pendingTouched.clear();
       result.oracle = runOracle(cfg.workDir);
       log(cfg, "oracle", { round: result.rounds, ...result.oracle });
       console.log(`round ${result.rounds}: oracle ${result.oracle.pass ? "GREEN" : "RED"}`);
-      results.push({ type: "tool_result", tool_use_id: c.id, content: `${formatOracle(result.oracle)}\n\nEdit rounds left: ${MAX_ROUNDS - result.rounds}` });
+      results.push({ type: "tool_result", tool_use_id: c.id, content: `${formatOracle(result.oracle, cfg.budget)}\n\nRounds left: ${MAX_ROUNDS - result.rounds}` });
     }
     if (stop) break;
     messages.push({ role: "user", content: results });
@@ -1227,7 +1333,7 @@ function selftest(): void {
   const cfg: Config = {
     provider: "anthropic", model: "-", runDir, workDir: TARGETS.todo.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, budgetStats: newStats(),
   };
-  const check = (name: string, ok: boolean) => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}`); if (!ok) process.exitCode = 1; };
+  const check = (name: string, ok: boolean, detail = "") => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}${ok || !detail ? "" : `  (${detail})`}`); if (!ok) process.exitCode = 1; };
 
   const units = buildManifest(cfg.workDir);
   check("manifest has 4 units", units.map((u) => u.name).join() === "commands,format,storage,types");
@@ -1266,6 +1372,26 @@ function selftest(): void {
   check("snapshot shows completed todos and the error exit", snap.includes("[x] walk dog") && snap.includes("[exit 1]") && snap.includes('"title": "pay rent"'));
   check("snapshot carries no source lines", findLeaks(cfg.workDir, units, snap).length === 0);
   check("snapshot is deterministic", snapshot(join(runDir, "work")) === snap);
+  // Context management under a budget: earlier reads go first; an overflowing latest batch is partly not returned;
+  // the opening prompt is never touched.
+  const big = "x".repeat(7000); // ~2000 tokens each
+  const opening = "request " + big;
+  const msgs: Msg[] = [
+    { role: "user", content: opening },
+    { role: "assistant", content: [{ type: "thinking", thinking: big, signature: "" }, { type: "tool_use", id: "r1", name: "read_file", input: { path: "a" } }] },
+    { role: "user", content: [{ type: "tool_result", tool_use_id: "r1", content: big }] },
+    { role: "assistant", content: [{ type: "tool_use", id: "r2", name: "read_file", input: { path: "b" } }, { type: "tool_use", id: "r3", name: "read_file", input: { path: "c" } }] },
+    { role: "user", content: [{ type: "tool_result", tool_use_id: "r2", content: big }, { type: "tool_result", tool_use_id: "r3", content: big }] },
+  ];
+  const budgetCfg = { ...cfg, budget: 5000 };
+  compact(budgetCfg, "", msgs, [], new Set(["r1", "r2", "r3"]));
+  const results = msgs.flatMap((m) => (typeof m.content === "string" ? [] : m.content as Anthropic.Beta.BetaContentBlockParam[]))
+    .filter((b) => b.type === "tool_result") as unknown as { content: string }[];
+  check("compaction fits the budget", estimateTokens("", msgs, []) <= 5000 * 0.9);
+  check("compaction keeps the opening prompt", msgs[0].content === opening);
+  check("compaction drops earlier reads first and keeps the oldest of the latest batch",
+    results[0].content === DROPPED && results[1].content === big && results[2].content === NOT_RETURNED, results.map((r) => r.content.slice(0, 12)).join(","));
+
   const copied = source.split("\n").find((l) => l.includes("map(formatTodo)"))!.trim();
   check("lines the governor wrote itself are not leaks", findLeaks(cfg.workDir, units, copied, copied).length === 0
     && findLeaks(cfg.workDir, units, copied).length === 1);

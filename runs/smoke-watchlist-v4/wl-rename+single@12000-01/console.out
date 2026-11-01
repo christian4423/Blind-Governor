@@ -1,0 +1,71 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-15-03-787Z/wl-rename+single@12000-01
+provider: ollama-cloud (glm-5.3)
+request: Rename the `watched` field of watchlist items to `seen` everywhere.
+
+single call 8: check  (Renamed the WatchItem.watched field to seen and updated all usages: the interface declaration (movie.ts), the store's filter/add/toggle logic (watchlist-store.ts), and the three template bindings in watchlist.html. The watchlist.spec.ts assertion reading the field was updated mechanically to keep it compiling; behaviour is unchanged.)
+round 1: oracle GREEN
+single call 9: accept  (Renamed the watchlist item field `watched` to `seen` everywhere it is declared or used: WatchItem interface in movie.ts; the store's count filter, add() default and toggleWatched() flip in watchlist-store.ts; and the [class], [checked] and status-pill bindings in watchlist.html. The spec's field access was updated mechanically to keep it compiling. Oracle is green: tsc --noEmit clean and 28/28 tests pass.)
+
+{
+  "target": "watchlist",
+  "mode": "single",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 1,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 2,
+    "failed": 1,
+    "failures": [
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
+    ]
+  },
+  "tokens": {
+    "input": 49258,
+    "output": 16865
+  },
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 8773,
+    "maxEstimate": 10622,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

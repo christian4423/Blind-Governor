@@ -1,0 +1,16 @@
+bench: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-27-27-323Z
+[1/1] wl-rename+single@6000 #1
+# Bench bench-2026-11-01T05-27-27-323Z
+
+## wl-rename+single@6000 — "Rename the `watched` field of watchlist items to `seen` everywhere."
+- **pass: 0/1** (accepted green; held-out: saves `seen`, and a watchlist saved before the rename still shows what was watched)
+- status: 1× over_budget/red
+- rounds: 1× 1
+- round-1 units: 1× watchlist
+- test-change requests: 1/1 runs; approvals given: 1/1 runs; rejected submissions: 0
+- held-out tests pass: 0/1; failures: 1× held-out
+- budget 6000 tokens: over-budget runs 1/1; largest prompt seen 4114 tokens; estimate undercounts: 0
+- tokens per run: in 118436, out 28303
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+Total cost: $0.00

@@ -1,0 +1,64 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T04-19-41-770Z/wl-rename+governor@6000-01
+provider: ollama-cloud (glm-5.3)
+request: Rename the `watched` field of watchlist items to `seen` everywhere.
+
+governor turn 1: plan -> movie, watchlist-store, watchlist  (Rename of the watchlist item field `watched` -> `seen` only. The type lives in `movie` (both item interfaces Movie and WatchItem), the field logic in `watchlist-store` (add/toggle/count/persist), and the rendering in `watchlist` (template bindings and component computations). Public names such as `toggleWatched`, `watchedCount` and `progress` are not fields and stay put, so search, movie-detail, app, app.config and app.routes need no changes; strict template checking plus the new acceptance tests catch any leftover `watched` reference.)
+round 1: owners movie=ok watchlist-store=ok watchlist=fail; oracle RED
+governor turn 2: plan -> watchlist  (Only the watchlist unit is implicated by the oracle errors: its template and spec still reference the old `watched` field. movie and watchlist-store already submitted. Instruction kept minimal because the watchlist owner exceeded its prompt budget last round.)
+round 2: owners watchlist=fail; oracle RED
+governor turn 3: ask  (Blocked by infrastructure, not by contract: the only remaining changes live in watchlist-owned files (3 template usages of `watched` + 1 in watchlist.spec.ts), and the watchlist owner's prompt exceeds its 6000-token budget regardless of instruction length (two attempts failed at ~22.5k and ~17k tokens). Escalating for a decision on how to unblock that unit.)
+governor asks: The `watched`→`seen` rename is complete everywhere except the watchlist unit: `Movie`/`WatchItem` (movie) and `WatchlistStore` now use `seen`, and the only remaining `watched` references are three usages in src/app/watchlist/watchlist.html and one at src/app/watchlist/watchlist.spec.ts:66 — files only the watchlist owner may edit. That owner cannot be instructed at all: its prompt (~22.5k tokens in round 1, ~17k in round 2, dominated by its own files) exceeds its hard 6000-token budget, and it failed identically in both rounds before doing any work; shortening my instruction cannot close an ~11k-token gap, and no other unit may edit those files. How would you like to unblock the watchlist unit — e.g., raise its prompt budget (or let it receive truncated/summarized files), shrink or split the unit, or make the four `watched`→`seen` replacements by hand? Once the owner (or you) can touch those files, I can finish the round and accept; note the owner will also need my approval to update the existing test at watchlist.spec.ts:66, which I will grant since the request requires the rename.
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "asked",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 0,
+    "failed": 0,
+    "failures": [
+      "held-out test did not run (build failed)"
+    ]
+  },
+  "tokens": {
+    "input": 26514,
+    "output": 97992
+  },
+  "budget": 6000,
+  "budgetStats": {
+    "maxPromptTokens": 4824,
+    "maxEstimate": 22513,
+    "overBudget": 2,
+    "violations": 0
+  },
+  "usd": 0
+}

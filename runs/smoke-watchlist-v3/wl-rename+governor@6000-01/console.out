@@ -1,0 +1,76 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T04-43-41-866Z/wl-rename+governor@6000-01
+provider: ollama-cloud (glm-5.3)
+request: Rename the `watched` field of watchlist items to `seen` everywhere.
+
+governor turn 1: plan -> movie, watchlist-store, watchlist  (The request renames the data field `watched` → `seen` on watchlist items. The change flows through exactly three units: movie (declares the field on WatchItem, and on Movie for consistency since the request says "everywhere"), watchlist-store (creates items with the flag, toggles it, counts it, persists it), and watchlist (renders it in template bindings and computed signals). Exported member names (toggleWatched, watchedCount) are not item fields and stay unchanged; the same for user-visible strings. search, movie-detail, movie.service, app, app.routes and app.config never touch this field (their manifests show they only pass TmdbMovie objects or ids). Acceptance tests pin the new required `seen` field on both interfaces and the store's behaviour through its exports.)
+round 1: owners movie=ok watchlist-store=ok watchlist=rejected; oracle RED
+governor turn 2: plan -> watchlist  (movie and watchlist-store renames applied cleanly; only watchlist is RED. Its round-1 submission was rejected solely because it modified an existing test's `watched` property access — a mechanical consequence of the approved rename, so that test change is now approved and the owner is re-instructed.)
+round 2: owners watchlist=ok; oracle GREEN
+governor turn 3: accept  (Rename complete: WatchItem/Movie expose `seen` instead of `watched`, the store persists and flips `seen` (watchedCount counts seen items), and the watchlist component's logic and templates use the new field after the approved one-test adjustment. Oracle is fully green (tsc exit 0, 42/42 tests including both acceptance specs), and no unit references the old field anywhere.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The only change is `store.items()[0].watched` → `store.items()[0].seen` in the assertion that clicking the title link does not toggle the state. The WatchItem data field was renamed from `watched` to `seen` by the movie unit, so the old property access no longer exists on the item type. Coverage is unchanged: the test still clicks the link and asserts the item's state stays false.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 2,
+    "failed": 1,
+    "failures": [
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
+    ]
+  },
+  "tokens": {
+    "input": 40992,
+    "output": 131712
+  },
+  "budget": 6000,
+  "budgetStats": {
+    "maxPromptTokens": 4382,
+    "maxEstimate": 5298,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

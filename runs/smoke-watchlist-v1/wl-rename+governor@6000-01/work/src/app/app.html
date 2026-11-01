@@ -1,0 +1,30 @@
+<a class="skip-link" href="#main" (click)="skipToMain($event)">Skip to main content</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a routerLink="/" class="brand">
+      <span aria-hidden="true">🎬</span> Watchlist
+    </a>
+
+    <nav aria-label="Main">
+      <ul class="nav-links">
+        <li>
+          <a routerLink="/" routerLinkActive="active" ariaCurrentWhenActive="page"
+            [routerLinkActiveOptions]="{ exact: true }">
+            My list
+            @if (store.count()) {
+              <span class="badge">{{ store.count() }}<span class="visually-hidden"> movies</span></span>
+            }
+          </a>
+        </li>
+        <li>
+          <a routerLink="/search" routerLinkActive="active" ariaCurrentWhenActive="page">Search</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <router-outlet />
+</main>
