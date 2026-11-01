@@ -230,7 +230,7 @@ Four smoke rounds (`runs/smoke-watchlist-v1` … `-v4`) exposed problems that wo
 
 # Watchlist bench: status (2026-11-01, in progress)
 
-`runs/bench-watchlist/`. The first attempt hit the Ollama cloud session usage limit 45 minutes in: 10 of 80 runs finished cleanly, 70 ended on HTTP 429. `glm-5.3`'s governor thinks heavily (80k–200k output tokens per run, about 10× the single agent), which is what used the quota. Scope was then cut (user, 2026-11-01) to **rename, sort and wrong-belief, 3 runs per setup** (36 runs; 8 already clean). Out-of-scope runs are kept in `bench-watchlist/_dropped/`. The bench now stops at the first rate-limited run and `harness/resume-loop.sh` retries `--resume` hourly until all 36 are clean.
+`runs/bench-watchlist/`. The first attempt hit the Ollama cloud session usage limit 45 minutes in: 10 of 80 runs finished cleanly, 70 ended on HTTP 429. `glm-5.3`'s governor thinks heavily (80k–200k output tokens per run, about 10× the single agent), which is what used the quota. Scope was then cut (user, 2026-11-01) to **rename, sort and wrong-belief, 3 runs per setup** (36 runs; 8 already clean). Out-of-scope runs are kept in `bench-watchlist/_dropped/`. The bench now stops at the first rate-limited run and `harness/resume-loop.sh` retries `--resume` every 20 minutes until all 36 are clean.
 
 Early hints from the 8 clean runs (one per setup, not results):
 - The **governor ran over budget in its own seat** in 4 of 6 runs, at 12k as well as 6k: its prompt grows each round with plans, owner reports and oracle output. I had predicted the owners would be the bottleneck.
