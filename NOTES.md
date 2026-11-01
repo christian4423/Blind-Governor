@@ -25,6 +25,18 @@ Start here. Findings with numbers are in [`RESULTS.md`](RESULTS.md); this file h
 
 - **Watchlist bench** on branch `watchlist-budget`: governor vs single on `../watchlist`, `glm-5.3` via Ollama cloud, 12k and 6k token budgets, 3 runs × 3 requests × 4 setups. Quota-limited, so `harness/resume-loop.sh` resumes it every 20 minutes (the session quota resets every few hours; weekly quota was at 18.4% on 2026-11-01). Check progress: `tail runs/bench-watchlist/resume.log`. Stop it: `kill <pid from the first line of that log>`. When it says DONE: `cd harness && npx tsx bench.ts --report ../runs/bench-watchlist`, then write up against the predictions in RESULTS.md.
 
+## Token savings: plan (user ideas, 2026-11-01)
+
+**Where tokens go today** (glm-5.3 transcripts): routing is already selective (owners run only for units the governor names), but **thinking is 85–92% of governor and owner output**. On watchlist a governor call averages ~69k output characters and an owner call ~38k, against ~2k for a single-agent call. On the todo calibration the governor setup spent **~165k tokens per successful rename vs ~20k** for the single agent. The cost is reasoning depth on every call, not the number of agents. Reports now show **tokens per successful change** and **repo size** per setup, plus output tokens by role (from 2026-11-01 runs on).
+
+Ideas, one bench each, cheapest first:
+1. **Thinking depth per role, escalation instead of default.** Owners doing mechanical edits and governor routing turns get low or no thinking; full depth only on escalation: the oracle is red after a round, an owner asks to change an existing test (behaviour conflict), an interface change spans units (architecture), owners' outputs disagree (contract errors between units), or the request is ambiguous. First check what the provider honours: Ollama's Anthropic-compatible endpoint may ignore `thinking`/`effort`; its native `/api/chat` has a `think` option.
+2. **Zero-inference relevance from the code itself.** "Is this unit relevant to renaming `Todo.done`?" is a compiler question: TypeScript's find-references answers it exactly, for free. Give the governor a references query and a pruned manifest (full declarations only for units touching the symbols involved, a one-line index for the rest), so its prompt stops growing with the repo. That is the "197 owners cost zero" property, extended to the governor.
+3. **Small-model triage where the compiler can't answer** (behaviour questions such as "does sorting the list affect you?"). Owners answer narrow questions rather than summarising themselves: "Does this request affect you? If yes, report only the behaviour relevant to X." This is ladder step 6 (owner query channel) with that question-answer protocol; measure how often it's needed once 1–2 exist.
+4. **Escalation to a bigger model** (rather than more thinking from the same one) as the last rung: small model by default, large model on the escalation triggers above.
+
+Metric for all of them: **tokens per successful change vs repository size**, and pass rate must not drop.
+
 ## Success criteria (revised 2026-10-29)
 
 The original criteria passed a run that did the wrong thing (RESULTS.md, finding 1), so these were fixed before anything else:
