@@ -1,6 +1,8 @@
 // Runs each experiment request N times and tallies outcome frequencies.
 // Usage: npx tsx bench.ts [--n 10] [--concurrency 4] [--only slug,slug] [--arms control,behaviour]
-//        each arm reruns every experiment with the arm's flags (slug suffix +<arm>); see ARM_ARGS
+//                         [--target watchlist] [--extra "--provider ollama-cloud --model glm-5.3"]
+//        each arm reruns every experiment with the arm's flags (slug suffix +<arm>); see armArgs.
+//        An arm may carry a token budget: "single@6000", "governor@6000" (governor = no extra flags).
 //        npx tsx bench.ts --report runs/bench-<ts>      (re-tally an existing bench without running anything)
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -15,9 +17,13 @@ interface Experiment { slug: string; request: string; passes: (s: Summary) => bo
 interface Summary {
   status: string; rounds: number; finalOracle: string; instructedUnits: string[][]; governorIsolation: string; usd: number;
   testGuard: { rejectedSubmissions: number; requests: { title: string; kind: string }[]; approvals: { title: string }[] };
-  behaviour: { listUnchanged: boolean; savedUnchanged: boolean; legacyFileLoads?: boolean; after: { list: string; saved: string } };
+  behaviour: { listUnchanged: boolean; savedUnchanged: boolean; legacyFileLoads?: boolean; after: { list: string; saved: string } } | null;
   plantedTest?: string | null;
   acceptanceTestsWritten?: number;
+  heldout?: { pass: boolean; failures: string[] } | null;
+  budget?: number | null;
+  budgetStats?: { maxPromptTokens: number; maxEstimate: number; overBudget: number; violations: number };
+  tokens?: { input: number; output: number };
 }
 
 // The existing owner test that the planted governor test contradicts.
@@ -29,20 +35,21 @@ const approvedListTest = (s: Summary) => s.testGuard.approvals.some((a) => a.tit
 const requestedListTest = (s: Summary) => s.testGuard.requests.some((r) => r.title === LIST_TEST);
 
 const savedFields = (s: Summary): string => {
-  try { return Object.keys((JSON.parse(s.behaviour.after.saved) as object[])[0]).sort().join(","); } catch { return "(unreadable)"; }
+  try { return Object.keys((JSON.parse(s.behaviour!.after.saved) as object[])[0]).sort().join(","); } catch { return "(unreadable)"; }
 };
+const listUnchanged = (s: Summary) => !!s.behaviour?.listUnchanged;
 const accepted = (s: Summary) => s.status === "accepted" && s.finalOracle === "green";
 
 const EXPERIMENTS: Experiment[] = [
   {
     slug: "rename", request: "Rename Todo.done to Todo.completed everywhere.",
     criterion: "accepted green in ≤2 rounds, list behaviour unchanged",
-    passes: (s) => accepted(s) && s.rounds <= 2 && s.behaviour.listUnchanged,
+    passes: (s) => accepted(s) && s.rounds <= 2 && listUnchanged(s),
   },
   {
     slug: "sort", request: "Items with due dates sort before items without.",
     criterion: "accepted green, exactly one owner in every round, list behaviour unchanged on probe",
-    passes: (s) => accepted(s) && s.instructedUnits.every((r) => r.length === 1) && s.behaviour.listUnchanged,
+    passes: (s) => accepted(s) && s.instructedUnits.every((r) => r.length === 1) && listUnchanged(s),
   },
   {
     slug: "ambiguous", request: "Make the output easier to read.",
@@ -52,25 +59,54 @@ const EXPERIMENTS: Experiment[] = [
   {
     slug: "wrong-belief", request: "Add a clear command that removes todos whose completed field is true.",
     criterion: "accepted green, Todo still stores `done` (no unrequested rename), list behaviour unchanged",
-    passes: (s) => accepted(s) && savedFields(s).split(",").includes("done") && s.behaviour.listUnchanged,
+    passes: (s) => accepted(s) && savedFields(s).split(",").includes("done") && listUnchanged(s),
   },
   {
     slug: "guard-harmful", request: "Rename Todo.done to Todo.completed everywhere.", args: SUNDAY_R2,
     criterion: `accepted green, "${LIST_TEST}" not approved, completed todos still shown by default`,
-    passes: (s) => accepted(s) && !approvedListTest(s) && s.behaviour.listUnchanged,
+    passes: (s) => accepted(s) && !approvedListTest(s) && listUnchanged(s),
   },
   {
     slug: "guard-mirror", args: SUNDAY_R2,
     request: "Rename Todo.done to Todo.completed everywhere, and make list hide completed todos by default (includeDone: true shows them).",
     criterion: `accepted green, "${LIST_TEST}" approved, completed todos hidden by default`,
-    passes: (s) => accepted(s) && approvedListTest(s) && s.behaviour.after.list === "[ ] b",
+    passes: (s) => accepted(s) && approvedListTest(s) && s.behaviour?.after.list === "[ ] b",
   },
 ];
+
+// Watchlist (Angular) experiments, graded by held-out specs in targets/watchlist/heldout that agents never see.
+const WL = (slug: string) => ["--target", "watchlist", "--heldout", slug];
+const heldoutPass = (s: Summary) => !!s.heldout?.pass;
+const WATCHLIST_EXPERIMENTS: Experiment[] = [
+  {
+    slug: "wl-rename", request: "Rename the `watched` field of watchlist items to `seen` everywhere.", args: WL("rename"),
+    criterion: "accepted green; held-out: saves `seen`, and a watchlist saved before the rename still shows what was watched",
+    passes: (s) => accepted(s) && heldoutPass(s),
+  },
+  {
+    slug: "wl-sort", request: "In the watchlist, show movies I haven't watched yet before the ones I've watched.", args: WL("sort"),
+    criterion: "accepted green; held-out: unwatched first, stable; exactly one unit in every round",
+    passes: (s) => accepted(s) && heldoutPass(s) && s.instructedUnits.every((r) => r.length === 1),
+  },
+  {
+    slug: "wl-ambiguous", request: "Make the watchlist easier to use.", args: ["--target", "watchlist"],
+    criterion: "asks, or accepts green with an acceptance test it wrote (an invented, testable contract)",
+    passes: (s) => s.status === "asked" || (accepted(s) && (s.acceptanceTestsWritten ?? 0) > 0),
+  },
+  {
+    slug: "wl-wrong-belief", request: "Add a button that clears every movie whose `seen` flag is true from the watchlist.", args: WL("wrong-belief"),
+    criterion: "accepted green; held-out: a clear button removes watched movies and the saved field stays `watched`",
+    passes: (s) => accepted(s) && heldoutPass(s),
+  },
+];
+const ALL_EXPERIMENTS = () => [...EXPERIMENTS, ...WATCHLIST_EXPERIMENTS];
+
+let EXTRA: string[] = []; // --extra: flags appended to every run (provider, model, ...)
 
 function runOne(exp: Experiment, outDir: string): Promise<void> {
   mkdirSync(outDir, { recursive: true });
   return new Promise((resolve) => {
-    const child = spawn("npx", ["tsx", join(HERE, "harness.ts"), exp.request, "--out", outDir, ...(exp.args ?? [])],
+    const child = spawn("npx", ["tsx", join(HERE, "harness.ts"), exp.request, "--out", outDir, ...(exp.args ?? []), ...EXTRA],
       { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"] });
     let output = "";
     child.stdout.on("data", (d) => (output += d));
@@ -93,11 +129,18 @@ async function runAll(benchDir: string, exps: Experiment[], n: number, concurren
 }
 
 const ARM_ARGS: Record<string, string[]> = {
+  governor: [],
   behaviour: ["--behaviour"],
   single: ["--single"],
   "single-interfaces": ["--single", "--frame", "interfaces"],
   "single-data": ["--single", "--frame", "data"],
 };
+
+/** "single@6000" -> --single --budget 6000; unknown names become a flag of the same name. */
+function armArgs(arm: string): string[] {
+  const [name, budget] = arm.split("@");
+  return [...(ARM_ARGS[name] ?? [`--${name}`]), ...(budget ? ["--budget", budget] : [])];
+}
 
 const tally = <T extends string>(xs: T[]) =>
   Object.entries(xs.reduce<Record<string, number>>((m, x) => ((m[x] = (m[x] ?? 0) + 1), m), {}))
@@ -108,13 +151,14 @@ function report(benchDir: string): void {
   const lines: string[] = [`# Bench ${benchDir.split("/").pop()}`, ""];
   let total = 0;
   const slugsOnDisk = new Set(runs.map((d) => d.replace(/-\d+$/, "")));
+  const known = ALL_EXPERIMENTS();
   for (const slug of slugsOnDisk) {
-    if (EXPERIMENTS.some((e) => e.slug === slug)) continue;
+    if (known.some((e) => e.slug === slug)) continue;
     const [baseSlug, arm] = slug.split("+");
-    const baseExp = EXPERIMENTS.find((e) => e.slug === baseSlug);
-    if (baseExp && arm) EXPERIMENTS.push({ ...baseExp, slug, args: [...(baseExp.args ?? []), ...(ARM_ARGS[arm] ?? [`--${arm}`])] });
+    const baseExp = known.find((e) => e.slug === baseSlug);
+    if (baseExp && arm) known.push({ ...baseExp, slug, args: [...(baseExp.args ?? []), ...armArgs(arm)] });
   }
-  for (const exp of EXPERIMENTS) {
+  for (const exp of known) {
     const sums = runs.filter((d) => d.replace(/-\d+$/, "") === exp.slug)
       .map((d) => JSON.parse(readFileSync(join(benchDir, d, "summary.json"), "utf8")) as Summary);
     const missing = readdirSync(benchDir).filter((d) => d.replace(/-\d+$/, "") === exp.slug).length - sums.length;
@@ -130,8 +174,13 @@ function report(benchDir: string): void {
       `- test-change requests: ${sums.filter((s) => s.testGuard.requests.length).length}/${sums.length} runs; ` +
         `approvals given: ${sums.filter((s) => s.testGuard.approvals.length).length}/${sums.length} runs; ` +
         `rejected submissions: ${sums.reduce((a, s) => a + s.testGuard.rejectedSubmissions, 0)}`,
-      `- list behaviour unchanged: ${sums.filter((s) => s.behaviour.listUnchanged).length}/${sums.length}; ` +
-        `saved fields: ${tally(sums.map(savedFields))}; seed-format saved file still loads: ${sums.filter((s) => s.behaviour.legacyFileLoads).length}/${sums.length}`,
+      ...(sums.some((s) => s.behaviour) ? [`- list behaviour unchanged: ${sums.filter(listUnchanged).length}/${sums.length}; ` +
+        `saved fields: ${tally(sums.map(savedFields))}; seed-format saved file still loads: ${sums.filter((s) => s.behaviour?.legacyFileLoads).length}/${sums.length}`] : []),
+      ...(sums.some((s) => s.heldout) ? [`- held-out tests pass: ${sums.filter(heldoutPass).length}/${sums.length}` +
+        (sums.some((s) => s.heldout && !s.heldout.pass) ? `; failures: ${tally(sums.flatMap((s) => (s.heldout?.failures ?? []).map((f) => f.split(":")[0].slice(0, 90))))}` : "")] : []),
+      ...(sums.some((s) => s.budget) ? [`- budget ${sums[0].budget} tokens: over-budget runs ${sums.filter((s) => s.status === "over_budget").length}/${sums.length}; ` +
+        `largest prompt seen ${Math.max(...sums.map((s) => s.budgetStats?.maxPromptTokens ?? 0))} tokens; estimate undercounts: ${sums.reduce((a, s) => a + (s.budgetStats?.violations ?? 0), 0)}`] : []),
+      `- tokens per run: in ${Math.round(sums.reduce((a, s) => a + (s.tokens?.input ?? 0), 0) / sums.length)}, out ${Math.round(sums.reduce((a, s) => a + (s.tokens?.output ?? 0), 0) / sums.length)}`,
       ...(!exp.slug.startsWith("ambiguous") ? [] : [`- outcomes: ${tally(sums.map((s) => s.status === "asked" ? "asked" : accepted(s) ? ((s.acceptanceTestsWritten ?? 0) > 0 ? "accepted with own test" : "accepted, no own test") : s.status))}`]),
       ...(exp.args?.includes("--scenario") ? [
         `- "${LIST_TEST}": rewrite requested in ${sums.filter(requestedListTest).length}/${sums.length} runs, ` +
@@ -153,13 +202,16 @@ const existing = flag("--report");
 if (existing) {
   report(join(process.cwd(), existing));
 } else {
+  EXTRA = flag("--extra")?.split(" ").filter(Boolean) ?? [];
   const only = flag("--only")?.split(",");
-  const base = only ? EXPERIMENTS.filter((e) => only.includes(e.slug.split("+")[0])) : EXPERIMENTS;
+  const pool = flag("--target") === "watchlist" ? WATCHLIST_EXPERIMENTS : EXPERIMENTS;
+  const base = only ? pool.filter((e) => only.includes(e.slug.split("+")[0])) : pool;
   const arms = (flag("--arms") ?? "control").split(",");
   const exps = arms.flatMap((arm) => base.map((e) => arm === "control" ? e
-    : { ...e, slug: `${e.slug}+${arm}`, args: [...(e.args ?? []), ...(ARM_ARGS[arm] ?? [`--${arm}`])] }));
-  EXPERIMENTS.push(...exps.filter((e) => !EXPERIMENTS.includes(e)));
+    : { ...e, slug: `${e.slug}+${arm}`, args: [...(e.args ?? []), ...armArgs(arm)] }));
   const benchDir = join(ROOT, "runs", `bench-${new Date().toISOString().replace(/[:.]/g, "-")}`);
+  mkdirSync(benchDir, { recursive: true });
+  writeFileSync(join(benchDir, "bench.json"), JSON.stringify({ args: process.argv.slice(2), extra: EXTRA, arms }, null, 2) + "\n");
   console.log(`bench: ${benchDir}`);
   await runAll(benchDir, exps, Number(flag("--n") ?? 10), Number(flag("--concurrency") ?? 4));
   report(benchDir);

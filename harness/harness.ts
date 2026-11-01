@@ -1,5 +1,8 @@
 // Governor/owner prototype harness. Plain functions in one file, per the weekend spec.
-// Usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama] [--model <id>] [--out <runDir>]
+// Usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama|ollama-cloud] [--model <id>] [--out <runDir>]
+//        add --target watchlist to run against ../watchlist (an Angular app) instead of the todo seed
+//        add --heldout <slug> to grade a watchlist run with harness/targets/watchlist/heldout/<slug>.spec.ts
+//        add --budget <tokens> to cap every agent's prompt (the harness's stand-in for a small context window)
 //        add --interactive to answer the governor's clarifying questions from stdin
 //        add --single to run one agent that sees and edits the whole repo (control for the governor/owner split)
 //        add --behaviour to show the governor the CLI's observed behaviour (start of run vs now) every turn
@@ -8,10 +11,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createTwoFilesPatch, diffLines } from "diff";
 import { spawnSync } from "node:child_process";
 import {
-  appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync,
+  appendFileSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
@@ -19,10 +22,11 @@ import { z } from "zod";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SEED = join(ROOT, "seed");
+const WATCHLIST_REPO = join(ROOT, "..", "watchlist");
+const WATCHLIST_COMMIT = "6af7d35"; // pinned so every run starts from the same code
 const MAX_ROUNDS = 3;
 const MAX_OWNER_TURNS = 6;
 const MAX_ASKS = 3; // --interactive: clarifying questions answered per run (they don't use up rounds)
-const NON_UNITS = new Set(["cli"]);
 
 // Load KEY=value lines from experiment-1/keys.txt without overriding the real environment.
 const KEYS_FILE = join(ROOT, "keys.txt");
@@ -39,86 +43,233 @@ type Tool = Anthropic.Beta.BetaTool;
 // ---------- config & logging ----------
 
 interface Config {
-  provider: "anthropic" | "ollama";
+  provider: "anthropic" | "ollama" | "ollama-cloud";
   model: string;
   runDir: string;
   workDir: string;
   cost: { inputTokens: number; outputTokens: number; usd: number };
+  budget?: number; // max prompt tokens per call; see --budget
+  budgetStats: { maxPromptTokens: number; maxEstimate: number; overBudget: number; violations: number };
 }
+
+const newStats = (): Config["budgetStats"] => ({ maxPromptTokens: 0, maxEstimate: 0, overBudget: 0, violations: 0 });
 
 function log(cfg: Config, type: string, data: Record<string, unknown>): void {
   appendFileSync(join(cfg.runDir, "log.jsonl"), JSON.stringify({ ts: new Date().toISOString(), type, ...data }) + "\n");
 }
 
-// ---------- seed copy & manifest ----------
+// ---------- targets: the repo a run works on ----------
+// Everything repo-specific lives here; the governor/owner/single loop is the same for every target.
 
-function copySeed(runDir: string): string {
-  const workDir = join(runDir, "work");
-  cpSync(SEED, workDir, {
-    recursive: true,
-    filter: (src) => !["node_modules", ".manifest", "units.json"].includes(basename(src)),
-  });
-  symlinkSync(join(SEED, "node_modules"), join(workDir, "node_modules"), "dir");
-  return workDir;
+interface Target {
+  name: "todo" | "watchlist";
+  description: string;                 // how agents are told what the codebase is
+  prepare(runDir: string): string;     // creates and returns the run's work directory
+  srcRoot: string;                     // unit files live under here
+  unitExts: string[];                  // extensions that belong to a unit, besides its test file
+  testSuffix: string;
+  nonUnits: Set<string>;               // stems that are not units (entry points)
+  manifestTsc: string[];               // tsc args that emit declarations into .manifest
+  manifestRoot: string;                // where declarations for srcRoot land
+  typecheck: string[][];               // tsc arg lists the oracle runs
+  testArgs(out: string): { bin: string; args: string[] }; // JSON reporter, written to `out`
+  acceptanceDir: string;               // governor acceptance tests
+  acceptanceHint: string;              // how those tests import units
+  editable: RegExp;                    // paths the single agent may write
+  hasCli: boolean;                     // the CLI probe and behaviour snapshot apply
 }
+
+function linkNodeModules(from: string, workDir: string): void {
+  symlinkSync(join(from, "node_modules"), join(workDir, "node_modules"), "dir");
+}
+
+/**
+ * A real node_modules folder per run whose entries link into the shared install. Tools that write caches into
+ * node_modules then write into the run's own folder: Angular's vitest runner keeps a transform cache in
+ * node_modules/.vitest-cache, and with a shared (symlinked) folder it served code compiled in an earlier run
+ * (caught by the watchlist self-test) and wrote into the user's own repo.
+ */
+function isolateNodeModules(from: string, workDir: string): void {
+  const shared = join(from, "node_modules");
+  const own = join(workDir, "node_modules");
+  mkdirSync(own);
+  for (const entry of readdirSync(shared)) {
+    if ([".vitest-cache", ".vite", ".cache"].includes(entry)) continue;
+    symlinkSync(join(shared, entry), join(own, entry));
+  }
+}
+
+const TARGETS: Record<Target["name"], Target> = {
+  todo: {
+    name: "todo",
+    description: "a todo CLI",
+    prepare(runDir) {
+      const workDir = join(runDir, "work");
+      cpSync(SEED, workDir, {
+        recursive: true,
+        filter: (src) => !["node_modules", ".manifest", "units.json"].includes(basename(src)),
+      });
+      linkNodeModules(SEED, workDir);
+      return workDir;
+    },
+    srcRoot: "src",
+    unitExts: [".ts"],
+    testSuffix: ".test.ts",
+    nonUnits: new Set(["cli"]),
+    manifestTsc: ["-p", ".", "--noEmit", "false", "--declaration", "--emitDeclarationOnly", "--rootDir", ".", "--outDir", ".manifest"],
+    manifestRoot: ".manifest/src",
+    typecheck: [["--noEmit", "--pretty", "false"]],
+    testArgs: (out) => ({ bin: "vitest", args: ["run", "--reporter=json", `--outputFile=${out}`] }),
+    acceptanceDir: "tests/acceptance",
+    acceptanceHint: 'It lives at tests/acceptance/<unit>.test.ts, so import the unit from "../../src/<unit>" and import describe/it/expect from "vitest" (there are no globals).',
+    editable: /^(src|tests)\/[\w./-]+\.ts$/,
+    hasCli: true,
+  },
+  watchlist: {
+    name: "watchlist",
+    description: "an Angular movie watchlist app",
+    prepare(runDir) {
+      // A clean clone at a pinned commit, so ignored local files (e.g. a real API key) never enter a run.
+      const workDir = join(runDir, "work");
+      const clone = (...a: string[]) => spawnSync("git", a, { encoding: "utf8" });
+      clone("clone", "-q", WATCHLIST_REPO, workDir);
+      clone("-C", workDir, "checkout", "-q", WATCHLIST_COMMIT);
+      rmSync(join(workDir, ".git"), { recursive: true, force: true });
+      // The test build swaps in the git-ignored environment.development.ts; give it the tracked placeholder.
+      cpSync(join(workDir, "src/environments/environment.ts"), join(workDir, "src/environments/environment.development.ts"));
+      isolateNodeModules(WATCHLIST_REPO, workDir);
+      return workDir;
+    },
+    srcRoot: "src/app",
+    unitExts: [".ts", ".html", ".scss"],
+    testSuffix: ".spec.ts",
+    nonUnits: new Set(),
+    manifestTsc: ["-p", "tsconfig.app.json", "--noEmit", "false", "--declaration", "--emitDeclarationOnly", "--rootDir", "src", "--outDir", ".manifest"],
+    manifestRoot: ".manifest/app",
+    typecheck: [["-p", "tsconfig.app.json", "--noEmit", "--pretty", "false"], ["-p", "tsconfig.spec.json", "--noEmit", "--pretty", "false"]],
+    testArgs: (out) => ({ bin: "ng", args: ["test", "--watch=false", "--reporters=json", `--output-file=${out}`] }),
+    acceptanceDir: "src/acceptance",
+    acceptanceHint: 'It lives at src/acceptance/<unit>.spec.ts, so import units from "../app/..." (e.g. "../app/watchlist-store"). Tests run under Angular\'s vitest runner with jsdom; describe/it/expect are globals, and components need TestBed.',
+    editable: /^src\/(app|acceptance)\/[\w./-]+\.(ts|html|scss)$/,
+    hasCli: false,
+  },
+};
+
+let target: Target = TARGETS.todo; // set from --target before a run starts
 
 interface Unit {
   name: string;
-  path: string;
-  testPath: string;
+  path: string;      // the unit's main .ts file
+  testPath: string;  // its sibling test file (may not exist yet)
+  files: string[];   // every file the owner may edit: path, siblings with unitExts, testPath
   purpose: string;
   exports: string;
   imports: string[];
 }
 
+function walk(dir: string): string[] {
+  return existsSync(dir)
+    ? readdirSync(dir, { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? walk(join(dir, d.name)) : [join(dir, d.name)]))
+    : [];
+}
+
+/** Every unit file under srcRoot, repo-relative (tests included). */
+function sourceFiles(workDir: string): string[] {
+  return walk(join(workDir, target.srcRoot))
+    .map((f) => relative(workDir, f))
+    .filter((f) => target.unitExts.includes(extname(f)))
+    .sort();
+}
+
 function buildManifest(workDir: string): Unit[] {
   rmSync(join(workDir, ".manifest"), { recursive: true, force: true });
   // Emits even when the code has type errors; the oracle reports those separately.
-  spawnSync(join(workDir, "node_modules/.bin/tsc"),
-    ["-p", ".", "--noEmit", "false", "--declaration", "--emitDeclarationOnly", "--rootDir", ".", "--outDir", ".manifest"],
-    { cwd: workDir, encoding: "utf8" });
-  const units = readdirSync(join(workDir, "src"))
-    .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts") && !NON_UNITS.has(basename(f, ".ts")))
-    .sort()
-    .map((f): Unit => {
-      const name = basename(f, ".ts");
-      const source = readFileSync(join(workDir, "src", f), "utf8");
-      const dts = join(workDir, ".manifest/src", `${name}.d.ts`);
-      return {
-        name,
-        path: `src/${name}.ts`,
-        testPath: `src/${name}.test.ts`,
-        purpose: source.match(/@purpose\s+(.+?)\s*\*\//)?.[1] ?? "(no @purpose comment)",
-        exports: existsSync(dts) ? readFileSync(dts, "utf8").trim() : "(declaration emit failed)",
-        imports: [...source.matchAll(/from\s+["']\.\/(\w+)["']/g)].map((m) => m[1]),
-      };
-    });
+  spawnSync(join(workDir, "node_modules/.bin/tsc"), target.manifestTsc, { cwd: workDir, encoding: "utf8" });
+  const files = sourceFiles(workDir);
+  const mains = files.filter((f) => f.endsWith(".ts") && !f.endsWith(target.testSuffix) && !target.nonUnits.has(basename(f, ".ts")));
+  const stemOf = (f: string) => basename(f).replace(/(\.spec|\.test)?\.(ts|html|scss)$/, "");
+  const names = new Set(mains.map(stemOf));
+  const units = mains.map((path): Unit => {
+    const name = stemOf(path);
+    const dir = dirname(path);
+    const source = readFileSync(join(workDir, path), "utf8");
+    const dts = join(workDir, target.manifestRoot, relative(target.srcRoot, dir), `${name}.d.ts`);
+    const testPath = join(dir, `${name}${target.testSuffix}`);
+    const siblings = target.unitExts.map((ext) => join(dir, name + ext)).filter((f) => files.includes(f));
+    return {
+      name, path, testPath,
+      files: [...new Set([...siblings, testPath])],
+      purpose: source.match(/@purpose\s+(.+?)\s*\*\//)?.[1] ?? source.match(/^\s*\/\*\*\s*([^*]+?)\s*\*\//)?.[1] ?? "",
+      exports: existsSync(dts) ? readFileSync(dts, "utf8").trim() : "(declaration emit failed)",
+      imports: [...new Set([...source.matchAll(/from\s+["'](\.{1,2}\/[^"']+)["']/g)]
+        .map((m) => basename(m[1])).filter((n) => names.has(n) && n !== name))],
+    };
+  }).sort((a, b) => a.name.localeCompare(b.name));
   writeFileSync(join(workDir, "units.json"), JSON.stringify(units, null, 2) + "\n");
   return units;
 }
+
+const readOr = (path: string, fallback = "") => (existsSync(path) ? readFileSync(path, "utf8") : fallback);
 
 // ---------- model access ----------
 
 const PRICE_PER_MTOK = { input: 4, output: 20 }; // claude-opus-5-5
 
-function ollamaBaseURL(): string {
-  const url = process.env.OLLAMA_BASE_URL;
-  if (!url) throw new Error("--provider ollama needs OLLAMA_BASE_URL (set it in keys.txt or the environment)");
-  return url;
+function env(name: string, provider: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`--provider ${provider} needs ${name} (set it in keys.txt or the environment)`);
+  return value;
 }
+
+// Output cap per call. The local Ollama server runs a 16k context, which output also counts against.
+const MAX_OUTPUT: Record<Config["provider"], number> = { anthropic: 32000, ollama: 4000, "ollama-cloud": 16000 };
 
 const clients = new Map<string, Anthropic>();
 function client(cfg: Config): Anthropic {
   if (!clients.has(cfg.provider)) {
-    clients.set(cfg.provider, cfg.provider === "ollama"
-      ? new Anthropic({ baseURL: ollamaBaseURL(), apiKey: "ollama", timeout: 15 * 60_000 })
+    clients.set(cfg.provider,
+      cfg.provider === "ollama" ? new Anthropic({ baseURL: env("OLLAMA_BASE_URL", "ollama"), apiKey: "ollama", timeout: 15 * 60_000 })
+      // Ollama's cloud accepts the key only as a bearer token; an x-api-key header is rejected.
+      : cfg.provider === "ollama-cloud" ? new Anthropic({
+          baseURL: env("OLLAMA_API_URL", "ollama-cloud"), apiKey: null, authToken: env("OLLAMA_API_KEY", "ollama-cloud"),
+          timeout: 15 * 60_000,
+        })
       : new Anthropic());
   }
   return clients.get(cfg.provider)!;
 }
 
+/** Frees the local GPU: the user asked for the model to be unloaded after every run. */
+async function unloadLocalModel(cfg: Config): Promise<void> {
+  if (cfg.provider !== "ollama") return;
+  try {
+    await fetch(`${env("OLLAMA_BASE_URL", "ollama")}/api/generate`, {
+      method: "POST", body: JSON.stringify({ model: cfg.model, prompt: "", keep_alive: 0 }),
+    });
+  } catch (e) {
+    console.error(`could not unload ${cfg.model}: ${(e as Error).message}`);
+  }
+}
+
+// ---------- token budget ----------
+// The Anthropic API has no context-window setting, and Ollama's num_ctx silently drops the start of oversized
+// prompts. So the harness enforces the window itself, identically for every agent and every setup.
+
+class OverBudget extends Error {}
+
+/** Conservative token estimate (about 3.5 characters per token). */
+function estimateTokens(system: string, messages: Msg[], tools: Tool[]): number {
+  return Math.ceil((system.length + JSON.stringify(messages).length + JSON.stringify(tools).length) / 3.5);
+}
+
 async function callModel(cfg: Config, system: string, messages: Msg[], tools: Tool[]): Promise<Anthropic.Beta.BetaMessage> {
-  const base = { model: cfg.model, max_tokens: 32000, system, messages, tools, tool_choice: { type: "auto" as const } };
+  const estimate = estimateTokens(system, messages, tools);
+  cfg.budgetStats.maxEstimate = Math.max(cfg.budgetStats.maxEstimate, estimate);
+  if (cfg.budget && estimate > cfg.budget) {
+    cfg.budgetStats.overBudget++;
+    throw new OverBudget(`prompt of ~${estimate} tokens exceeds the ${cfg.budget}-token budget`);
+  }
+  const base = { model: cfg.model, max_tokens: MAX_OUTPUT[cfg.provider], system, messages, tools, tool_choice: { type: "auto" as const } };
   const stream = cfg.provider === "anthropic"
     ? client(cfg).beta.messages.stream({
         ...base,
@@ -130,6 +281,8 @@ async function callModel(cfg: Config, system: string, messages: Msg[], tools: To
   const res = await stream.finalMessage();
 
   const input = res.usage.input_tokens + (res.usage.cache_read_input_tokens ?? 0) + (res.usage.cache_creation_input_tokens ?? 0);
+  cfg.budgetStats.maxPromptTokens = Math.max(cfg.budgetStats.maxPromptTokens, input);
+  if (cfg.budget && input > cfg.budget) cfg.budgetStats.violations++; // the estimate undercounted
   cfg.cost.inputTokens += input;
   cfg.cost.outputTokens += res.usage.output_tokens;
   if (cfg.provider === "anthropic") {
@@ -208,10 +361,10 @@ const DECISION_TOOL: Tool = {
   },
 };
 
-const GOVERNOR_SYSTEM = `You are the governor of a small TypeScript codebase. You never see source code, and you must not ask for it.
+const governorSystem = () => `You are the governor of a small TypeScript codebase (${target.description}). You never see source code, and you must not ask for it.
 Your entire view of the system is: the human's request, a manifest of units (name, purpose, exported TypeScript declarations, imports), and the raw output of the oracle (tsc --noEmit and vitest) from the previous round.
 
-Each unit has one owner agent that can edit only that unit's source file and its sibling test file. Owners see their own files, the declarations of the units they import, and your instruction - nothing else. Owners of different units run in parallel and cannot talk to each other, so any cross-unit agreement must be stated explicitly as an interfaceChange.
+Each unit has one owner agent that can edit only that unit's own files (listed in the manifest) and its sibling test file. Owners see their own files, the declarations of the units they import, and your instruction - nothing else. Owners of different units run in parallel and cannot talk to each other, so any cross-unit agreement must be stated explicitly as an interfaceChange.
 
 Each round, call submit_decision exactly once with one of:
 - action "plan": steps targeting only the units that need to change. When an interface changes, give the exact new declarations in interfaceChange for the unit that exports it, and tell importing units what they will receive. After a failed round, target only the units implicated by the errors.
@@ -220,7 +373,7 @@ Each round, call submit_decision exactly once with one of:
 
 Existing tests are the specification of current behaviour. Owners may add tests freely, but may not change or remove an existing test. When an owner needs to, its whole submission is rejected and you receive the request (test title, change kind, owner's reason) under "Previous rounds". To allow it, list the exact title in approveTestChanges and instruct that owner again; approving means you accept that the previously specified behaviour changes, so approve only what the request actually calls for. Otherwise, instruct the owner to achieve the request without that change.
 
-acceptanceTest (optional) is a complete vitest file that tests a unit through its exports. It lives at tests/acceptance/<unit>.test.ts, so import the unit from "../../src/<unit>" and import describe/it/expect from "vitest" (there are no globals). It replaces any earlier acceptance test for that unit. Use it to pin down the behaviour you asked for. Your acceptance tests currently in place are shown to you each turn; to delete one, list its unit in retractAcceptanceTests.`;
+acceptanceTest (optional) is a complete vitest file that tests a unit through its exports. ${target.acceptanceHint} It replaces any earlier acceptance test for that unit. Use it to pin down the behaviour you asked for. Your acceptance tests currently in place are shown to you each turn; to delete one, list its unit in retractAcceptanceTests.`;
 
 const BEHAVIOUR_SYSTEM = `
 
@@ -230,9 +383,9 @@ async function runGovernor(
   cfg: Config, request: string, clarifications: string[], units: Unit[], oracle: OracleResult | null, history: string[],
   knownTests: Set<string>, behaviour: { start: string; now: string } | null,
 ): Promise<Decision> {
-  const system = GOVERNOR_SYSTEM + (behaviour ? BEHAVIOUR_SYSTEM : "");
+  const system = governorSystem() + (behaviour ? BEHAVIOUR_SYSTEM : "");
   const manifest = units.map((u) =>
-    `## unit: ${u.name} (${u.path}, tests in ${u.testPath})\npurpose: ${u.purpose}\nimports: ${u.imports.join(", ") || "(none)"}\n\`\`\`ts\n${u.exports}\n\`\`\``,
+    `## unit: ${u.name} (files: ${u.files.filter((f) => f !== u.testPath).join(", ")}; tests in ${u.testPath})\npurpose: ${u.purpose || "(none given)"}\nimports: ${u.imports.join(", ") || "(none)"}\n\`\`\`ts\n${u.exports}\n\`\`\``,
   ).join("\n\n");
   const prompt = [
     `# Request\n${request}`,
@@ -241,7 +394,7 @@ async function runGovernor(
     ...(behaviour ? [`# Observed behaviour\n${formatBehaviour(behaviour.start, behaviour.now)}`] : []),
     `# Your acceptance tests in place\n${acceptanceTestsText(cfg.workDir)}`,
     `# Previous rounds\n${history.length ? history.join("\n\n") : "(none - this is the first round)"}`,
-    `# Last oracle result\n${oracle ? formatOracle(oracle) : "(not run yet - the seed repo is green)"}`,
+    `# Last oracle result\n${oracle ? formatOracle(oracle) : "(not run yet - the starting repo is green)"}`,
   ].join("\n\n");
 
   const leaks = findLeaks(cfg.workDir, units, system + prompt, acceptanceTestsText(cfg.workDir));
@@ -286,29 +439,33 @@ function validateDecision(input: unknown, units: Unit[], knownTests: Set<string>
 
 // ---------- owner ----------
 
-const READ_TOOL: Tool = {
+const ownerTools = (unit: Unit): Tool[] => [{
   name: "read_own_file",
-  description: "Read the current contents of your own source or test file.",
+  description: "Read the current contents of one of your own files.",
   strict: true,
   input_schema: {
     type: "object",
     additionalProperties: false,
-    required: ["which"],
-    properties: { which: { type: "string", enum: ["source", "test"] } },
+    required: ["path"],
+    properties: { path: { type: "string", enum: unit.files } },
   },
-};
-
-const SUBMIT_TOOL: Tool = {
+}, {
   name: "submit_files",
-  description: "Submit the complete new contents of your files. Call exactly once, when done.",
+  description: "Submit the complete new contents of the files you changed. Call exactly once, when done.",
   strict: true,
   input_schema: {
     type: "object",
     additionalProperties: false,
-    required: ["source", "test", "testChangeReasons"],
+    required: ["files", "testChangeReasons"],
     properties: {
-      source: { type: "string", description: "Full new contents of your source file." },
-      test: { type: "string", description: "Full new contents of your test file, or empty string to leave it unchanged." },
+      files: {
+        type: "array",
+        description: "Every file you changed, with its full new contents. Leave out files you did not change.",
+        items: {
+          type: "object", additionalProperties: false, required: ["path", "content"],
+          properties: { path: { type: "string", enum: unit.files }, content: { type: "string" } },
+        },
+      },
       testChangeReasons: {
         type: "array",
         description: "One entry per existing test you changed or removed without approval. Empty if none.",
@@ -321,14 +478,14 @@ const SUBMIT_TOOL: Tool = {
       },
     },
   },
-};
+}];
 
-const OWNER_SYSTEM = `You own exactly one unit of a TypeScript codebase: one source file and its sibling vitest test file. You cannot see or edit any other file.
+const ownerSystem = () => `You own exactly one unit of a TypeScript codebase (${target.description}): its own files and its sibling vitest test file. You cannot see or edit any other file.
 You are given your files, the exported declarations of the units you import, and an instruction from the governor.
 Make the change the instruction asks for and keep your exports compatible with what the governor specified.
 You may add new tests. You may not change or remove an existing test unless it is listed as approved. If the instruction cannot be met without such a change, make it anyway and explain it in testChangeReasons: the harness will reject your submission and send the request to the governor for a decision.
 If an interfaceChange is given, your exports must match it exactly. Do not change exports otherwise.
-When done, call submit_files once with the full contents of both files (test may be "" if unchanged). Do not explain the code at length.`;
+When done, call submit_files once with the full contents of every file you changed. Do not explain the code at length.`;
 
 interface OwnerResult {
   unit: string;
@@ -339,14 +496,13 @@ interface OwnerResult {
 }
 
 async function runOwner(cfg: Config, unit: Unit, units: Unit[], steps: Step[], protectedTests: string[], approved: Set<string>): Promise<OwnerResult> {
-  const read = (p: string) => readFileSync(join(cfg.workDir, p), "utf8");
+  const read = (p: string) => readOr(join(cfg.workDir, p), "");
   const imported = units
     .filter((u) => unit.imports.includes(u.name))
     .map((u) => `// ${u.path}\n${u.exports}`).join("\n\n");
   const prompt = [
     `# Your unit: ${unit.name}`,
-    `## ${unit.path}\n\`\`\`ts\n${read(unit.path)}\n\`\`\``,
-    `## ${unit.testPath}\n\`\`\`ts\n${read(unit.testPath)}\n\`\`\``,
+    ...unit.files.map((f) => `## ${f}\n\`\`\`${extname(f).slice(1)}\n${existsSync(join(cfg.workDir, f)) ? read(f) : "(does not exist yet; you may create it)"}\n\`\`\``),
     `## Declarations of units you import\n\`\`\`ts\n${imported || "// (none)"}\n\`\`\``,
     `## Existing tests in your test file\n${protectedTests.map((t) => `- ${JSON.stringify(t)}${approved.has(t) ? " (approved: you may change or remove it)" : ""}`).join("\n") || "(none)"}`,
     ...steps.map((s, i) =>
@@ -357,18 +513,17 @@ async function runOwner(cfg: Config, unit: Unit, units: Unit[], steps: Step[], p
 
   const messages: Msg[] = [{ role: "user", content: prompt }];
   for (let turn = 0; turn < MAX_OWNER_TURNS; turn++) {
-    const res = await callModel(cfg, OWNER_SYSTEM, messages, [READ_TOOL, SUBMIT_TOOL]);
+    const res = await callModel(cfg, ownerSystem(), messages, ownerTools(unit));
     log(cfg, "owner_output", { unit: unit.name, turn, content: res.content });
     const calls = toolUses(res);
     const submit = calls.find((c) => c.name === "submit_files");
     if (submit) {
       const input = z.object({
-        source: z.string().min(1), test: z.string(),
+        files: z.array(z.object({ path: z.string(), content: z.string().min(1) })),
         testChangeReasons: z.array(z.object({ title: z.string(), reason: z.string() })),
       }).safeParse(submit.input);
       if (!input.success) return { unit: unit.name, ok: false, files: {}, note: `bad submit_files input: ${input.error.message}` };
-      const files: Record<string, string> = { [unit.path]: input.data.source };
-      if (input.data.test) files[unit.testPath] = input.data.test;
+      const files = Object.fromEntries(input.data.files.map((f) => [f.path, f.content]));
       const testChangeReasons = Object.fromEntries(input.data.testChangeReasons.map((r) => [r.title, r.reason]));
       return { unit: unit.name, ok: true, files, note: textOf(res), testChangeReasons };
     }
@@ -381,11 +536,11 @@ async function runOwner(cfg: Config, unit: Unit, units: Unit[], steps: Step[], p
     messages.push({
       role: "user",
       content: calls.map((c): Anthropic.Beta.BetaToolResultBlockParam => {
-        const which = (c.input as { which?: string }).which;
-        if (c.name !== "read_own_file" || (which !== "source" && which !== "test")) {
-          return { type: "tool_result", tool_use_id: c.id, is_error: true, content: `Unknown tool call ${c.name}` };
+        const path = (c.input as { path?: string }).path ?? "";
+        if (c.name !== "read_own_file" || !unit.files.includes(path)) {
+          return { type: "tool_result", tool_use_id: c.id, is_error: true, content: `Unknown tool call ${c.name} or not your file: ${path}` };
         }
-        return { type: "tool_result", tool_use_id: c.id, content: read(which === "source" ? unit.path : unit.testPath) };
+        return { type: "tool_result", tool_use_id: c.id, content: existsSync(join(cfg.workDir, path)) ? read(path) : "(does not exist yet)" };
       }),
     });
   }
@@ -397,7 +552,7 @@ async function runOwner(cfg: Config, unit: Unit, units: Unit[], steps: Step[], p
 /** Writes an owner's files; rejects any path outside that owner's unit. Returns diffs. */
 function applyChanges(cfg: Config, units: Unit[], result: OwnerResult): { diffs: string[]; rejected: string[] } {
   const unit = units.find((u) => u.name === result.unit)!;
-  const allowed = new Set([unit.path, unit.testPath]);
+  const allowed = new Set(unit.files);
   const diffs: string[] = [];
   const rejected: string[] = [];
   for (const [path, contents] of Object.entries(result.files)) {
@@ -407,8 +562,9 @@ function applyChanges(cfg: Config, units: Unit[], result: OwnerResult): { diffs:
       continue;
     }
     const abs = join(cfg.workDir, path);
-    const before = existsSync(abs) ? readFileSync(abs, "utf8") : "";
+    const before = readOr(abs);
     const after = contents.endsWith("\n") ? contents : contents + "\n";
+    mkdirSync(dirname(abs), { recursive: true });
     writeFileSync(abs, after);
     const diff = createTwoFilesPatch(`a/${path}`, `b/${path}`, before, after);
     diffs.push(diff);
@@ -418,14 +574,14 @@ function applyChanges(cfg: Config, units: Unit[], result: OwnerResult): { diffs:
 }
 
 function acceptanceTestsText(workDir: string): string {
-  const dir = join(workDir, "tests/acceptance");
-  const files = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".test.ts")).sort() : [];
-  return files.map((f) => `## tests/acceptance/${f}\n\`\`\`ts\n${readFileSync(join(dir, f), "utf8").trim()}\n\`\`\``).join("\n\n") || "(none)";
+  const dir = join(workDir, target.acceptanceDir);
+  const files = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(target.testSuffix)).sort() : [];
+  return files.map((f) => `## ${target.acceptanceDir}/${f}\n\`\`\`ts\n${readFileSync(join(dir, f), "utf8").trim()}\n\`\`\``).join("\n\n") || "(none)";
 }
 
 function retractAcceptanceTests(cfg: Config, units: string[]): void {
   for (const unit of units) {
-    const path = join(cfg.workDir, "tests/acceptance", `${unit}.test.ts`);
+    const path = join(cfg.workDir, target.acceptanceDir, `${unit}${target.testSuffix}`);
     if (!existsSync(path)) continue;
     rmSync(path);
     log(cfg, "acceptance_test_retracted", { unit, path });
@@ -434,7 +590,7 @@ function retractAcceptanceTests(cfg: Config, units: string[]): void {
 
 function writeAcceptanceTests(cfg: Config, steps: Step[]): void {
   for (const s of steps.filter((s) => s.acceptanceTest.trim())) {
-    const path = join(cfg.workDir, "tests/acceptance", `${s.unit}.test.ts`);
+    const path = join(cfg.workDir, target.acceptanceDir, `${s.unit}${target.testSuffix}`);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, s.acceptanceTest);
     log(cfg, "acceptance_test", { unit: s.unit, path, source: s.acceptanceTest });
@@ -555,13 +711,32 @@ interface OracleResult {
   vitest: { exitCode: number; failures: string };
 }
 
-function runOracle(workDir: string): OracleResult {
+/**
+ * Angular's vitest runner caches compiled modules (node_modules/.vitest-cache) and serves them after the source
+ * changed, so a later test run tests earlier code (caught by the watchlist self-test). Clear it before every run.
+ */
+function clearTestCaches(workDir: string): void {
+  for (const dir of [".angular", "node_modules/.vitest-cache"]) {
+    const abs = join(workDir, dir);
+    // Never follow a symlinked node_modules into a shared install (the todo target links seed/node_modules).
+    if (dir.startsWith("node_modules/") && lstatSync(join(workDir, "node_modules"), { throwIfNoEntry: false })?.isSymbolicLink() !== false) continue;
+    rmSync(abs, { recursive: true, force: true });
+  }
+}
+
+function runOracle(workDir: string, testArgs = target.testArgs): OracleResult {
   const bin = (name: string) => join(workDir, "node_modules/.bin", name);
-  const tsc = spawnSync(bin("tsc"), ["--noEmit", "--pretty", "false"], { cwd: workDir, encoding: "utf8" });
+  const checks = target.typecheck.map((a) => spawnSync(bin("tsc"), a, { cwd: workDir, encoding: "utf8" }));
+  const tsc = {
+    status: checks.every((c) => c.status === 0) ? 0 : (checks.find((c) => c.status !== 0)?.status ?? 1),
+    stdout: checks.map((c) => c.stdout).join(""), stderr: checks.map((c) => c.stderr).join(""),
+  };
   // JSON reporter: the default reporter prints source code frames, which would leak code to the governor.
   const out = join(workDir, ".oracle-vitest.json");
   rmSync(out, { force: true });
-  const vitest = spawnSync(bin("vitest"), ["run", "--reporter=json", `--outputFile=${out}`], { cwd: workDir, encoding: "utf8" });
+  clearTestCaches(workDir);
+  const run = testArgs(out);
+  const vitest = spawnSync(bin(run.bin), run.args, { cwd: workDir, encoding: "utf8", env: { ...process.env, NG_CLI_ANALYTICS: "false" } });
   let failures = "";
   if (existsSync(out)) {
     const report = JSON.parse(readFileSync(out, "utf8")) as {
@@ -579,7 +754,9 @@ function runOracle(workDir: string): OracleResult {
     }
     failures = lines.join("\n");
   } else {
-    failures = `vitest produced no report.\n${vitest.stdout}\n${vitest.stderr}`;
+    // No report usually means the test build failed. Keep only error lines: full output can quote source.
+    const errors = (vitest.stdout + vitest.stderr).split("\n").filter((l) => /error|cannot|not found/i.test(l) && !/^\s+at /.test(l));
+    failures = `test run produced no report (build failed?).\n${errors.slice(0, 30).join("\n")}`;
   }
   return {
     pass: tsc.status === 0 && vitest.status === 0,
@@ -600,7 +777,7 @@ function formatOracle(o: OracleResult): string {
  */
 function findLeaks(workDir: string, units: Unit[], governorText: string, governorAuthored = ""): string[] {
   const manifestText = units.map((u) => u.exports).join("\n") + "\n" + governorAuthored;
-  const files = readdirSync(join(workDir, "src")).map((f) => join(workDir, "src", f));
+  const files = sourceFiles(workDir).map((f) => join(workDir, f));
   const lines = new Set(files.flatMap((f) => readFileSync(f, "utf8").split("\n").map((l) => l.trim())));
   return [...lines].filter((l) => l.length >= 25 && !manifestText.includes(l) && governorText.includes(l));
 }
@@ -609,9 +786,9 @@ function findLeaks(workDir: string, units: Unit[], governorText: string, governo
 // One agent, one continuous conversation, the whole repo in view, the same oracle, round cap and actions as the
 // governor. There is no second party to approve test changes, so they are recorded (same detector), not blocked.
 
-const SINGLE_SYSTEM = `You are a coding agent working alone on a small TypeScript codebase (a todo CLI). You can see and edit every file under src/ and tests/.
+const singleSystem = () => `You are a coding agent working alone on a small TypeScript codebase (${target.description}). You can see and edit every source file (paths matching ${target.editable.source}).
 Each round, make your changes and call submit once. The harness writes your files, runs the oracle (tsc --noEmit and vitest), and returns its raw output to you.
-- action "edit": in files, give the full new contents of every file you change (paths relative to the repo root, under src/ or tests/; empty content deletes a file under tests/).
+- action "edit": in files, give the full new contents of every file you change (paths relative to the repo root; empty content deletes a file under ${target.acceptanceDir}/).
 - action "accept": only when the oracle output is green and the request is satisfied.
 - action "ask": when the request is too ambiguous to implement and test; put the question in "question".
 Existing tests are the specification of current behaviour. If you change or remove an existing test, say why in testChangeReasons; change only what the request actually calls for.
@@ -628,7 +805,7 @@ const SINGLE_FRAMES: Record<string, string> = {
 const SINGLE_TOOLS: Tool[] = [
   {
     name: "read_file",
-    description: "Read the current contents of a file under src/ or tests/.",
+    description: "Read the current contents of a source file.",
     strict: true,
     input_schema: { type: "object", additionalProperties: false, required: ["path"], properties: { path: { type: "string" } } },
   },
@@ -679,34 +856,80 @@ interface SingleResult {
   testChanges: (TestChange & { round: number })[];
 }
 
+/** Everything the single agent may edit: unit files (todo's cli.ts included) and acceptance tests. */
+function repoFiles(workDir: string): string[] {
+  const acc = walk(join(workDir, target.acceptanceDir)).map((f) => relative(workDir, f));
+  return [...sourceFiles(workDir), ...acc].filter((f) => target.editable.test(f)).sort();
+}
+
 function repoText(workDir: string): string {
-  const files = ["src", "tests/acceptance"].flatMap((d) => {
-    const dir = join(workDir, d);
-    return existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".ts")).sort().map((f) => `${d}/${f}`) : [];
-  });
-  return files.map((f) => `## ${f}\n\`\`\`ts\n${readFileSync(join(workDir, f), "utf8").trimEnd()}\n\`\`\``).join("\n\n");
+  return repoFiles(workDir)
+    .map((f) => `## ${f}\n\`\`\`${extname(f).slice(1)}\n${readFileSync(join(workDir, f), "utf8").trimEnd()}\n\`\`\``).join("\n\n");
+}
+
+function repoListing(workDir: string): string {
+  return repoFiles(workDir).map((f) => {
+    const text = readFileSync(join(workDir, f), "utf8");
+    return `- ${f} (${text.split("\n").length} lines, ~${Math.ceil(text.length / 3.5)} tokens)`;
+  }).join("\n");
+}
+
+const DROPPED = "[dropped to fit the context budget; read the file again if you need it]";
+
+/** Under a budget, replaces the oldest read_file results with a placeholder until the conversation fits. */
+function compact(cfg: Config, system: string, messages: Msg[], tools: Tool[], readIds: Set<string>): number {
+  let dropped = 0;
+  for (const m of messages) {
+    if (!cfg.budget || estimateTokens(system, messages, tools) <= cfg.budget * 0.9) break;
+    if (m.role !== "user" || typeof m.content === "string") continue;
+    for (const b of m.content) {
+      if (b.type === "tool_result" && readIds.has(b.tool_use_id) && b.content !== DROPPED) {
+        b.content = DROPPED;
+        dropped++;
+        if (estimateTokens(system, messages, tools) <= cfg.budget * 0.9) break;
+      }
+    }
+  }
+  return dropped;
 }
 
 async function runSingle(
   cfg: Config, request: string, history: string[], startOracle: OracleResult | null,
-  baselineTests: Map<string, Map<string, string>>, frame?: string,
+  baselineTests: Map<string, Map<string, string>>, units: Unit[], frame?: string,
 ): Promise<SingleResult> {
-  const system = SINGLE_SYSTEM + (frame ? SINGLE_FRAMES[frame] : "");
-  const prompt = [
+  const system = singleSystem() + (frame ? SINGLE_FRAMES[frame] : "");
+  const build = (repo: string) => [
     `# Request\n${request}`,
     ...(history.length ? [`# Earlier in this session\n${history.join("\n\n")}`] : []),
-    `# Repository\n${repoText(cfg.workDir)}`,
+    repo,
     `# Oracle\n${startOracle ? formatOracle(startOracle) : "(not run yet - the repo is green)"}`,
   ].join("\n\n");
-  log(cfg, "single_input", { system, prompt, frame });
+  let prompt = build(`# Repository\n${repoText(cfg.workDir)}`);
+  // Under a budget the whole repo may not fit next to a working conversation: then start from a file list.
+  const listed = !!cfg.budget && estimateTokens(system, [{ role: "user", content: prompt }], SINGLE_TOOLS) > cfg.budget * 0.6;
+  if (listed) {
+    prompt = build(`# Repository\nThe repository is too large to show at once within your context budget. Read files with read_file.\n${repoListing(cfg.workDir)}`);
+  }
+  log(cfg, "single_input", { system, prompt, frame, listed });
 
   const result: SingleResult = { status: "turn_limit", rounds: 0, oracle: startOracle, touched: [], testChanges: [] };
   const seen = new Set<string>();
   const messages: Msg[] = [{ role: "user", content: prompt }];
-  const pathOk = (p: string) => /^(src|tests)\/[\w./-]+\.ts$/.test(p) && !p.includes("..");
+  const pathOk = (p: string) => target.editable.test(p) && !p.includes("..");
+  const readIds = new Set<string>();
+  let dropped = 0;
 
   for (let call = 0; call < 40; call++) {
-    const res = await callModel(cfg, system, messages, SINGLE_TOOLS);
+    dropped += compact(cfg, system, messages, SINGLE_TOOLS, readIds);
+    let res: Anthropic.Beta.BetaMessage;
+    try {
+      res = await callModel(cfg, system, messages, SINGLE_TOOLS);
+    } catch (e) {
+      if (!(e instanceof OverBudget)) throw e;
+      result.status = "over_budget";
+      log(cfg, "single_over_budget", { call, error: e.message, dropped });
+      break;
+    }
     log(cfg, "single_output", { call, content: res.content });
     messages.push({ role: "assistant", content: res.content });
     const calls = toolUses(res);
@@ -716,11 +939,12 @@ async function runSingle(
     let stop = false;
     for (const c of calls) {
       if (c.name === "read_file") {
+        readIds.add(c.id);
         const path = (c.input as { path?: string }).path ?? "";
         const abs = join(cfg.workDir, path);
         results.push(pathOk(path) && existsSync(abs)
           ? { type: "tool_result", tool_use_id: c.id, content: readFileSync(abs, "utf8") }
-          : { type: "tool_result", tool_use_id: c.id, is_error: true, content: `No such file under src/ or tests/: ${path}` });
+          : { type: "tool_result", tool_use_id: c.id, is_error: true, content: `No such source file: ${path}` });
         continue;
       }
       const parsed = SubmitSchema.safeParse(c.input);
@@ -737,7 +961,7 @@ async function runSingle(
         continue;
       }
       if (result.rounds >= MAX_ROUNDS) { result.status = "cap_hit"; stop = true; break; }
-      const bad = d.files.filter((f) => !pathOk(f.path) || (f.content === "" && !f.path.startsWith("tests/")));
+      const bad = d.files.filter((f) => !pathOk(f.path) || (f.content === "" && !f.path.startsWith(`${target.acceptanceDir}/`)));
       if (bad.length) {
         results.push({ type: "tool_result", tool_use_id: c.id, is_error: true, content: `Rejected, nothing applied: invalid path(s) ${bad.map((f) => f.path).join(", ")}` });
         continue;
@@ -745,7 +969,8 @@ async function runSingle(
       result.rounds++;
       const reasons = Object.fromEntries(d.testChangeReasons.map((r) => [r.title, r.reason]));
       for (const [unit, base] of baselineTests) {
-        const f = d.files.find((x) => x.path === `src/${unit}.test.ts`);
+        const testPath = units.find((u) => u.name === unit)?.testPath;
+        const f = d.files.find((x) => x.path === testPath);
         if (!f) continue;
         for (const change of unapprovedTestChanges(unit, base, f.content, seen, reasons)) {
           seen.add(change.title);
@@ -758,9 +983,9 @@ async function runSingle(
         if (f.content === "") rmSync(abs, { force: true });
         else { mkdirSync(dirname(abs), { recursive: true }); writeFileSync(abs, f.content.endsWith("\n") ? f.content : f.content + "\n"); }
         log(cfg, "diff", { unit: "single", path: f.path, diff: createTwoFilesPatch(`a/${f.path}`, `b/${f.path}`, before, f.content) });
-        if (f.path.startsWith("tests/acceptance/") && f.content) log(cfg, "acceptance_test", { unit: "single", path: f.path, source: f.content });
+        if (f.path.startsWith(`${target.acceptanceDir}/`) && f.content) log(cfg, "acceptance_test", { unit: "single", path: f.path, source: f.content });
       }
-      result.touched.push([...new Set(d.files.map((f) => basename(f.path).replace(/(\.test)?\.ts$/, "")))]);
+      result.touched.push([...new Set(d.files.map((f) => basename(f.path).replace(/(\.spec|\.test)?\.(ts|html|scss)$/, "")))]);
       result.oracle = runOracle(cfg.workDir);
       log(cfg, "oracle", { round: result.rounds, ...result.oracle });
       console.log(`round ${result.rounds}: oracle ${result.oracle.pass ? "GREEN" : "RED"}`);
@@ -769,7 +994,38 @@ async function runSingle(
     if (stop) break;
     messages.push({ role: "user", content: results });
   }
+  if (dropped) log(cfg, "single_compaction", { droppedReads: dropped });
   return result;
+}
+
+// ---------- held-out grading (watchlist; never shown to agents) ----------
+
+interface HeldoutResult { slug: string; pass: boolean; total: number; failed: number; failures: string[] }
+
+function gradeHeldout(workDir: string, slug: string): HeldoutResult {
+  const src = join(ROOT, "harness/targets/watchlist/heldout");
+  const dest = join(workDir, "src/heldout");
+  rmSync(dest, { recursive: true, force: true });
+  mkdirSync(dest, { recursive: true });
+  cpSync(join(src, "_helpers.ts"), join(dest, "_helpers.ts"));
+  cpSync(join(src, `${slug}.spec.ts`), join(dest, `${slug}.spec.ts`));
+  const out = join(workDir, ".heldout.json");
+  rmSync(out, { force: true });
+  clearTestCaches(workDir);
+  spawnSync(join(workDir, "node_modules/.bin/ng"),
+    ["test", "--watch=false", "--include", `heldout/${slug}.spec.ts`, "--reporters=json", `--output-file=${out}`],
+    { cwd: workDir, encoding: "utf8", env: { ...process.env, NG_CLI_ANALYTICS: "false" } });
+  rmSync(dest, { recursive: true, force: true });
+  if (!existsSync(out)) return { slug, pass: false, total: 0, failed: 0, failures: ["held-out test did not run (build failed)"] };
+  const report = JSON.parse(readFileSync(out, "utf8")) as {
+    numTotalTests: number; numFailedTests: number;
+    testResults: { message: string; assertionResults: { fullName: string; status: string; failureMessages: string[] }[] }[];
+  };
+  const failures = report.testResults.flatMap((f) => [
+    ...(f.message ? [f.message.split("\n")[0]] : []),
+    ...f.assertionResults.filter((a) => a.status !== "passed").map((a) => `${a.fullName}: ${(a.failureMessages[0] ?? "").split("\n")[0]}`),
+  ]);
+  return { slug, pass: report.numTotalTests > 0 && report.numFailedTests === 0 && !failures.length, total: report.numTotalTests, failed: report.numFailedTests, failures };
 }
 
 // ---------- loop ----------
@@ -785,12 +1041,18 @@ function lineReader(): () => Promise<string | null> {
 
 async function main(
   request: string, provider: Config["provider"], model: string, interactive: boolean, out?: string, scenario?: string,
-  showBehaviour = false, single = false, frame?: string,
+  showBehaviour = false, single = false, frame?: string, budget?: number, targetName: Target["name"] = "todo", heldout?: string,
 ): Promise<void> {
+  target = TARGETS[targetName];
+  if (!target.hasCli && showBehaviour) throw new Error(`--behaviour needs a CLI target; ${target.name} has none`);
+  if (target.name !== "todo" && scenario) throw new Error("--scenario fixtures exist only for the todo target");
+  if (heldout && target.name !== "watchlist") throw new Error("--heldout applies to the watchlist target");
   const runDir = out ? resolve(out) : join(ROOT, "runs", new Date().toISOString().replace(/[:.]/g, "-"));
   mkdirSync(runDir, { recursive: true });
-  const cfg: Config = { provider, model, runDir, workDir: copySeed(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 } };
-  log(cfg, "run_start", { request, provider, model, interactive, scenario, showBehaviour, single, frame });
+  const cfg: Config = {
+    provider, model, runDir, workDir: target.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, budget, budgetStats: newStats(),
+  };
+  log(cfg, "run_start", { request, provider, model, interactive, scenario, showBehaviour, single, frame, budget, target: target.name, heldout });
   if (frame && (!single || !(frame in SINGLE_FRAMES))) throw new Error(`--frame needs --single and one of: ${Object.keys(SINGLE_FRAMES).join(", ")}`);
   if (single && (interactive || showBehaviour)) throw new Error("--single does not support --interactive or --behaviour");
 
@@ -812,13 +1074,13 @@ async function main(
   console.log(`run: ${runDir}\nprovider: ${provider} (${model})\nrequest: ${request}\n`);
 
   let units = buildManifest(cfg.workDir);
-  const baselineTests = new Map(units.map((u) => [u.name, testsIn(readFileSync(join(cfg.workDir, u.testPath), "utf8"))]));
+  const baselineTests = new Map(units.map((u) => [u.name, testsIn(readOr(join(cfg.workDir, u.testPath)))]));
   const knownTests = new Set([...baselineTests.values()].flatMap((m) => [...m.keys()]));
   const approved = new Set<string>();
   const testRequests: (TestChange & { round: number })[] = [];
   const approvals: { round: number; title: string }[] = [];
   let rejectedSubmissions = 0;
-  const probeBefore = probe(cfg.workDir);
+  const probeBefore = target.hasCli ? probe(cfg.workDir) : null;
   const behaviour = showBehaviour ? { start: snapshot(cfg.workDir), now: "" } : null;
   if (behaviour) { behaviour.now = behaviour.start; log(cfg, "behaviour_snapshot", { round: 0, snapshot: behaviour.start }); }
   let oracle: OracleResult | null = null;
@@ -837,7 +1099,7 @@ async function main(
 
   if (single) {
     try {
-      const r = await runSingle(cfg, request, history, oracle, baselineTests, frame);
+      const r = await runSingle(cfg, request, history, oracle, baselineTests, units, frame);
       ({ status, rounds, oracle } = r);
       instructedUnits.push(...r.touched);
       testRequests.push(...r.testChanges);
@@ -854,7 +1116,7 @@ async function main(
     try {
       decision = await runGovernor(cfg, request, clarifications, units, oracle, history, knownTests, behaviour);
     } catch (e) {
-      status = `error: ${(e as Error).message}`;
+      status = e instanceof OverBudget ? "over_budget" : `error: ${(e as Error).message}`;
       log(cfg, "governor_error", { turn, error: String(e) });
       console.error(`governor turn ${turn} failed: ${(e as Error).message}`);
       break;
@@ -922,9 +1184,10 @@ async function main(
   }
 
   const leaked = readFileSync(join(runDir, "log.jsonl"), "utf8").includes('"type":"governor_leak"');
-  const probeAfter = probe(cfg.workDir);
+  const probeAfter = target.hasCli ? probe(cfg.workDir) : null;
+  const heldoutResult = heldout ? gradeHeldout(cfg.workDir, heldout) : null;
   const summary = {
-    mode: single ? "single" : "governor", frame: frame ?? null,
+    target: target.name, mode: single ? "single" : "governor", frame: frame ?? null,
     request, provider, model, rounds, status, clarifications: clarifications.length,
     finalOracle: oracle ? (oracle.pass ? "green" : "red") : "not run",
     instructedUnits, governorIsolation: single ? "n/a" : leaked ? "LEAK" : "clean",
@@ -935,15 +1198,19 @@ async function main(
       const path = join(cfg.workDir, "tests/acceptance", f);
       return !existsSync(path) ? "retracted" : readFileSync(path, "utf8") === source ? "kept" : "revised";
     }).join(","),
-    behaviour: {
+    behaviour: probeBefore && probeAfter ? {
       listUnchanged: probeAfter.list === probeBefore.list,
       legacyFileLoads: probeAfter.legacy === "[x] a\n[ ] b",
       savedUnchanged: probeAfter.saved === probeBefore.saved,
       before: probeBefore, after: probeAfter,
-    },
+    } : null,
+    heldout: heldoutResult,
     tokens: { input: cfg.cost.inputTokens, output: cfg.cost.outputTokens },
+    budget: budget ?? null, budgetStats: cfg.budgetStats,
     usd: Number(cfg.cost.usd.toFixed(3)),
   };
+  await unloadLocalModel(cfg);
+  rmSync(join(cfg.workDir, ".angular"), { recursive: true, force: true }); // Angular's build cache
   writeFileSync(join(runDir, "summary.json"), JSON.stringify(summary, null, 2) + "\n");
   log(cfg, "run_end", summary);
   console.log("\n" + JSON.stringify(summary, null, 2));
@@ -955,7 +1222,9 @@ function selftest(): void {
   const runDir = join(ROOT, "runs", "selftest");
   rmSync(runDir, { recursive: true, force: true });
   mkdirSync(runDir, { recursive: true });
-  const cfg: Config = { provider: "anthropic", model: "-", runDir, workDir: copySeed(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 } };
+  const cfg: Config = {
+    provider: "anthropic", model: "-", runDir, workDir: TARGETS.todo.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, budgetStats: newStats(),
+  };
   const check = (name: string, ok: boolean) => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}`); if (!ok) process.exitCode = 1; };
 
   const units = buildManifest(cfg.workDir);
@@ -1000,11 +1269,65 @@ function selftest(): void {
     && findLeaks(cfg.workDir, units, copied).length === 1);
 }
 
+/** Watchlist target checks: slower (several Angular test runs, ~3 minutes), so run separately. */
+function selftestWatchlist(): void {
+  target = TARGETS.watchlist;
+  const runDir = join(ROOT, "runs", "selftest-watchlist");
+  rmSync(runDir, { recursive: true, force: true });
+  mkdirSync(runDir, { recursive: true });
+  const workDir = target.prepare(runDir);
+  const cfg: Config = { provider: "anthropic", model: "-", runDir, workDir, cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, budgetStats: newStats() };
+  const check = (name: string, ok: boolean, detail = "") => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}${ok || !detail ? "" : `  (${detail})`}`); if (!ok) process.exitCode = 1; };
+  const edit = (path: string, from: string | RegExp, to: string) => {
+    const abs = join(workDir, path);
+    const before = readFileSync(abs, "utf8");
+    const after = before.replace(from, to);
+    if (after === before) throw new Error(`selftest edit did not apply in ${path}`);
+    writeFileSync(abs, after);
+  };
+
+  const units = buildManifest(workDir);
+  const names = units.map((u) => u.name).join();
+  check("clean clone has no real environment file", readFileSync(join(workDir, "src/environments/environment.development.ts"), "utf8").includes("ur_key_here"));
+  check("manifest has the 9 expected units", names === "app,app.config,app.routes,movie,movie-detail,movie.service,search,watchlist,watchlist-store", names);
+  const wl = units.find((u) => u.name === "watchlist")!;
+  check("a component unit owns its ts, html, scss and spec", ["ts", "html", "scss", "spec.ts"].every((x) => wl.files.some((f) => f.endsWith(`watchlist.${x}`))));
+  check("watchlist imports movie and watchlist-store", ["movie", "watchlist-store"].every((n) => wl.imports.includes(n)), wl.imports.join());
+  check("declarations reach the manifest", units.every((u) => u.exports.includes("export")));
+  check("starting oracle is green", runOracle(workDir).pass);
+
+  const spec = readFileSync(join(workDir, wl.testPath), "utf8");
+  const changed = unapprovedTestChanges("watchlist", testsIn(spec), spec.replace("'Watched: Movie 1'", "'Seen: Movie 1'"), new Set());
+  check("guard catches an edited spec assertion", changed.length === 1 && changed[0].kind === "modified");
+  check("unit sources carry no leak into the manifest text", findLeaks(workDir, units, units.map((u) => u.exports).join("\n")).length === 0);
+
+  const repoTokens = Math.ceil(repoText(workDir).length / 3.5);
+  const manifestTokens = Math.ceil(units.map((u) => u.exports).join("\n").length / 3.5);
+  check("the whole repo does not fit a 6k budget, the manifest does", repoTokens > 6000 && manifestTokens < 3000, `repo ~${repoTokens}, manifest ~${manifestTokens}`);
+  check("the file listing fits a 6k budget", Math.ceil(repoListing(workDir).length / 3.5) < 1500);
+
+  for (const slug of ["rename", "sort", "wrong-belief"]) check(`held-out ${slug} fails on the starting code`, !gradeHeldout(workDir, slug).pass);
+  // A rename that forgets saved data, then the same rename with a migration on load.
+  edit("src/app/movie.ts", "title: string;\n    watched: boolean;\n    // Optional", "title: string;\n    seen: boolean;\n    // Optional");
+  edit("src/app/watchlist-store.ts", /m\.watched/g, "m.seen");
+  edit("src/app/watchlist-store.ts", "watched: false }", "seen: false }");
+  edit("src/app/watchlist-store.ts", "watched: !m.seen", "seen: !m.seen");
+  edit("src/app/watchlist/watchlist.html", /movie\.watched/g, "movie.seen");
+  const noMigration = gradeHeldout(workDir, "rename");
+  check("held-out rename fails without a migration (old saved watchlists)", !noMigration.pass && noMigration.failures.some((f) => /saved before/.test(f)), noMigration.failures.join(" | "));
+  edit("src/app/watchlist-store.ts", "JSON.parse(localStorage.getItem(this.KEY) ?? '[]')",
+    "JSON.parse(localStorage.getItem(this.KEY) ?? '[]').map(({ watched, ...m }: any) => ({ ...m, seen: m.seen ?? watched ?? false }))");
+  const migrated = gradeHeldout(workDir, "rename");
+  check("held-out rename passes with a migration", migrated.pass, migrated.failures.join(" | "));
+  rmSync(join(workDir, ".angular"), { recursive: true, force: true });
+  void cfg;
+}
+
 // ---------- entry ----------
 
 const args = process.argv.slice(2);
 if (args.includes("--selftest")) {
-  selftest();
+  if (args.includes("watchlist")) selftestWatchlist(); else selftest();
 } else if (args[0] === "--reprobe") {
   // Re-grade finished runs with the current probe: compares each run's final work/ against a fresh seed probe.
   const seedProbe = probe(SEED);
@@ -1020,23 +1343,30 @@ if (args.includes("--selftest")) {
     writeFileSync(summaryPath, JSON.stringify(summary, null, 2) + "\n");
   }
 } else {
+  // Every flag is removed before the remaining words become the request. (Until 2026-10-31 --behaviour, --single
+  // and --frame were parsed after the request was built, so they leaked into the request text; see RESULTS.md.)
   const flag = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args.splice(i, 2)[1] : undefined; };
+  const bool = (name: string) => { const i = args.indexOf(name); if (i >= 0) args.splice(i, 1); return i >= 0; };
   const provider = (flag("--provider") ?? "anthropic") as Config["provider"];
-  const model = flag("--model") ?? (provider === "ollama" ? "qwen3.5:9b" : "claude-opus-5-5");
+  const DEFAULT_MODEL: Record<Config["provider"], string> = { anthropic: "claude-opus-5-5", ollama: "qwen3.5:9b", "ollama-cloud": "glm-5.3" };
+  const model = flag("--model") ?? DEFAULT_MODEL[provider];
   const out = flag("--out");
   const scenario = flag("--scenario");
-  const interactive = args.includes("--interactive");
-  if (interactive) args.splice(args.indexOf("--interactive"), 1);
+  const frame = flag("--frame");
+  const targetName = (flag("--target") ?? "todo") as Target["name"];
+  const heldout = flag("--heldout");
+  const budgetArg = flag("--budget");
+  const budget = budgetArg ? Number(budgetArg) : undefined;
+  const interactive = bool("--interactive");
+  const showBehaviour = bool("--behaviour");
+  const single = bool("--single");
+  const unknown = args.filter((a) => a.startsWith("--"));
   const request = args.join(" ").trim();
-  if (!request) {
-    console.error('usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama] [--model id] [--interactive] [--out runDir] [--scenario dir] [--behaviour] [--single [--frame interfaces|data]]');
+  if (!request || unknown.length || !(provider in DEFAULT_MODEL) || !(targetName in TARGETS) || (budget !== undefined && !(budget > 0))) {
+    if (unknown.length) console.error(`unknown flag(s): ${unknown.join(" ")}`);
+    console.error('usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama|ollama-cloud] [--model id] [--target todo|watchlist] [--heldout slug] [--budget tokens] [--interactive] [--out runDir] [--scenario dir] [--behaviour] [--single [--frame interfaces|data]]');
     process.exit(2);
   }
-  const showBehaviour = args.includes("--behaviour");
-  if (showBehaviour) args.splice(args.indexOf("--behaviour"), 1);
-  const frame = flag("--frame");
-  const single = args.includes("--single");
-  if (single) args.splice(args.indexOf("--single"), 1);
-  await main(request, provider, model, interactive, out, scenario, showBehaviour, single, frame);
+  await main(request, provider, model, interactive, out, scenario, showBehaviour, single, frame, budget, targetName, heldout);
   process.exit(process.exitCode ?? 0); // the stdin reader would otherwise keep the process alive
 }

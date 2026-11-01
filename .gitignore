@@ -4,3 +4,6 @@ node_modules
 .oracle-vitest.json
 .DS_Store
 PRIVATE_PLAN.md
+.angular/
+.vitest-cache/
+runs/selftest-watchlist/

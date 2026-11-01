@@ -170,3 +170,15 @@ All 30 single-agent runs passed the graded criteria in 1 round.
 - **Wording explains about half of it.** Contract framing alone moved the single agent from 0/10 to 5/10. The remaining gap to the governor (5 vs 9 out of 10) points to the role adding something, but at n=10 it isn't conclusive (Fisher exact p≈0.14).
 - **One explicit line beats the whole split, at about a third of the cost.** For this failure, the cheapest fix is to say the requirement, not to restructure the agents.
 - **Caveat:** that line was written knowing the failure. The split found the data boundary unprompted, without anyone naming it. On a problem nobody has anticipated, an explicit line isn't available. That's the version of the thesis still standing: separating intent from implementation surfaces contracts that nobody wrote down. It needs a test whose hidden contract we didn't design the prompt around.
+
+---
+
+# Harness fixes found on 2026-10-31 (branch `watchlist-budget`)
+
+**Flags leaked into the request text.** Until now, `--behaviour`, `--single` and `--frame` were parsed *after* the request string was built, so every run in those arms received e.g. "Rename Todo.done to Todo.completed everywhere. --single --frame data". Control arms were clean. Impact, checked across all 110 affected runs by searching agent outputs for the stray text: **7 reacted to it.**
+- `ambiguous+single`: 6/10 asked what "--single" meant inside their clarifying question. All 10 asked anyway, so the pass count is unchanged, but the question wording is contaminated.
+- `rename+behaviour-09`: the governor read "--behaviour" as an extra hint to rename on disk. Outcome unchanged.
+- None of the runs behind the headline results mentioned it: `rename+single` (old saved files 0/10) and both wording variants. Those conclusions stand.
+Fixed: every flag is removed before the remaining words become the request, and unknown flags are rejected.
+
+**Stale test results on the Angular target (caught before any agent run).** Angular's vitest runner keeps a transform cache in `node_modules/.vitest-cache`. With `node_modules` symlinked to a shared install, a test run after an edit could execute code compiled earlier, and the cache was written into the user's own `watchlist` repo. The watchlist self-test caught it: a rename with no migration graded exactly like the unrenamed code. Fixed: each watchlist run gets its own `node_modules` folder of per-package links, and `.angular/` plus `node_modules/.vitest-cache` are cleared before every test run. The 46 cache entries these checks had written into the user's repo were removed; the user's own 20 pre-existing entries were left alone. The todo target uses plain vitest, which keeps no transform cache, and its self-test shows the oracle reacting to an edit in the same folder, so earlier todo benches are unaffected.
