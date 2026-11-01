@@ -23,7 +23,7 @@ Start here. Findings with numbers are in [`RESULTS.md`](RESULTS.md); this file h
 
 ## In progress (2026-11-01)
 
-- **Watchlist bench** on branch `watchlist-budget`: governor vs single on `../watchlist`, `glm-5.3` via Ollama cloud, 12k and 6k token budgets, 3 runs × 3 requests × 4 setups. Quota-limited, so `harness/resume-loop.sh` resumes it every 20 minutes (the session quota resets every few hours; weekly quota was at 18.4% on 2026-11-01). Check progress: `tail runs/bench-watchlist/resume.log`. Stop it: `kill <pid from the first line of that log>`. When it says DONE: `cd harness && npx tsx bench.ts --report ../runs/bench-watchlist`, then write up against the predictions in RESULTS.md.
+- **Watchlist bench** on branch `watchlist-budget`: governor vs single on `../watchlist`, `glm-5.3` via Ollama cloud, 12k and 6k token budgets, 3 runs × 3 requests × 4 setups. Quota-limited, so `harness/resume-loop.sh` resumes it every 20 minutes (the Ollama session quota resets every 5 hours; weekly quota was at 18.4% on 2026-11-01). Check progress: `tail runs/bench-watchlist/resume.log`. Stop it: `kill <pid from the first line of that log>`. When it says DONE: `cd harness && npx tsx bench.ts --report ../runs/bench-watchlist`, then write up against the predictions in RESULTS.md.
 
 ## Token savings: plan (user ideas, 2026-11-01)
 
