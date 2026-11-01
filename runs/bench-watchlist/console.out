@@ -1,0 +1,256 @@
+bench: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z
+[1/80] wl-rename+governor@12000 #1
+[2/80] wl-sort+governor@12000 #1
+[3/80] wl-ambiguous+governor@12000 #1
+[4/80] wl-rename+single@12000 #1
+[5/80] wl-ambiguous+single@12000 #1
+[6/80] wl-sort+single@12000 #1
+[7/80] wl-wrong-belief+single@12000 #1
+[8/80] wl-wrong-belief+governor@12000 #1
+[9/80] wl-rename+governor@6000 #1
+[10/80] wl-sort+governor@6000 #1
+[11/80] wl-ambiguous+governor@6000 #1
+[12/80] wl-rename+single@6000 #1
+[13/80] wl-wrong-belief+governor@6000 #1
+[14/80] wl-ambiguous+single@6000 #1
+[15/80] wl-sort+single@6000 #1
+[16/80] wl-wrong-belief+single@6000 #1
+[17/80] wl-rename+governor@12000 #2
+[18/80] wl-ambiguous+governor@12000 #2
+[19/80] wl-sort+governor@12000 #2
+[20/80] wl-wrong-belief+governor@12000 #2
+[21/80] wl-rename+single@12000 #2
+[22/80] wl-ambiguous+single@12000 #2
+[23/80] wl-wrong-belief+single@12000 #2
+[24/80] wl-sort+single@12000 #2
+[25/80] wl-ambiguous+governor@6000 #2
+[26/80] wl-rename+governor@6000 #2
+[27/80] wl-sort+governor@6000 #2
+[28/80] wl-wrong-belief+governor@6000 #2
+[29/80] wl-rename+single@6000 #2
+[30/80] wl-ambiguous+single@6000 #2
+[31/80] wl-sort+single@6000 #2
+[32/80] wl-wrong-belief+single@6000 #2
+[33/80] wl-sort+governor@12000 #3
+[34/80] wl-rename+governor@12000 #3
+[35/80] wl-ambiguous+governor@12000 #3
+[36/80] wl-wrong-belief+governor@12000 #3
+[37/80] wl-sort+single@12000 #3
+[38/80] wl-rename+single@12000 #3
+[39/80] wl-ambiguous+single@12000 #3
+[40/80] wl-wrong-belief+single@12000 #3
+[41/80] wl-rename+governor@6000 #3
+[42/80] wl-sort+governor@6000 #3
+[43/80] wl-ambiguous+governor@6000 #3
+[44/80] wl-wrong-belief+governor@6000 #3
+[45/80] wl-rename+single@6000 #3
+[46/80] wl-sort+single@6000 #3
+[47/80] wl-ambiguous+single@6000 #3
+[48/80] wl-sort+governor@12000 #4
+[49/80] wl-wrong-belief+single@6000 #3
+[50/80] wl-rename+governor@12000 #4
+[51/80] wl-ambiguous+governor@12000 #4
+[52/80] wl-rename+single@12000 #4
+[53/80] wl-wrong-belief+governor@12000 #4
+[54/80] wl-sort+single@12000 #4
+[55/80] wl-ambiguous+single@12000 #4
+[56/80] wl-wrong-belief+single@12000 #4
+[57/80] wl-sort+governor@6000 #4
+[58/80] wl-rename+governor@6000 #4
+[59/80] wl-ambiguous+governor@6000 #4
+[60/80] wl-wrong-belief+governor@6000 #4
+[61/80] wl-sort+single@6000 #4
+[62/80] wl-rename+single@6000 #4
+[63/80] wl-ambiguous+single@6000 #4
+[64/80] wl-wrong-belief+single@6000 #4
+[65/80] wl-rename+governor@12000 #5
+[66/80] wl-sort+governor@12000 #5
+[67/80] wl-ambiguous+governor@12000 #5
+[68/80] wl-wrong-belief+governor@12000 #5
+[69/80] wl-sort+single@12000 #5
+[70/80] wl-rename+single@12000 #5
+[71/80] wl-ambiguous+single@12000 #5
+[72/80] wl-sort+governor@6000 #5
+[73/80] wl-wrong-belief+single@12000 #5
+[74/80] wl-rename+governor@6000 #5
+[75/80] wl-ambiguous+governor@6000 #5
+[76/80] wl-wrong-belief+governor@6000 #5
+[77/80] wl-rename+single@6000 #5
+[78/80] wl-sort+single@6000 #5
+[79/80] wl-ambiguous+single@6000 #5
+[80/80] wl-wrong-belief+single@6000 #5
+# Bench bench-2026-11-01T05-36-43-186Z
+
+## wl-ambiguous+governor@12000 — "Make the watchlist easier to use."
+- **pass: 1/5** (asks, or accepts green with an acceptance test it wrote (an invented, testable contract))
+- status: 1× accepted/green; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 92df981b-f830-49da-9fcb-1e7ed61a5cf0)"},"request_id":"req_aaa9077d96b7e1a666e39a9a"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 1478e596-a078-41fa-a3b7-c8d7b0eafbdb)"},"request_id":"req_1ad4543af46340c6e0b7da08"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: b98fcfd6-569d-4b03-ae1c-d143e1a48e34)"},"request_id":"req_5efb1586f0e14661574b4e90"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: ba77e130-5a6e-4bba-b36e-32c118f8cd42)"},"request_id":"req_fb153a418f093ca1fbd570d4"}/not run
+- rounds: 4× 0; 1× 2
+- round-1 units: 4× (none); 1× watchlist+watchlist-store
+- test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
+- budget 12000 tokens: over-budget runs 0/5; largest prompt seen 5609 tokens; estimate undercounts: 0
+- tokens per run: in 8300, out 39604
+- isolation leaks: 1; cost: $0.00 ($0.000/run)
+
+## wl-ambiguous+governor@6000 — "Make the watchlist easier to use."
+- **pass: 0/5** (asks, or accepts green with an acceptance test it wrote (an invented, testable contract))
+- status: 1× over_budget/red; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 5208e8fc-c4cb-49b7-a28b-f6c60b8abe82)"},"request_id":"req_e1f4cb52ae87bc14a6cd746a"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 3d8a0af7-efba-4831-aceb-5f541e18f0da)"},"request_id":"req_3328cb27ac6a64470caaf9a5"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 1aa8dcb5-f224-404e-bd00-cce0b5935e6e)"},"request_id":"req_58eba61b4309a627e40be979"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: a2da4b70-c1d5-494a-9817-03f87fe9a62e)"},"request_id":"req_d8699d76df99c1ad304e3ff4"}/not run
+- rounds: 4× 0; 1× 1
+- round-1 units: 4× (none); 1× watchlist+watchlist-store
+- test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
+- budget 6000 tokens: over-budget runs 1/5; largest prompt seen 4194 tokens; estimate undercounts: 0
+- tokens per run: in 2770, out 22189
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-ambiguous+single@12000 — "Make the watchlist easier to use."
+- **pass: 0/5** (asks, or accepts green with an acceptance test it wrote (an invented, testable contract))
+- status: 1× turn_limit/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 8ba24960-8c59-437d-9a2b-bfa3f600a55d)"},"request_id":"req_ed0e71e3b79859666860e398"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: fb4e7485-5317-4e54-9b59-f7e00ab68712)"},"request_id":"req_d38775cbe323652b5d01f4e0"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 1b4bfcd0-fee6-40a0-bcda-831df8d3836b)"},"request_id":"req_7c89d8c50f27c3c6c19a0238"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 93674163-a058-4517-a10d-2a196fe24ca3)"},"request_id":"req_263c21345b64254dc953371d"}/not run
+- rounds: 5× 0
+- round-1 units: 5× (none)
+- test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
+- budget 12000 tokens: over-budget runs 0/5; largest prompt seen 8302 tokens; estimate undercounts: 0
+- tokens per run: in 50634, out 5247
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-ambiguous+single@6000 — "Make the watchlist easier to use."
+- **pass: 0/5** (asks, or accepts green with an acceptance test it wrote (an invented, testable contract))
+- status: 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 61c67959-08c6-4cb9-a7d6-b4e9bd19e245)"},"request_id":"req_0865eecb5ae4f27e70455aac"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: e5f20181-9ee3-4a34-a048-781b3dee6d09)"},"request_id":"req_de98f354c0fbd3d41a037bce"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: f3602fa9-f694-44ec-8c15-0fed73680aea)"},"request_id":"req_54af84c1b3bd15aa6bc80ec4"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 4275f51f-6ec8-4610-800e-65a01ba578fd)"},"request_id":"req_f8be9e828168e5ffce6bb59c"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 53c96dab-ae81-4faa-ac57-31b1162d051e)"},"request_id":"req_31bdfebd32e0e383c1b95d27"}/not run
+- rounds: 5× 0
+- round-1 units: 5× (none)
+- test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
+- budget 6000 tokens: over-budget runs 0/5; largest prompt seen 0 tokens; estimate undercounts: 0
+- tokens per run: in 0, out 0
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-rename+governor@12000 — "Rename the `watched` field of watchlist items to `seen` everywhere."
+- **pass: 0/5** (accepted green; held-out: saves `seen`, and a watchlist saved before the rename still shows what was watched)
+- status: 1× over_budget/red; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 91e5ad76-5ac2-445e-8d06-8b6f09c177b6)"},"request_id":"req_3ebf407e84619656cc96434a"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 5a39d0d1-f701-463a-9984-3d2a3ba9ef1b)"},"request_id":"req_e60c54b4a7190c40f903fb59"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 9e1e0835-fe55-4f3d-979a-3789e1d6e0d8)"},"request_id":"req_b072e4a9ed566b1d60fbddf1"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 09670269-c20b-4e59-8d7a-eeef9ddc49bb)"},"request_id":"req_c64bc91b4996c0ee06b207a2"}/not run
+- rounds: 4× 0; 1× 1
+- round-1 units: 4× (none); 1× app+movie+movie-detail+search+watchlist+watchlist-store
+- test-change requests: 1/5 runs; approvals given: 0/5 runs; rejected submissions: 1
+- held-out tests pass: 0/5; failures: 4× held-out; 1× held-out test did not run (build failed)
+- budget 12000 tokens: over-budget runs 1/5; largest prompt seen 7997 tokens; estimate undercounts: 0
+- tokens per run: in 7955, out 28031
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-rename+governor@6000 — "Rename the `watched` field of watchlist items to `seen` everywhere."
+- **pass: 0/5** (accepted green; held-out: saves `seen`, and a watchlist saved before the rename still shows what was watched)
+- status: 1× over_budget/red; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: f1ac416d-075b-4044-94e2-8f14c4243999)"},"request_id":"req_5d6569a9aeffd809c19cbe29"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 6bb1b597-7ad9-46b4-a3ef-b9573ef9f219)"},"request_id":"req_3075a3758c4014d28b038e96"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 19f5b784-2553-407d-8e8d-787029c18e30)"},"request_id":"req_e4cad1e5c4d8cac583225a9f"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 17149029-6ae2-4878-aadd-c97422aaa750)"},"request_id":"req_6d16c8563fb89e73db7ea433"}/not run
+- rounds: 4× 0; 1× 2
+- round-1 units: 4× (none); 1× movie+watchlist+watchlist-store
+- test-change requests: 1/5 runs; approvals given: 0/5 runs; rejected submissions: 1
+- held-out tests pass: 0/5; failures: 5× held-out
+- budget 6000 tokens: over-budget runs 1/5; largest prompt seen 4732 tokens; estimate undercounts: 0
+- tokens per run: in 4374, out 17709
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-rename+single@12000 — "Rename the `watched` field of watchlist items to `seen` everywhere."
+- **pass: 0/5** (accepted green; held-out: saves `seen`, and a watchlist saved before the rename still shows what was watched)
+- status: 1× accepted/green; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 1f560e2c-32d3-4a0a-8051-74b467a4d429)"},"request_id":"req_4c042155f3a1444b9cc2eda6"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 58826914-9414-4a12-8450-8dc7367f77fe)"},"request_id":"req_961864d7fc8d6f178297a4c8"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: b438fe85-f5e8-4948-8053-17b9f780ba16)"},"request_id":"req_611a6b4df33970b1df11b233"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 4bef7123-7904-40a4-a2fd-4a65d5dac17c)"},"request_id":"req_a3ee86a63f667a03363fc7e6"}/not run
+- rounds: 4× 0; 1× 1
+- round-1 units: 4× (none); 1× movie+watchlist+watchlist-store
+- test-change requests: 1/5 runs; approvals given: 1/5 runs; rejected submissions: 0
+- held-out tests pass: 0/5; failures: 5× held-out
+- budget 12000 tokens: over-budget runs 0/5; largest prompt seen 8828 tokens; estimate undercounts: 0
+- tokens per run: in 14121, out 1899
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-rename+single@6000 — "Rename the `watched` field of watchlist items to `seen` everywhere."
+- **pass: 0/5** (accepted green; held-out: saves `seen`, and a watchlist saved before the rename still shows what was watched)
+- status: 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: a31dfa92-5dd4-4d97-8692-234139bd73ea)"},"request_id":"req_0f4322934f5fb0d2beabc2b2"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: edfd4a48-f422-4cb4-9beb-fed940160045)"},"request_id":"req_efb04e793131601148e4208b"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 51f842d7-7e92-48a4-88b9-2987cdbcd463)"},"request_id":"req_31e0d62103b458ed768366f4"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: c1651c27-739b-4fa3-a668-8deb66267a14)"},"request_id":"req_f4494ed6afdeb7fec71784d4"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 0c5194a4-9836-4e6b-add8-cfae50aead05)"},"request_id":"req_385674adc9f99a91adbd90ba"}/not run
+- rounds: 5× 0
+- round-1 units: 5× (none)
+- test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
+- held-out tests pass: 0/5; failures: 5× held-out
+- budget 6000 tokens: over-budget runs 0/5; largest prompt seen 0 tokens; estimate undercounts: 0
+- tokens per run: in 0, out 0
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-sort+governor@12000 — "In the watchlist, show movies I haven't watched yet before the ones I've watched."
+- **pass: 0/5** (accepted green; held-out: unwatched first, stable; exactly one unit in every round)
+- status: 1× over_budget/red; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 7b9c0838-478d-4451-920e-c6eeec0e4c85)"},"request_id":"req_744e3c717745879f84b8e693"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 43f9d2c3-b998-423a-8783-d6f0d5e0df14)"},"request_id":"req_fa08888c651f5a0e87c2c42c"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 6459b2ca-e917-4d31-a609-bc47e1eab8e0)"},"request_id":"req_9e7ce36d03bd47fa3e5e350c"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 9a057d62-e344-426d-99c3-1cf139981afb)"},"request_id":"req_c0de6ad0b1d10969da4e6ad2"}/not run
+- rounds: 4× 0; 1× 2
+- round-1 units: 4× (none); 1× watchlist
+- test-change requests: 1/5 runs; approvals given: 1/5 runs; rejected submissions: 1
+- held-out tests pass: 1/5; failures: 4× held-out
+- budget 12000 tokens: over-budget runs 1/5; largest prompt seen 4225 tokens; estimate undercounts: 0
+- tokens per run: in 3630, out 16358
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-sort+governor@6000 — "In the watchlist, show movies I haven't watched yet before the ones I've watched."
+- **pass: 0/5** (accepted green; held-out: unwatched first, stable; exactly one unit in every round)
+- status: 1× over_budget/green; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 4e2b8b5b-d2ee-4bf7-bd1e-0fec5142930e)"},"request_id":"req_5094fdf62f679e1a3fbeb3d3"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: c66ca0c0-2a9c-40f5-b1e5-a04d687f93ef)"},"request_id":"req_fd0fb75c4a1776b0c390d604"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 1c6b6e21-252f-4003-9fe4-511d203f8a19)"},"request_id":"req_3f0e3562152ee6206c565fbe"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 4e9a074c-3f69-486e-a75d-0cd7855fc34f)"},"request_id":"req_cec1886275917f8a62b6d36d"}/not run
+- rounds: 4× 0; 1× 2
+- round-1 units: 4× (none); 1× watchlist
+- test-change requests: 1/5 runs; approvals given: 1/5 runs; rejected submissions: 1
+- held-out tests pass: 1/5; failures: 4× held-out
+- budget 6000 tokens: over-budget runs 1/5; largest prompt seen 5033 tokens; estimate undercounts: 0
+- tokens per run: in 5293, out 18390
+- isolation leaks: 1; cost: $0.00 ($0.000/run)
+
+## wl-sort+single@12000 — "In the watchlist, show movies I haven't watched yet before the ones I've watched."
+- **pass: 0/5** (accepted green; held-out: unwatched first, stable; exactly one unit in every round)
+- status: 1× accepted/green; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 53a85e79-8d70-4dd5-bd01-aff7c13c873f)"},"request_id":"req_53b19c7f2a742ddbb6241dc0"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 1cb301e1-7ce0-47cd-86d2-d72e72f431d6)"},"request_id":"req_cc66f8754861b805f3eb91a9"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 57fdf64f-3a7c-40b1-9607-f877683ae04f)"},"request_id":"req_b3395543b8c9cfb0b04dee29"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: b39ded36-50f6-4a53-9c1e-3d3b9703b203)"},"request_id":"req_2e6651ddbe91810f6423b135"}/not run
+- rounds: 4× 0; 1× 2
+- round-1 units: 4× (none); 1× watchlist
+- test-change requests: 1/5 runs; approvals given: 1/5 runs; rejected submissions: 0
+- held-out tests pass: 1/5; failures: 4× held-out
+- budget 12000 tokens: over-budget runs 0/5; largest prompt seen 8493 tokens; estimate undercounts: 0
+- tokens per run: in 22399, out 2171
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-sort+single@6000 — "In the watchlist, show movies I haven't watched yet before the ones I've watched."
+- **pass: 0/5** (accepted green; held-out: unwatched first, stable; exactly one unit in every round)
+- status: 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 21ffddb0-6dc6-44ec-b88d-d6fa41cab844)"},"request_id":"req_3969737bff982f78690b7100"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 529bb653-120f-4431-8f5c-6c6bdc87e949)"},"request_id":"req_b4bc9ad04390c77220ff6bd2"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 699492c5-41db-468c-ba77-130e01e00267)"},"request_id":"req_c12c3bfbb014aa8063b981d2"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 98b3ba96-5e59-4179-aeca-1f9e06d1693b)"},"request_id":"req_5a89df4e88fa2e6e940582e9"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 15409a3a-1b03-4fb1-b89c-1c2980e45c56)"},"request_id":"req_d6f99987b27a650be9d28072"}/not run
+- rounds: 5× 0
+- round-1 units: 5× (none)
+- test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
+- held-out tests pass: 0/5; failures: 5× held-out
+- budget 6000 tokens: over-budget runs 0/5; largest prompt seen 0 tokens; estimate undercounts: 0
+- tokens per run: in 0, out 0
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-wrong-belief+governor@12000 — "Add a button that clears every movie whose `seen` flag is true from the watchlist."
+- **pass: 1/5** (accepted green; held-out: a clear button removes watched movies and the saved field stays `watched`)
+- status: 1× accepted/green; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 051d10fe-229b-46ea-a748-0c0e4471898b)"},"request_id":"req_b3a209f99894d3bb303e6fba"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 5dc3ab61-70e7-439e-8fed-01c046623e84)"},"request_id":"req_c7d06effc7f55a0a6126e234"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: c386087a-f491-432a-8382-1e31ee5b2911)"},"request_id":"req_4b1a9f7fb1fa4df38e707938"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 6346872d-e5f0-456b-a0fa-2495d1fc098a)"},"request_id":"req_ba5effa3f699fd9dd9efdddb"}/not run
+- rounds: 4× 0; 1× 2
+- round-1 units: 4× (none); 1× watchlist+watchlist-store
+- test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
+- held-out tests pass: 1/5; failures: 4× held-out
+- budget 12000 tokens: over-budget runs 0/5; largest prompt seen 4800 tokens; estimate undercounts: 0
+- tokens per run: in 5312, out 30702
+- isolation leaks: 1; cost: $0.00 ($0.000/run)
+
+## wl-wrong-belief+governor@6000 — "Add a button that clears every movie whose `seen` flag is true from the watchlist."
+- **pass: 0/5** (accepted green; held-out: a clear button removes watched movies and the saved field stays `watched`)
+- status: 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 332a244a-02c5-4ed8-bd64-d97c1262ac8d)"},"request_id":"req_ca1b58c7f77ce2a1a99b087b"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: facf5043-288f-4650-83cc-666e6e30eb2e)"},"request_id":"req_efa0cbc26a81da475cfb8798"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: d6b18642-eb99-403e-ac78-f9f51372f696)"},"request_id":"req_b7c9d935ae0db6431b2572de"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 1cf2e73b-6b88-44a4-93e6-9a3bd337b45a)"},"request_id":"req_1e076b4aa1b6729384b82406"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: e3b08c8b-c664-463e-a5ea-7eb577f81ff2)"},"request_id":"req_b1bf6479ffe4c3cb9beccb33"}/not run
+- rounds: 5× 0
+- round-1 units: 5× (none)
+- test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
+- held-out tests pass: 0/5; failures: 5× held-out
+- budget 6000 tokens: over-budget runs 0/5; largest prompt seen 0 tokens; estimate undercounts: 0
+- tokens per run: in 0, out 0
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-wrong-belief+single@12000 — "Add a button that clears every movie whose `seen` flag is true from the watchlist."
+- **pass: 0/5** (accepted green; held-out: a clear button removes watched movies and the saved field stays `watched`)
+- status: 1× turn_limit/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 12026b79-087d-41a0-9aed-cb94f537e12f)"},"request_id":"req_e9f98714045b3bd8012356de"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: b58c4e4c-e8d8-4ec7-ac50-372d7a9c701c)"},"request_id":"req_4069c3e5dfbdd0a3d6468bfe"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 3aea90e1-7a08-4eca-aff1-3f472636456c)"},"request_id":"req_75387134b8ac2616d64133c6"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 8d40ebc6-3b3d-4676-baa4-3aea438b1882)"},"request_id":"req_505ee2107b3a75e291f7bf1a"}/not run
+- rounds: 5× 0
+- round-1 units: 5× (none)
+- test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
+- held-out tests pass: 0/5; failures: 5× held-out
+- budget 12000 tokens: over-budget runs 0/5; largest prompt seen 8409 tokens; estimate undercounts: 0
+- tokens per run: in 54133, out 2992
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-wrong-belief+single@6000 — "Add a button that clears every movie whose `seen` flag is true from the watchlist."
+- **pass: 0/5** (accepted green; held-out: a clear button removes watched movies and the saved field stays `watched`)
+- status: 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 268d0855-7cdb-46f5-9ef3-8d78d0a40138)"},"request_id":"req_5829fe5678120959fba5c31e"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 8af6d3ab-ea26-4984-b98d-5b8980a05e7e)"},"request_id":"req_27e3aabc86ac1b51f8367ce2"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 3db13d05-798a-4748-ab1a-a9bade10c5d9)"},"request_id":"req_7149367f606508e944463e3d"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 9c55ac61-f41a-4a2b-b5c3-45fe2599ce6e)"},"request_id":"req_2fa787da40e09d8348b9dc67"}/not run; 1× error: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: d3f71594-d02c-4231-9903-a753e38875b1)"},"request_id":"req_b22b95f523e5308261903bd6"}/not run
+- rounds: 5× 0
+- round-1 units: 5× (none)
+- test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
+- held-out tests pass: 0/5; failures: 5× held-out
+- budget 6000 tokens: over-budget runs 0/5; largest prompt seen 0 tokens; estimate undercounts: 0
+- tokens per run: in 0, out 0
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+Total cost: $0.00

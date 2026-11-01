@@ -1,0 +1,36 @@
+{
+  "target": "watchlist",
+  "mode": "single",
+  "frame": null,
+  "request": "Make the watchlist easier to use.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 0,
+  "status": "turn_limit",
+  "clarifications": 0,
+  "finalOracle": "not run",
+  "instructedUnits": [],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": null,
+  "tokens": {
+    "input": 253172,
+    "output": 26237
+  },
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 8302,
+    "maxEstimate": 10799,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

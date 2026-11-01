@@ -4,8 +4,10 @@
 //        each arm reruns every experiment with the arm's flags (slug suffix +<arm>); see armArgs.
 //        An arm may carry a token budget: "single@6000", "governor@6000" (governor = no extra flags).
 //        npx tsx bench.ts --report runs/bench-<ts>      (re-tally an existing bench without running anything)
+//        npx tsx bench.ts --resume runs/bench-<ts>      (rerun only missing or rate-limited runs, same settings)
+// The bench stops launching runs at the first rate-limited one (provider quota), so a later --resume can finish it.
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -115,14 +117,30 @@ function runOne(exp: Experiment, outDir: string): Promise<void> {
   });
 }
 
+const runDirName = (slug: string, i: number) => `${slug}-${String(i + 1).padStart(2, "0")}`;
+const finishedCleanly = (dir: string) => {
+  const f = join(dir, "summary.json");
+  return existsSync(f) && (JSON.parse(readFileSync(f, "utf8")) as Summary).status !== "rate_limited";
+};
+
 async function runAll(benchDir: string, exps: Experiment[], n: number, concurrency: number): Promise<void> {
-  // Interleave requests so a partial bench still covers every experiment.
-  const queue = Array.from({ length: n }, (_, i) => exps.map((e) => ({ e, i }))).flat();
+  // Interleave requests so a partial bench still covers every experiment; skip runs a resumed bench already has.
+  const queue = Array.from({ length: n }, (_, i) => exps.map((e) => ({ e, i }))).flat()
+    .filter(({ e, i }) => !finishedCleanly(join(benchDir, runDirName(e.slug, i))));
+  const total = queue.length;
   let done = 0;
+  let limited = false;
   const worker = async () => {
-    for (let job = queue.shift(); job; job = queue.shift()) {
-      await runOne(job.e, join(benchDir, `${job.e.slug}-${String(job.i + 1).padStart(2, "0")}`));
-      console.log(`[${++done}/${n * exps.length}] ${job.e.slug} #${job.i + 1}`);
+    for (let job = queue.shift(); job && !limited; job = queue.shift()) {
+      const dir = join(benchDir, runDirName(job.e.slug, job.i));
+      rmSync(dir, { recursive: true, force: true });
+      await runOne(job.e, dir);
+      const status = existsSync(join(dir, "summary.json")) ? (JSON.parse(readFileSync(join(dir, "summary.json"), "utf8")) as Summary).status : "";
+      if (status === "rate_limited") {
+        limited = true;
+        console.log(`rate-limited at ${job.e.slug} #${job.i + 1}: stopping; finish later with --resume ${benchDir}`);
+      }
+      console.log(`[${++done}/${total}] ${job.e.slug} #${job.i + 1}`);
     }
   };
   await Promise.all(Array.from({ length: concurrency }, worker));
@@ -168,7 +186,7 @@ function report(benchDir: string): void {
     lines.push(
       `## ${exp.slug} — "${exp.request}"`,
       `- **pass: ${sums.filter(exp.passes).length}/${sums.length}** (${exp.criterion})${missing ? `; ${missing} run(s) crashed without a summary` : ""}`,
-      `- status: ${tally(sums.map((s) => `${s.status}/${s.finalOracle}`))}`,
+      `- status: ${tally(sums.map((s) => `${s.status.slice(0, 60)}/${s.finalOracle}`))}`,
       `- rounds: ${tally(sums.map((s) => String(s.rounds)))}`,
       `- round-1 units: ${tally(sums.map((s) => (s.instructedUnits[0] ?? []).slice().sort().join("+") || "(none)"))}`,
       `- test-change requests: ${sums.filter((s) => s.testGuard.requests.length).length}/${sums.length} runs; ` +
@@ -199,9 +217,20 @@ function report(benchDir: string): void {
 const args = process.argv.slice(2);
 const flag = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
 const existing = flag("--report");
+const resume = flag("--resume");
 if (existing) {
   report(join(process.cwd(), existing));
+} else if (resume) {
+  const benchDir = join(process.cwd(), resume);
+  const saved = JSON.parse(readFileSync(join(benchDir, "bench.json"), "utf8")) as { args: string[] };
+  console.log(`resuming ${benchDir} with: ${saved.args.join(" ")}`);
+  args.splice(0, args.length, ...saved.args);
+  await runFromArgs(benchDir);
 } else {
+  await runFromArgs();
+}
+
+async function runFromArgs(resumeDir?: string): Promise<void> {
   EXTRA = flag("--extra")?.split(" ").filter(Boolean) ?? [];
   const only = flag("--only")?.split(",");
   const pool = flag("--target") === "watchlist" ? WATCHLIST_EXPERIMENTS : EXPERIMENTS;
@@ -209,9 +238,9 @@ if (existing) {
   const arms = (flag("--arms") ?? "control").split(",");
   const exps = arms.flatMap((arm) => base.map((e) => arm === "control" ? e
     : { ...e, slug: `${e.slug}+${arm}`, args: [...(e.args ?? []), ...armArgs(arm)] }));
-  const benchDir = join(ROOT, "runs", `bench-${new Date().toISOString().replace(/[:.]/g, "-")}`);
+  const benchDir = resumeDir ?? join(ROOT, "runs", `bench-${new Date().toISOString().replace(/[:.]/g, "-")}`);
   mkdirSync(benchDir, { recursive: true });
-  writeFileSync(join(benchDir, "bench.json"), JSON.stringify({ args: process.argv.slice(2), extra: EXTRA, arms }, null, 2) + "\n");
+  if (!resumeDir) writeFileSync(join(benchDir, "bench.json"), JSON.stringify({ args: process.argv.slice(2), extra: EXTRA, arms }, null, 2) + "\n");
   console.log(`bench: ${benchDir}`);
   await runAll(benchDir, exps, Number(flag("--n") ?? 10), Number(flag("--concurrency") ?? 4));
   report(benchDir);

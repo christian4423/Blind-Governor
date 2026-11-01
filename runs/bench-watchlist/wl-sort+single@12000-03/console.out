@@ -1,0 +1,49 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-sort+single@12000-03
+provider: ollama-cloud (glm-5.3)
+request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
+
+
+{
+  "target": "watchlist",
+  "mode": "single",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 0,
+  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 1cb301e1-7ce0-47cd-86d2-d72e72f431d6)\"},\"request_id\":\"req_cc66f8754861b805f3eb91a9\"}",
+  "clarifications": 0,
+  "finalOracle": "not run",
+  "instructedUnits": [],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": false,
+    "total": 1,
+    "failed": 1,
+    "failures": [
+      "held-out: unwatched before watched lists unwatched movies first, keeping the original order within each group: AssertionError: expected [ 'A', 'B', 'C', 'D' ] to deeply equal [ 'B', 'D', 'A', 'C' ]"
+    ]
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 0,
+    "maxEstimate": 1241,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

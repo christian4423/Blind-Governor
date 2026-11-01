@@ -1,0 +1,49 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-wrong-belief+single@12000-01
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+
+{
+  "target": "watchlist",
+  "mode": "single",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 0,
+  "status": "turn_limit",
+  "clarifications": 0,
+  "finalOracle": "not run",
+  "instructedUnits": [],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": false,
+    "total": 1,
+    "failed": 1,
+    "failures": [
+      "held-out: clear watched movies a clear button removes watched movies, keeps the rest, and keeps the saved field name: AssertionError: a button whose text mentions \"clear\": expected undefined to be truthy"
+    ]
+  },
+  "tokens": {
+    "input": 270667,
+    "output": 14958
+  },
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 8409,
+    "maxEstimate": 10790,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

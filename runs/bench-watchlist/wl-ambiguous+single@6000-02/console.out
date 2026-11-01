@@ -1,0 +1,41 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-ambiguous+single@6000-02
+provider: ollama-cloud (glm-5.3)
+request: Make the watchlist easier to use.
+
+
+{
+  "target": "watchlist",
+  "mode": "single",
+  "frame": null,
+  "request": "Make the watchlist easier to use.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 0,
+  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: e5f20181-9ee3-4a34-a048-781b3dee6d09)\"},\"request_id\":\"req_de98f354c0fbd3d41a037bce\"}",
+  "clarifications": 0,
+  "finalOracle": "not run",
+  "instructedUnits": [],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": null,
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "budget": 6000,
+  "budgetStats": {
+    "maxPromptTokens": 0,
+    "maxEstimate": 1228,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

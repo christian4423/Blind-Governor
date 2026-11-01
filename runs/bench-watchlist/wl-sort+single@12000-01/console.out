@@ -1,0 +1,81 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-sort+single@12000-01
+provider: ollama-cloud (glm-5.3)
+request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
+
+single call 11: check  (Implemented unwatched-before-watched ordering as a `movies` computed in the Watchlist component (store keeps insertion order, so other specs' membership/add-order assertions are unaffected). Updated two existing watchlist tests that re-query row 0 after toggling watched (they'd now assert on a different movie, since the toggled row moves behind the unwatched ones) to capture the checkbox before clicking; added a new test pinning the ordering.)
+round 1: oracle RED
+single call 14: check  (Re-running without changes to check whether the three axe-test timeouts (5s default limit, in movie-detail/search/watchlist specs) are transient environment slowness rather than caused by my change â two of those specs don't even render the Watchlist component.)
+round 2: oracle GREEN
+single call 15: accept  (Watchlist now shows unwatched movies before watched ones. Implemented as a `movies` computed in the Watchlist component so the store's insertion order (and every other consumer) is unaffected; within each group the original add order is preserved. All 29 tests pass and tsc is clean.)
+
+{
+  "target": "watchlist",
+  "mode": "single",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist"
+    ],
+    []
+  ],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when the checkbox is clicked",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when blank space on the row is clicked",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 1,
+        "title": "Watchlist > toggles watched when the checkbox is clicked"
+      },
+      {
+        "round": 1,
+        "title": "Watchlist > toggles watched when blank space on the row is clicked"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 111995,
+    "output": 10857
+  },
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 8493,
+    "maxEstimate": 10794,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

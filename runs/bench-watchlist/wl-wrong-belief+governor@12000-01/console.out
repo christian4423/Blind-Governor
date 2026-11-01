@@ -1,0 +1,62 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-wrong-belief+governor@12000-01
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (The request's "seen" flag maps to the existing `watched` boolean on WatchItem (the only watched/seen flag in the model). Plan: watchlist-store gains clearWatched() which removes every watched item, preserves unwatched order and persists like the other mutators; the watchlist page gets a page-level "Clear watched" button (disabled when nothing is watched) that calls it and announces how many movies were cleared.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+!! GOVERNOR ISOLATION LEAK: 1 source line(s) in governor prompt
+governor turn 2: plan -> watchlist-store  (tsc is clean and all watchlist (component) tests pass; the only red test is the watchlist-store persistence acceptance test — clearWatched() works in memory but leaves persisted state that a fresh store loads as empty. Only watchlist-store is implicated, so I am re-tasking just that unit to make the cleared list durable before clearWatched() returns.)
+round 2: owners watchlist-store=ok; oracle GREEN
+!! GOVERNOR ISOLATION LEAK: 1 source line(s) in governor prompt
+governor turn 3: accept  (Oracle is green (tsc exit 0, 42 tests passing) including both acceptance suites: the store removes and durably persists the unwatched-only list, and the watchlist page exposes a "Clear watched" button that clears all watched movies when clicked and is disabled when none are watched. The request is fully satisfied; existing acceptance tests are kept as regression guards.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "LEAK",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 3,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 26562,
+    "output": 153512
+  },
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 4800,
+    "maxEstimate": 5778,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

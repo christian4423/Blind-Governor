@@ -1,0 +1,44 @@
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 0,
+  "status": "rate_limited",
+  "clarifications": 0,
+  "finalOracle": "not run",
+  "instructedUnits": [],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": false,
+    "total": 1,
+    "failed": 1,
+    "failures": [
+      "held-out: unwatched before watched lists unwatched movies first, keeping the original order within each group: AssertionError: expected [ 'A', 'B', 'C', 'D' ] to deeply equal [ 'B', 'D', 'A', 'C' ]"
+    ]
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 0,
+    "maxEstimate": 2950,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

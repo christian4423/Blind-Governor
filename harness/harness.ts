@@ -296,6 +296,10 @@ async function callModel(cfg: Config, system: string, messages: Msg[], tools: To
 
 class MaxTokens extends Error {}
 
+/** Provider quota errors end the run with a status the bench recognises, so it can stop and resume later. */
+const isRateLimit = (e: unknown) => /rate_limit_error|usage limit|\b429\b/.test(String((e as Error)?.message ?? e));
+const errorStatus = (e: unknown) => (e instanceof OverBudget ? "over_budget" : isRateLimit(e) ? "rate_limited" : `error: ${(e as Error).message}`);
+
 /** callModel, retrying a response that ran out of output tokens (the prompt is unchanged, so this is just another draw). */
 async function callWithRetry(cfg: Config, system: string, messages: Msg[], tools: Tool[]): Promise<Anthropic.Beta.BetaMessage> {
   for (let attempt = 0; ; attempt++) {
@@ -1213,7 +1217,7 @@ async function main(
       testRequests.push(...r.testChanges);
       approvals.push(...r.testChanges.map((c) => ({ round: c.round, title: c.title }))); // self-approved
     } catch (e) {
-      status = `error: ${(e as Error).message}`;
+      status = errorStatus(e);
       log(cfg, "single_error", { error: String(e) });
     }
   }
@@ -1224,7 +1228,7 @@ async function main(
     try {
       decision = await runGovernor(cfg, request, clarifications, units, oracle, history, knownTests, behaviour);
     } catch (e) {
-      status = e instanceof OverBudget ? "over_budget" : `error: ${(e as Error).message}`;
+      status = errorStatus(e);
       log(cfg, "governor_error", { turn, error: String(e) });
       console.error(`governor turn ${turn} failed: ${(e as Error).message}`);
       break;

@@ -1,0 +1,42 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-ambiguous+governor@6000-05
+provider: ollama-cloud (glm-5.3)
+request: Make the watchlist easier to use.
+
+governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: a2da4b70-c1d5-494a-9817-03f87fe9a62e)"},"request_id":"req_d8699d76df99c1ad304e3ff4"}
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Make the watchlist easier to use.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 0,
+  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: a2da4b70-c1d5-494a-9817-03f87fe9a62e)\"},\"request_id\":\"req_d8699d76df99c1ad304e3ff4\"}",
+  "clarifications": 0,
+  "finalOracle": "not run",
+  "instructedUnits": [],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": null,
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "budget": 6000,
+  "budgetStats": {
+    "maxPromptTokens": 0,
+    "maxEstimate": 2936,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}
