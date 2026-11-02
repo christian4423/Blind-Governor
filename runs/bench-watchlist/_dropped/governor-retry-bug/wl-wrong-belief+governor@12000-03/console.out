@@ -1,0 +1,69 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-wrong-belief+governor@12000-03
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (There is no `seen` field anywhere in the codebase; the request's "seen" flag is the existing `WatchItem.watched` boolean, which the watchlist page already tracks via `watchedCount`. The removal logic belongs in the shared store (new `clearWatched(): void`), and the button belongs on the watchlist page, where watched toggles and per-item removal already live. Only these two units need to change.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+!! GOVERNOR ISOLATION LEAK: 1 source line(s) in governor prompt
+governor turn 2 failed: prompt of ~26826 tokens exceeds the 12000-token budget
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "over_budget",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "LEAK",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 13635,
+    "output": 82201
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 2,
+      "input": 8175,
+      "output": 44799
+    },
+    "owner": {
+      "calls": 2,
+      "input": 5460,
+      "output": 37402
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 5698,
+    "maxEstimate": 26826,
+    "overBudget": 1,
+    "violations": 0
+  },
+  "usd": 0
+}

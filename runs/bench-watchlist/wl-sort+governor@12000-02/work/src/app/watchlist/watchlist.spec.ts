@@ -34,6 +34,12 @@ describe('Watchlist', () => {
   const items = () => el.querySelectorAll<HTMLLIElement>('.watchlist-item');
   const checkbox = (i = 0) => items()[i].querySelector<HTMLInputElement>('input[type="checkbox"]')!;
 
+  // Locate a row by its title so tests don't assume a movie keeps a given position.
+  const rowByTitle = (title: string) =>
+    Array.from(items()).find((li) => li.querySelector('a.title-link')?.textContent?.trim() === title)!;
+  const rowCheckbox = (title: string) =>
+    rowByTitle(title).querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+
   it('should create', () => {
     expect(component).toBeTruthy();
   });
@@ -44,17 +50,31 @@ describe('Watchlist', () => {
   });
 
   it('toggles watched when the checkbox is clicked', async () => {
-    checkbox().click();
+    rowCheckbox('Movie 1').click();
     await fixture.whenStable();
-    expect(checkbox().checked).toBe(true);
+
+    expect(rowCheckbox('Movie 1').checked).toBe(true);
     expect(component.watchedCount()).toBe(1);
     expect(el.querySelector('.subtitle')?.textContent).toContain('1 of 2 watched');
   });
 
   it('toggles watched when blank space on the row is clicked', async () => {
-    items()[0].click();
+    rowByTitle('Movie 1').click();
     await fixture.whenStable();
-    expect(checkbox().checked).toBe(true);
+
+    expect(rowCheckbox('Movie 1').checked).toBe(true);
+    expect(component.watchedCount()).toBe(1);
+    expect(el.querySelector('.subtitle')?.textContent).toContain('1 of 2 watched');
+  });
+
+  it('lists unwatched movies before watched ones', async () => {
+    rowByTitle('Movie 1').click();
+    await fixture.whenStable();
+
+    const titles = Array.from(items()).map((li) => li.querySelector('a.title-link')?.textContent?.trim());
+    expect(titles).toEqual(['Movie 2', 'Movie 1']);
+    // The store itself keeps its original order.
+    expect(store.items().map((i) => i.title)).toEqual(['Movie 1', 'Movie 2']);
   });
 
   it('navigates via the title link without toggling watched', async () => {

@@ -22,8 +22,8 @@
         <ul class="watchlist" aria-label="Movies on your watchlist">
             @for (movie of movies(); track movie.id) {
                 <!-- Clicking empty space on the row toggles watched; the checkbox, link and button handle their own clicks -->
-                <li class="watchlist-item" [class.watched]="movie.watched" (click)="onRowClick($event, movie.id)">
-                    <input type="checkbox" class="watched-checkbox" [checked]="movie.watched"
+                <li class="watchlist-item" [class.watched]="movie.seen" (click)="onRowClick($event, movie.id)">
+                    <input type="checkbox" class="watched-checkbox" [checked]="movie.seen"
                         (change)="toggleWatched(movie.id)" [attr.aria-label]="'Watched: ' + movie.title">
 
                     @if (movie.poster_path) {
@@ -39,7 +39,7 @@
                         }
                     </div>
 
-                    <span class="status-pill" aria-hidden="true">{{ movie.watched ? 'Watched' : 'To watch' }}</span>
+                    <span class="status-pill" aria-hidden="true">{{ movie.seen ? 'Watched' : 'To watch' }}</span>
 
                     <button type="button" class="remove-btn" (click)="remove(movie)">
                         <span aria-hidden="true">✕</span>

@@ -1,0 +1,67 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-sort+governor@12000-02
+provider: ollama-cloud (glm-5.3)
+request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
+
+governor turn 1: plan -> watchlist-store  (The watchlist page renders store.items() verbatim, so making WatchlistStore's items signal return unwatched movies before watched ones satisfies the request with a single unit change and no interface changes; all other consumers (count, isOnList, onList) are order-agnostic.)
+round 1: owners watchlist-store=ok; oracle RED
+governor turn 2 failed: prompt of ~36908 tokens exceeds the 12000-token budget
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "over_budget",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 1,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 15399,
+    "output": 91766
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 13853,
+      "output": 78623
+    },
+    "owner": {
+      "calls": 1,
+      "input": 1546,
+      "output": 13143
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 5688,
+    "maxEstimate": 36908,
+    "overBudget": 1,
+    "violations": 0
+  },
+  "usd": 0
+}

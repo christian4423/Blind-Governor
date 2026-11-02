@@ -5,18 +5,44 @@
   "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "rate_limited",
+  "rounds": 3,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
   "governorIsolation": "clean",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 5,
   "testGuard": {
-    "rejectedSubmissions": 0,
-    "requests": [],
-    "approvals": []
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The test read store.items()[0].watched to assert the movie was not toggled when the title link is clicked. WatchItem now exposes `seen` instead of `watched` (and the store stores the flag under `seen`), so the old field no longer exists and the assertion would not type-check/fail. Changed only that property access to `store.items()[0].seen`; the test's intent, name and expected value (false) are unchanged, as instructed.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
@@ -26,17 +52,30 @@
     "total": 2,
     "failed": 1,
     "failures": [
-      "held-out: rename watched -> seen toggling a movie saves the new field name, not the old one: AssertionError: expected false to be true // Object.is equality"
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
     ]
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 59457,
+    "output": 169883
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 18260,
+      "output": 51451
+    },
+    "owner": {
+      "calls": 12,
+      "input": 41197,
+      "output": 118432
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2946,
+    "maxPromptTokens": 6299,
+    "maxEstimate": 7531,
     "overBudget": 0,
     "violations": 0
   },

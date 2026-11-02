@@ -5,18 +5,44 @@
   "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "rate_limited",
+  "rounds": 3,
+  "status": "cap_hit",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "movie"
+    ]
+  ],
   "governorIsolation": "clean",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 5,
   "testGuard": {
-    "rejectedSubmissions": 0,
-    "requests": [],
-    "approvals": []
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The test asserted `store.items()[0].watched`, but `WatchItem.watched` was renamed to `seen` by the governor's interface change, so the property no longer exists and the assertion would fail to type-check and compare `undefined` to `false`. Updated it to read `.seen`; the test's intent and behavior are unchanged.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
@@ -26,17 +52,30 @@
     "total": 2,
     "failed": 1,
     "failures": [
-      "held-out: rename watched -> seen toggling a movie saves the new field name, not the old one: AssertionError: expected false to be true // Object.is equality"
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
     ]
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 42905,
+    "output": 189219
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 6,
+      "input": 19815,
+      "output": 130187
+    },
+    "owner": {
+      "calls": 9,
+      "input": 23090,
+      "output": 59032
+    }
+  },
+  "repoTokens": 12710,
   "budget": 6000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2946,
+    "maxPromptTokens": 4309,
+    "maxEstimate": 5205,
     "overBudget": 0,
     "violations": 0
   },

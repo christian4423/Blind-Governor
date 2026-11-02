@@ -11,7 +11,13 @@ import { WatchlistStore } from '../watchlist-store';
 })
 export class Watchlist {
   store = inject(WatchlistStore)
-  movies = this.store.items
+
+  // Unwatched movies always render before watched ones; within each group the
+  // store's relative order is preserved (stable partition, no other sorting).
+  movies = computed<WatchItem[]>(() => {
+    const items = this.store.items()
+    return [...items.filter(item => !item.watched), ...items.filter(item => item.watched)]
+  })
 
   readonly imageBase = 'https://image.tmdb.org/t/p/w92';
 

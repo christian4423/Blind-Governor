@@ -1,0 +1,59 @@
+<div class="container">
+    <header class="page-header">
+        <h1>Find movies</h1>
+        <p class="subtitle">Search TMDB and add movies to your watchlist.</p>
+    </header>
+
+    <form role="search" class="search-form" (submit)="$event.preventDefault()">
+        <label for="movie-search" class="search-label">Search by title</label>
+        <div class="search-field">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input id="movie-search" type="search" [formControl]="searchControl"
+                placeholder="e.g. Dune, Spirited Away…" autocomplete="off">
+        </div>
+    </form>
+
+    <h2 class="results-heading" id="results-heading">{{ heading() }}</h2>
+    <p class="visually-hidden" role="status">{{ statusMessage() }}</p>
+
+    @if (loading()) {
+        <ul class="results-grid" aria-hidden="true">
+            @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+                <li class="movie-card skeleton"></li>
+            }
+        </ul>
+    } @else if (error()) {
+        <p class="empty-state" role="alert">Sorry, we couldn't load movies. Please try again.</p>
+    } @else if (movies().length === 0) {
+        <div class="empty-state">
+            <p>No movies match “{{ query() }}”. Try a different title.</p>
+        </div>
+    } @else {
+        <ul class="results-grid" aria-labelledby="results-heading">
+            @for (movie of movies(); track movie.id) {
+                <li class="movie-card">
+                    <a [routerLink]="['/movie', movie.id]" class="card-link">
+                        @if (movie.poster_path) {
+                            <img class="poster" [src]="imageBase + movie.poster_path" alt=""
+                                width="342" height="513" loading="lazy">
+                        } @else {
+                            <div class="poster poster-empty" aria-hidden="true">🎞️</div>
+                        }
+                        <span class="card-title">{{ movie.title }}</span>
+                        @if (movie.release_date) {
+                            <span class="card-year">{{ movie.release_date.slice(0, 4) }}</span>
+                        }
+                    </a>
+                    <button type="button" class="btn add-btn" [class.btn-primary]="!isOnList(movie.id)"
+                        (click)="toggleList(movie)">
+                        @if (isOnList(movie.id)) {
+                            <span aria-hidden="true">✓</span> Added<span class="visually-hidden"> {{ movie.title }}, remove from watchlist</span>
+                        } @else {
+                            <span aria-hidden="true">+</span> Add<span class="visually-hidden"> {{ movie.title }} to watchlist</span>
+                        }
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</div>

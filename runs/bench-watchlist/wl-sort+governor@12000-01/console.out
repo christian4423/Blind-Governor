@@ -1,12 +1,12 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-sort+governor@12000-01
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-sort+governor@12000-01
 provider: ollama-cloud (glm-5.3)
 request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
 
-governor turn 1: plan -> watchlist  (The request is a display-ordering concern of the watchlist page. No interface needs to change: `movies` stays a `Signal<WatchItem[]>`, but must now be a sorted derived signal (unwatched first, watched after, stable within groups) instead of an alias of `store.items`. The store itself keeps its current data behaviour.)
+governor turn 1: plan -> watchlist  (The request is a display-ordering concern of the watchlist view, so the watchlist component's movies signal should become a stable unwatched-first partition of the store's items. The store (and every other unit) stays untouched, so persistence and all other consumers are unaffected.)
 round 1: owners watchlist=rejected; oracle RED
-governor turn 2: plan -> watchlist  (The requested ordering inherently moves a row to the bottom when it is marked watched, so the two existing tests that resolve the checkbox positionally AFTER the click can no longer pass as written. The owner's minimal edit (capture the checkbox element before the click) preserves exactly what those tests specify — clicking a checkbox or blank row space toggles that movie's watched state — so I approve both edits and re-issue the same implementation plan for the watchlist unit.)
-round 2: owners watchlist=ok; oracle RED
-governor turn 3 failed: prompt of ~23451 tokens exceeds the 12000-token budget
+governor turn 2: plan -> watchlist  (Round 1's watchlist change was rejected solely because it required adapting two existing tests whose premise (the just-toggled movie stays in the first row) is directly invalidated by the requested reordering. The owner's minimal adaptations preserve those tests' original intent (clicking a checkbox/row toggles that movie), so I approve them and re-issue the same implementation instruction. tsc is already green; only the not-yet-applied ordering fails.)
+round 2: owners watchlist=ok; oracle GREEN
+governor turn 3: accept  (The watchlist now partitions unwatched movies before watched ones (stable within each group, fully reactive, same items preserved). Oracle is green: tsc clean and all 32 tests pass, including the acceptance tests that pin the ordering, reactivity, and completeness of the list.)
 
 {
   "target": "watchlist",
@@ -16,9 +16,9 @@ governor turn 3 failed: prompt of ~23451 tokens exceeds the 12000-token budget
   "provider": "ollama-cloud",
   "model": "glm-5.3",
   "rounds": 2,
-  "status": "over_budget",
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "red",
+  "finalOracle": "green",
   "instructedUnits": [
     [
       "watchlist"
@@ -37,14 +37,14 @@ governor turn 3 failed: prompt of ~23451 tokens exceeds the 12000-token budget
         "unit": "watchlist",
         "title": "Watchlist > toggles watched when the checkbox is clicked",
         "kind": "modified",
-        "reason": "The required new behaviour (unwatched movies listed before watched ones) makes the clicked row move: marking Movie 1 watched drops its row below Movie 2, so the first row becomes Movie 2. This test looked the checkbox up positionally (first row) AFTER the click, so it would assert on Movie 2's unchecked checkbox and fail. I captured the checkbox element before the click so the assertion still targets the movie that was toggled; the behaviour under test (clicking a checkbox toggles that movie's watched state) and all other assertions are unchanged.",
+        "reason": "This test re-queried the first row's checkbox after clicking it. Under the new required ordering (unwatched movies first), the movie just toggled to watched is re-ordered to the end of the list, so the first checkbox after the click belongs to the other, still-unwatched movie and `checkbox().checked` would be false, failing the test even though the component behaves correctly. I captured a reference to the clicked checkbox before the click and assert on that element; the test's original intent (clicking a checkbox marks that movie watched) and the watchedCount/subtitle assertions are unchanged.",
         "round": 1
       },
       {
         "unit": "watchlist",
         "title": "Watchlist > toggles watched when blank space on the row is clicked",
         "kind": "modified",
-        "reason": "Same conflict with the new ordering: clicking blank space on the first row marks Movie 1 watched, which moves that row to the bottom of the list, so the original post-click positional checkbox() lookup resolves to Movie 2's unchecked checkbox. I capture the checkbox before the click so the assertion still checks the movie whose row was clicked; the behaviour under test (clicking blank row space toggles that movie) is unchanged.",
+        "reason": "Same consequence of the new ordering: after clicking blank space on the first row, that movie becomes watched and its row is re-ordered to the end, so re-querying the first row's checkbox no longer finds the toggled movie's checkbox and the test would fail despite correct behaviour. The test now holds a reference to the clicked row's checkbox before clicking, preserving its original intent (a blank-space row click toggles that row's movie).",
         "round": 1
       }
     ],
@@ -69,14 +69,27 @@ governor turn 3 failed: prompt of ~23451 tokens exceeds the 12000-token budget
     "failures": []
   },
   "tokens": {
-    "input": 18151,
-    "output": 81792
+    "input": 18529,
+    "output": 67092
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 10889,
+      "output": 24887
+    },
+    "owner": {
+      "calls": 2,
+      "input": 7640,
+      "output": 42205
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 4225,
-    "maxEstimate": 23451,
-    "overBudget": 1,
+    "maxPromptTokens": 4393,
+    "maxEstimate": 5096,
+    "overBudget": 0,
     "violations": 0
   },
   "usd": 0

@@ -5,18 +5,26 @@
   "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 2,
-  "status": "over_budget",
+  "rounds": 3,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "red",
+  "finalOracle": "green",
   "instructedUnits": [
     [
       "movie",
       "watchlist-store",
-      "watchlist"
+      "watchlist",
+      "search",
+      "movie-detail",
+      "app"
     ],
     [
-      "watchlist"
+      "watchlist-store",
+      "watchlist",
+      "movie"
+    ],
+    [
+      "watchlist-store"
     ]
   ],
   "governorIsolation": "clean",
@@ -29,32 +37,48 @@
         "unit": "watchlist",
         "title": "Watchlist > navigates via the title link without toggling watched",
         "kind": "modified",
-        "reason": "modified assertion (single property access): item data field renamed from `watched` to `seen` per the governor's request — `expect(store.items()[0].watched).toBe(false)` becomes `expect(store.items()[0].seen).toBe(false)`. This was the only occurrence of the old data field name in the file (the tsc error at line 66, col 29); all other `watched` occurrences are the unchanged `watchedCount` API, user-visible text, or test titles, none of which were altered. Test title and all other expectations are identical; no assertions weakened, skipped, or deleted.",
-        "round": 2
+        "reason": "The test's assertion read `store.items()[0].watched`, a field that no longer exists now that `WatchItem` and every item in `store.items()` carries `seen: boolean` instead of `watched: boolean` (the old assertion would not compile and would always fail). Updated it to `store.items()[0].seen`, exactly as the instruction directs assertions to be updated to `seen`. The behaviour being verified — clicking the title link must not change the item's status — is unchanged.",
+        "round": 1
       }
     ],
-    "approvals": []
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
   "heldout": {
     "slug": "rename",
-    "pass": false,
+    "pass": true,
     "total": 2,
-    "failed": 1,
-    "failures": [
-      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 21870,
-    "output": 88546
+    "input": 66066,
+    "output": 340972
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 16032,
+      "output": 66361
+    },
+    "owner": {
+      "calls": 19,
+      "input": 50034,
+      "output": 274611
+    }
+  },
+  "repoTokens": 12710,
   "budget": 6000,
   "budgetStats": {
-    "maxPromptTokens": 4732,
-    "maxEstimate": 6463,
-    "overBudget": 1,
+    "maxPromptTokens": 4900,
+    "maxEstimate": 5854,
+    "overBudget": 0,
     "violations": 0
   },
   "usd": 0

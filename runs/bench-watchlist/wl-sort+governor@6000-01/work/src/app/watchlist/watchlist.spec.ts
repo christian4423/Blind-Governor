@@ -1,12 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { vi } from 'vitest';
 import { Watchlist } from './watchlist';
 import { WatchlistStore } from '../watchlist-store';
 import { expectNoA11yViolations } from '../../testing/axe';
-
-// Axe scans over the full watchlist can be slow in this environment.
-vi.setConfig({ testTimeout: 30000 });
 
 describe('Watchlist', () => {
   let component: Watchlist;
@@ -37,10 +33,9 @@ describe('Watchlist', () => {
 
   const items = () => el.querySelectorAll<HTMLLIElement>('.watchlist-item');
   const checkbox = (i = 0) => items()[i].querySelector<HTMLInputElement>('input[type="checkbox"]')!;
-  // Unwatched movies are listed before watched ones, so a movie's checkbox can
-  // move position once it is toggled; look it up by its aria-label instead.
-  const checkboxByLabel = (title: string) =>
-    el.querySelector<HTMLInputElement>(`input[aria-label="Watched: ${title}"]`)!;
+  const titles = () =>
+    Array.from(el.querySelectorAll<HTMLAnchorElement>('.title-link'))
+      .map(link => link.textContent?.trim());
 
   it('should create', () => {
     expect(component).toBeTruthy();
@@ -52,9 +47,10 @@ describe('Watchlist', () => {
   });
 
   it('toggles watched when the checkbox is clicked', async () => {
-    checkboxByLabel('Movie 1').click();
+    checkbox().click();
     await fixture.whenStable();
-    expect(checkboxByLabel('Movie 1').checked).toBe(true);
+    // Movie 1 became watched, so under the unwatched-first order it sank to index 1
+    expect(checkbox(1).checked).toBe(true);
     expect(component.watchedCount()).toBe(1);
     expect(el.querySelector('.subtitle')?.textContent).toContain('1 of 2 watched');
   });
@@ -62,30 +58,40 @@ describe('Watchlist', () => {
   it('toggles watched when blank space on the row is clicked', async () => {
     items()[0].click();
     await fixture.whenStable();
-    expect(checkboxByLabel('Movie 1').checked).toBe(true);
+    // Movie 1 became watched, so under the unwatched-first order it sank to index 1
+    expect(checkbox(1).checked).toBe(true);
   });
 
-  it('lists unwatched movies before watched ones, preserving store order within each group', async () => {
+  it('lists unwatched movies before watched ones, keeping relative order', async () => {
+    component.toggleWatched(1);
+    await fixture.whenStable();
+    // Watched Movie 1 sinks below the still-unwatched Movie 2
+    expect(titles()).toEqual(['Movie 2', 'Movie 1']);
+
+    component.toggleWatched(2);
+    await fixture.whenStable();
+    // Both watched: the store's original relative order is preserved
+    expect(titles()).toEqual(['Movie 1', 'Movie 2']);
+
+    component.toggleWatched(2);
+    await fixture.whenStable();
+    // Movie 2 unwatched again: moves back above the watched Movie 1
+    expect(titles()).toEqual(['Movie 2', 'Movie 1']);
+  });
+
+  it('immediately reflects the new order when items are added or removed', async () => {
+    component.toggleWatched(1);
+    await fixture.whenStable();
+    expect(titles()).toEqual(['Movie 2', 'Movie 1']);
+
     store.add({ id: 3, title: 'Movie 3', release_date: '2024-03-01', poster_path: null, overview: '' });
-    store.add({ id: 4, title: 'Movie 4', release_date: '2024-04-01', poster_path: null, overview: '' });
     await fixture.whenStable();
-    expect(component.movies().map((movie) => movie.id)).toEqual([1, 2, 3, 4]);
+    // Unwatched new arrival goes after Movie 2 but above the watched Movie 1
+    expect(titles()).toEqual(['Movie 2', 'Movie 3', 'Movie 1']);
 
-    component.toggleWatched(2);
-    component.toggleWatched(4);
+    store.remove(2);
     await fixture.whenStable();
-    expect(component.movies().map((movie) => movie.id)).toEqual([1, 3, 2, 4]);
-    expect(
-      Array.from(el.querySelectorAll<HTMLAnchorElement>('.title-link')).map((link) => link.textContent),
-    ).toEqual(['Movie 1', 'Movie 3', 'Movie 2', 'Movie 4']);
-
-    component.remove(component.movies().find((movie) => movie.id === 1)!);
-    await fixture.whenStable();
-    expect(component.movies().map((movie) => movie.id)).toEqual([3, 2, 4]);
-
-    component.toggleWatched(2);
-    await fixture.whenStable();
-    expect(component.movies().map((movie) => movie.id)).toEqual([2, 3, 4]);
+    expect(titles()).toEqual(['Movie 3', 'Movie 1']);
   });
 
   it('navigates via the title link without toggling watched', async () => {

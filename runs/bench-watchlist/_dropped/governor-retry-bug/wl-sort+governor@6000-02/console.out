@@ -1,0 +1,77 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-sort+governor@6000-02
+provider: ollama-cloud (glm-5.3)
+request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
+
+governor turn 1: plan -> watchlist  (The request is a display-order concern for the watchlist view only: its `movies` signal must become a stable partition of the store's items (unwatched first, watched after). This can be done entirely inside the watchlist component — no interface changes and no other unit is affected. An acceptance test pins the sorted, reactive behaviour through the component's public exports.)
+round 1: owners watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist  (Only the watchlist unit is implicated: tsc is clean and the sorting acceptance tests pass, but two existing toggle tests in the unit's own spec now fail ('expected false to be true'), meaning the round-1 change broke checkbox/row-click toggling. Instruct that owner to repair the toggle wiring while keeping the sorted display, without editing existing tests.)
+round 2: owners watchlist=ok; oracle RED
+governor turn 3: plan -> watchlist  (Identical failures persist after the owner's round-2 fix while all other suites (including the sorted-display acceptance tests) pass, so the sorting works and the problem is confined to the click-to-toggle path or to order-dependent assertions in the two failing spec tests. I'm forcing a ground-truth fork: the owner must first prove whether a UI click flips the store item; if not, fix the id-based wiring; if yes, formally request changes to the two tests that pin the pre-sort display order. I extend the acceptance test to pin component.toggleWatched(id) so next round's oracle cleanly distinguishes a broken component method from order-pinned spec assertions.)
+round 3: owners watchlist=fail; oracle RED
+governor turn 4 failed: prompt of ~6653 tokens exceeds the 6000-token budget
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "over_budget",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 3,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 28485,
+    "output": 146219
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 10651,
+      "output": 41186
+    },
+    "owner": {
+      "calls": 4,
+      "input": 17834,
+      "output": 105033
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "budgetStats": {
+    "maxPromptTokens": 4793,
+    "maxEstimate": 6653,
+    "overBudget": 2,
+    "violations": 0
+  },
+  "usd": 0
+}

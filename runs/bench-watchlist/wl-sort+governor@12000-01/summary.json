@@ -6,9 +6,9 @@
   "provider": "ollama-cloud",
   "model": "glm-5.3",
   "rounds": 2,
-  "status": "over_budget",
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "red",
+  "finalOracle": "green",
   "instructedUnits": [
     [
       "watchlist"
@@ -27,14 +27,14 @@
         "unit": "watchlist",
         "title": "Watchlist > toggles watched when the checkbox is clicked",
         "kind": "modified",
-        "reason": "The required new behaviour (unwatched movies listed before watched ones) makes the clicked row move: marking Movie 1 watched drops its row below Movie 2, so the first row becomes Movie 2. This test looked the checkbox up positionally (first row) AFTER the click, so it would assert on Movie 2's unchecked checkbox and fail. I captured the checkbox element before the click so the assertion still targets the movie that was toggled; the behaviour under test (clicking a checkbox toggles that movie's watched state) and all other assertions are unchanged.",
+        "reason": "This test re-queried the first row's checkbox after clicking it. Under the new required ordering (unwatched movies first), the movie just toggled to watched is re-ordered to the end of the list, so the first checkbox after the click belongs to the other, still-unwatched movie and `checkbox().checked` would be false, failing the test even though the component behaves correctly. I captured a reference to the clicked checkbox before the click and assert on that element; the test's original intent (clicking a checkbox marks that movie watched) and the watchedCount/subtitle assertions are unchanged.",
         "round": 1
       },
       {
         "unit": "watchlist",
         "title": "Watchlist > toggles watched when blank space on the row is clicked",
         "kind": "modified",
-        "reason": "Same conflict with the new ordering: clicking blank space on the first row marks Movie 1 watched, which moves that row to the bottom of the list, so the original post-click positional checkbox() lookup resolves to Movie 2's unchecked checkbox. I capture the checkbox before the click so the assertion still checks the movie whose row was clicked; the behaviour under test (clicking blank row space toggles that movie) is unchanged.",
+        "reason": "Same consequence of the new ordering: after clicking blank space on the first row, that movie becomes watched and its row is re-ordered to the end, so re-querying the first row's checkbox no longer finds the toggled movie's checkbox and the test would fail despite correct behaviour. The test now holds a reference to the clicked row's checkbox before clicking, preserving its original intent (a blank-space row click toggles that row's movie).",
         "round": 1
       }
     ],
@@ -59,14 +59,27 @@
     "failures": []
   },
   "tokens": {
-    "input": 18151,
-    "output": 81792
+    "input": 18529,
+    "output": 67092
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 10889,
+      "output": 24887
+    },
+    "owner": {
+      "calls": 2,
+      "input": 7640,
+      "output": 42205
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 4225,
-    "maxEstimate": 23451,
-    "overBudget": 1,
+    "maxPromptTokens": 4393,
+    "maxEstimate": 5096,
+    "overBudget": 0,
     "violations": 0
   },
   "usd": 0

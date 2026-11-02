@@ -1,0 +1,94 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-rename+governor@12000-03
+provider: ollama-cloud (glm-5.3)
+request: Rename the `watched` field of watchlist items to `seen` everywhere.
+
+governor turn 1: plan -> movie, watchlist-store, watchlist  (Pure rename of the WatchItem field `watched` → `seen`: the declaration lives in movie, all reads/writes and the persisted JSON live in watchlist-store, and the template/computed references live in watchlist. Public member names (toggleWatched, watchedCount, progress) and non-watchlist types (Movie.watched) are intentionally unchanged — the request targets the watchlist item field only. search, movie-detail and app only touch list membership and unchanged member names, so they need no edits.)
+round 1: owners movie=ok watchlist-store=ok watchlist=rejected; oracle RED
+governor turn 2: plan -> watchlist  (movie and watchlist-store already applied the rename; the only remaining errors are in the watchlist unit. Its prior submission was rejected solely for changing an existing test's field read from `watched` to `seen`, which is precisely what this rename request requires, so I approve that single test edit and re-instruct watchlist.)
+round 2: owners watchlist=ok; oracle RED
+governor turn 3: plan -> watchlist-store  (The rename is complete in production code: tsc is green and all unit tests pass. The only failures are the watchlist-store acceptance tests, which constructed the store with `new WatchlistStore()` outside an injection context (NG0203, because the constructor calls effect()). I am replacing that acceptance test with a TestBed-based version that constructs the store in an injection context, flushes effects before the persistence/reload check, and creates the reloaded instance via a fresh TestBed injector. No production changes are needed.)
+round 3: owners watchlist-store=ok; oracle RED
+governor turn 4 failed: prompt of ~33123 tokens exceeds the 12000-token budget
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "over_budget",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "This test pinned the old WatchItem.watched field via `expect(store.items()[0].watched).toBe(false)`, which will no longer compile against the updated WatchItem interface where `watched` is renamed to `seen`. Updated the read to `store.items()[0].seen`; the expected value (false), the test's intent, and its title are unchanged. No workaround was possible since the field is removed by the interface change.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 2,
+    "failed": 1,
+    "failures": [
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
+    ]
+  },
+  "tokens": {
+    "input": 42039,
+    "output": 167864
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 17094,
+      "output": 71621
+    },
+    "owner": {
+      "calls": 9,
+      "input": 24945,
+      "output": 96243
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 6267,
+    "maxEstimate": 33123,
+    "overBudget": 1,
+    "violations": 0
+  },
+  "usd": 0
+}

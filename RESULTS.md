@@ -244,3 +244,28 @@ The first pass finished at 08:35 (36/36 runs), but 15 of 18 governor runs ended 
 2. **Asymmetry: the governor had no context management.** Without retries, its prompt reached 6.2k–6.9k tokens after 2–4 rounds (manifest ~1.4k, growing history of plans and owner reports up to ~2.4k, capped oracle output, its own acceptance tests up to ~1.3k), so 7 runs overflowed 6k. Owners and the single agent drop their oldest detail; the governor now does too, under a budget: earlier rounds shrink to their first line, then its acceptance tests to titles only. The latest round, the manifest and the capped oracle output stay whole.
 
 The 18 governor runs were moved to `bench-watchlist/_dropped/governor-retry-bug/` and are being rerun with the fixes. The 18 single-agent runs stand.
+
+# Watchlist bench: results (2026-11-01)
+
+`runs/bench-watchlist/` · 36 runs (rename, sort, wrong-belief × governor/single × 12k/6k budget × 3) · `glm-5.3` via Ollama cloud · repo ~12.7k tokens · governor runs redone after the retry fix (old ones in `_dropped/governor-retry-bug/`). Pass = accepted green **and** the held-out spec passes (and, for sort, one unit per round).
+
+| Passes (of 3) | Governor 12k | Governor 6k | Single 12k | Single 6k |
+|---|---|---|---|---|
+| Rename (`watched` → `seen`, old saved watchlists still load) | 0 | **2** | 0 | 0 |
+| Sort (unwatched first) | 2 | **3** | 2 | 1 |
+| Wrong belief (clear button; field stays `watched`) | 2 | 2 | 0 | 0 |
+| **Total** | **4/9** | **7/9** | **2/9** | **1/9** |
+| Runs that ran out of context | 0 | 0 | 0 | **6** |
+| Output tokens per run (all roles) | ~140k | ~140k | ~11k | ~8k |
+
+## Against the predictions (written before running)
+- **Single agent degrades at 6k: confirmed.** 6 of 9 runs ran out of context, and it passed 1/9. It reads, compaction drops what it read, it reads again.
+- **Governor setup at 6k: better than predicted.** I expected owners of big units (`movie-detail`) to overflow; with the shared context management none did (0/9 over budget), and 6k scored 7/9, the best cell. With n=3 the 6k-vs-12k difference for the governor (7 vs 4) is noise-level; the governor-vs-single gap at 6k (7 vs 1) is not.
+- **Old saved data on the rename: mostly wrong prediction.** I expected both setups to break saved watchlists (glm's calibration: 1/5). The single agent broke them 3/3 at 12k, but the governor setup at 6k kept them loading in 2/3, and 0/3 at 12k. Too few runs to say why.
+- **Sort routing: wrong prediction.** I expected glm's governor to over-route as on todo; it sent sort to `watchlist` alone in 6/6 runs.
+- **Single agent at 12k "behaves like todo": partly.** Rename went green in 1 round each time (breaking saved data, as predicted), sort passed 2/3, but **wrong-belief failed 3/3 by hitting the 40-call limit**, although its code passed the held-out test in 2 of those 3: it made the change and kept exploring instead of running the tests and accepting. That's partly a property of my single-agent loop (call cap, no nudge to run `check`), so read wrong-belief+single as "didn't finish", not "got it wrong".
+
+## Reading it
+- **This is the first result that supports the thesis**: when one agent can't hold the repo (6k vs a ~12.7k-token repo), the split keeps working (7/9) and the single agent doesn't (1/9). At 12k, where the whole repo nearly fits, the gap is smaller (4/9 vs 2/9) and partly about the single agent's loop.
+- **It costs far more.** The governor setup produced ~140k output tokens per run (mostly thinking) vs ~8–11k for the single agent. Tokens per successful change: governor 84k–392k, single 168k–291k where it passed at all. The token-saving plan in NOTES.md (thinking depth by role, compiler-based relevance) is the next lever.
+- **Caveats:** n=3 per cell; one model (glm-5.3); one small repo; the single agent's tools and loop were redesigned during this bench (search/edit, compaction, 40-call cap), and several harness fixes landed between smoke runs, all recorded above.

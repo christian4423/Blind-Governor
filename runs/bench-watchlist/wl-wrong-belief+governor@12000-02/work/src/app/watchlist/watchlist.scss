@@ -6,6 +6,38 @@
   max-width: 800px;
 }
 
+// Bulk actions row. Rendered unconditionally so the Clear watched button is
+// part of the view even when the watchlist is empty.
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.clear-watched-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+
+  &:hover:not(:disabled) {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  // Disabled state stays legible: full-contrast text on a muted surface
+  &:disabled {
+    background-color: var(--surface-muted);
+    color: var(--text);
+    cursor: not-allowed;
+  }
+}
+
 .progress {
   height: 6px;
   margin: -8px 0 20px;

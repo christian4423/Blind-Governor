@@ -11,7 +11,13 @@ import { WatchlistStore } from '../watchlist-store';
 })
 export class Watchlist {
   store = inject(WatchlistStore)
-  movies = this.store.items
+  // Unwatched movies are shown before watched ones; within each group the
+  // store's order (insertion order) is preserved. The store itself keeps its
+  // own ordering so persistence and other consumers are unaffected.
+  movies = computed(() => {
+    const items = this.store.items()
+    return [...items.filter(m => !m.watched), ...items.filter(m => m.watched)]
+  })
 
   readonly imageBase = 'https://image.tmdb.org/t/p/w92';
 

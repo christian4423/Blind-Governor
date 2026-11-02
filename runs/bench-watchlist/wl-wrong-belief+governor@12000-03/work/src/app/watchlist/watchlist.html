@@ -3,6 +3,10 @@
         <h1>My Watchlist</h1>
         @if (movies().length) {
             <p class="subtitle">{{ watchedCount() }} of {{ movies().length }} watched</p>
+            @if (watchedCount() > 0) {
+                <!-- Bulk action: the store drops every watched item, announcement set in clearWatched() -->
+                <button type="button" class="clear-watched-btn" (click)="clearWatched()">Clear seen movies</button>
+            }
         }
     </header>
 

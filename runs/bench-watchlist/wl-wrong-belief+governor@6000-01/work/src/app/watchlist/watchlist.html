@@ -1,0 +1,56 @@
+<div class="container">
+    <header class="page-header">
+        <h1>My Watchlist</h1>
+        @if (movies().length) {
+            <p class="subtitle">{{ watchedCount() }} of {{ movies().length }} watched</p>
+        }
+    </header>
+
+    <!-- Announces watchlist changes (add/remove/clear) to screen reader users -->
+    <p class="visually-hidden" role="status">{{ announcement() }}</p>
+
+    @if (movies().length === 0) {
+        <div class="empty-state">
+            <p>Your watchlist is empty.</p>
+            <a routerLink="/search" class="btn btn-primary">Find movies to add</a>
+        </div>
+    } @else {
+        <div class="progress-row">
+            <div class="progress" aria-hidden="true">
+                <div class="progress-bar" [style.width.%]="progress()"></div>
+            </div>
+            <button type="button" class="clear-watched" [disabled]="watchedCount() === 0"
+                (click)="clearWatched()">Clear watched movies</button>
+        </div>
+
+        <ul class="watchlist" aria-label="Movies on your watchlist">
+            @for (movie of movies(); track movie.id) {
+                <!-- Clicking empty space on the row toggles watched; the checkbox, link and button handle their own clicks -->
+                <li class="watchlist-item" [class.watched]="movie.watched" (click)="onRowClick($event, movie.id)">
+                    <input type="checkbox" class="watched-checkbox" [checked]="movie.watched"
+                        (change)="toggleWatched(movie.id)" [attr.aria-label]="'Watched: ' + movie.title">
+
+                    @if (movie.poster_path) {
+                        <img class="thumb" [src]="imageBase + movie.poster_path" alt="" width="46" height="69" loading="lazy">
+                    } @else {
+                        <div class="thumb thumb-empty" aria-hidden="true">🎞️</div>
+                    }
+
+                    <div class="item-text">
+                        <a [routerLink]="['/movie', movie.id]" class="title-link">{{ movie.title }}</a>
+                        @if (movie.release_date) {
+                            <span class="year">{{ movie.release_date.slice(0, 4) }}</span>
+                        }
+                    </div>
+
+                    <span class="status-pill" aria-hidden="true">{{ movie.watched ? 'Watched' : 'To watch' }}</span>
+
+                    <button type="button" class="remove-btn" (click)="remove(movie)">
+                        <span aria-hidden="true">✕</span>
+                        <span class="visually-hidden">Remove {{ movie.title }} from watchlist</span>
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</div>

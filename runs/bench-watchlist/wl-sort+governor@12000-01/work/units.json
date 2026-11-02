@@ -114,7 +114,7 @@
       "src/app/watchlist/watchlist.spec.ts"
     ],
     "purpose": "",
-    "exports": "import { Signal } from '@angular/core';\nimport { WatchItem } from '../movie';\nimport { WatchlistStore } from '../watchlist-store';\nexport declare class Watchlist {\n    store: WatchlistStore;\n    movies: Signal<WatchItem[]>;\n    readonly imageBase = \"https://image.tmdb.org/t/p/w92\";\n    watchedCount: Signal<number>;\n    progress: Signal<number>;\n    announcement: import(\"@angular/core\").WritableSignal<string>;\n    toggleWatched(id: number): void;\n    onRowClick(event: MouseEvent, id: number): void;\n    remove(movie: WatchItem): void;\n}",
+    "exports": "import { WatchItem } from '../movie';\nimport { WatchlistStore } from '../watchlist-store';\nexport declare class Watchlist {\n    store: WatchlistStore;\n    movies: import(\"@angular/core\").Signal<WatchItem[]>;\n    readonly imageBase = \"https://image.tmdb.org/t/p/w92\";\n    watchedCount: import(\"@angular/core\").Signal<number>;\n    progress: import(\"@angular/core\").Signal<number>;\n    announcement: import(\"@angular/core\").WritableSignal<string>;\n    toggleWatched(id: number): void;\n    onRowClick(event: MouseEvent, id: number): void;\n    remove(movie: WatchItem): void;\n}",
     "imports": [
       "movie",
       "watchlist-store"

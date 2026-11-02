@@ -1,54 +1,36 @@
 import { TestBed } from '@angular/core/testing';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { WatchlistStore } from '../app/watchlist-store';
-import { TmdbMovie } from '../app/movie';
 
-const movie = (id: number, title: string): TmdbMovie => ({
-  id,
-  title,
-  release_date: '2024-01-01',
-  poster_path: '/poster.jpg',
-  overview: 'An epic adventure.',
-});
+describe('WatchlistStore items use a seen flag', () => {
+  let store: WatchlistStore;
 
-async function freshStore(): Promise<WatchlistStore> {
-  await TestBed.resetTestingModule();
-  await TestBed.configureTestingModule({ providers: [WatchlistStore] });
-  return await TestBed.inject(WatchlistStore);
-}
-
-describe('WatchlistStore: watchlist items use the seen field', () => {
   beforeEach(() => {
     localStorage.clear();
+    TestBed.configureTestingModule({ providers: [WatchlistStore] });
+    store = TestBed.inject(WatchlistStore);
   });
 
-  afterEach(async () => {
-    await TestBed.resetTestingModule();
-  });
-
-  it('adds a movie as an item with seen false and no watched key', async () => {
-    const store = await freshStore();
-    store.add(movie(1, 'Dune'));
-    const items = store.items();
-    expect(items).toHaveLength(1);
-    const item = items[0] as unknown as Record<string, unknown>;
-    expect(item.id).toBe(1);
-    expect(item.title).toBe('Dune');
+  it('adds items with seen=false and no watched property', () => {
+    store.add({
+      id: 42,
+      title: 'Arrival',
+      release_date: '2016-11-10',
+      poster_path: null,
+      overview: 'First contact.',
+    });
+    const item = store.items()[0];
     expect(item.seen).toBe(false);
-    expect(item['watched']).toBeUndefined();
+    expect('watched' in item).toBe(false);
+    expect(store.count()).toBe(1);
   });
 
-  it('toggleWatched flips the item seen flag and watchedCount counts seen items', async () => {
-    const store = await freshStore();
-    store.add(movie(1, 'Dune'));
-    store.add(movie(2, 'Arrival'));
-    expect(store.watchedCount()).toBe(0);
-
+  it('toggles the seen flag and counts seen items', () => {
+    store.add({ id: 1, title: 'Up', release_date: '2009-05-28', poster_path: null, overview: 'a' });
+    store.add({ id: 2, title: 'Wall-E', release_date: '2008-06-27', poster_path: null, overview: 'b' });
     store.toggleWatched(1);
     expect(store.items().find((i) => i.id === 1)?.seen).toBe(true);
     expect(store.items().find((i) => i.id === 2)?.seen).toBe(false);
     expect(store.watchedCount()).toBe(1);
-
     store.toggleWatched(1);
     expect(store.items().find((i) => i.id === 1)?.seen).toBe(false);
     expect(store.watchedCount()).toBe(0);

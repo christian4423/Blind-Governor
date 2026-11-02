@@ -1,4 +1,4 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-sort+single@6000-02
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-sort+single@6000-02
 provider: ollama-cloud (glm-5.3)
 request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
 
@@ -11,7 +11,7 @@ request: In the watchlist, show movies I haven't watched yet before the ones I'v
   "provider": "ollama-cloud",
   "model": "glm-5.3",
   "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 529bb653-120f-4431-8f5c-6c6bdc87e949)\"},\"request_id\":\"req_b4bc9ad04390c77220ff6bd2\"}",
+  "status": "over_budget",
   "clarifications": 0,
   "finalOracle": "not run",
   "instructedUnits": [],
@@ -35,14 +35,22 @@ request: In the watchlist, show movies I haven't watched yet before the ones I'v
     ]
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 114629,
+    "output": 7864
   },
+  "tokensByRole": {
+    "single": {
+      "calls": 35,
+      "input": 114629,
+      "output": 7864
+    }
+  },
+  "repoTokens": 12710,
   "budget": 6000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 1241,
-    "overBudget": 0,
+    "maxPromptTokens": 4458,
+    "maxEstimate": 6037,
+    "overBudget": 1,
     "violations": 0
   },
   "usd": 0

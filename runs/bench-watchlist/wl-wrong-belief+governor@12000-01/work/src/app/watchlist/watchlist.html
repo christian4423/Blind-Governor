@@ -2,16 +2,11 @@
     <header class="page-header">
         <h1>My Watchlist</h1>
         @if (movies().length) {
-            <div class="header-actions">
-                <p class="subtitle">{{ watchedCount() }} of {{ movies().length }} watched</p>
-                <!-- Page-level control: clears every watched movie in one click (stays rendered, disabled when nothing is watched) -->
-                <button type="button" class="clear-watched-btn" (click)="clearWatched()"
-                    [disabled]="watchedCount() === 0">Clear watched</button>
-            </div>
+            <p class="subtitle">{{ watchedCount() }} of {{ movies().length }} watched</p>
         }
     </header>
 
-    <!-- Announces add/remove/clear changes to screen reader users -->
+    <!-- Announces add/remove changes to screen reader users -->
     <p class="visually-hidden" role="status">{{ announcement() }}</p>
 
     @if (movies().length === 0) {
@@ -20,8 +15,13 @@
             <a routerLink="/search" class="btn btn-primary">Find movies to add</a>
         </div>
     } @else {
-        <div class="progress" aria-hidden="true">
-            <div class="progress-bar" [style.width.%]="progress()"></div>
+        <div class="list-controls">
+            <div class="progress" aria-hidden="true">
+                <div class="progress-bar" [style.width.%]="progress()"></div>
+            </div>
+            <button type="button" class="clear-watched-btn" (click)="clearWatched()" [disabled]="watchedCount() === 0">
+                Clear watched ({{ watchedCount() }})
+            </button>
         </div>
 
         <ul class="watchlist" aria-label="Movies on your watchlist">

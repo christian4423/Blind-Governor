@@ -1,23 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { TmdbMovie } from './movie';
 import { WatchlistStore } from './watchlist-store';
-
-function movie(id: number, title: string): TmdbMovie {
-    return {
-        id,
-        title,
-        release_date: '2024-01-01',
-        poster_path: `/poster-${id}.jpg`,
-        overview: 'A test movie overview.'
-    };
-}
 
 describe('WatchlistStore', () => {
   let service: WatchlistStore;
 
   beforeEach(() => {
-    TestBed.resetTestingModule();
-    localStorage.clear();
+    localStorage.removeItem('watchlist');
     TestBed.configureTestingModule({});
     service = TestBed.inject(WatchlistStore);
   });
@@ -26,74 +14,56 @@ describe('WatchlistStore', () => {
     expect(service).toBeTruthy();
   });
 
-  it('adds an item with seen false and no watched key', () => {
-    service.add(movie(1, 'Movie One'));
+  it('adds items with seen: false', () => {
+    service.add({ id: 1, title: 'Alien', poster_path: '/alien.jpg', release_date: '1979-05-25', overview: '' });
 
+    expect(service.items()).toEqual([
+      { id: 1, title: 'Alien', poster_path: '/alien.jpg', release_date: '1979-05-25', seen: false },
+    ]);
     expect(service.count()).toBe(1);
-    expect(service.items()[0]).toEqual({
-      id: 1,
-      title: 'Movie One',
-      poster_path: '/poster-1.jpg',
-      release_date: '2024-01-01',
-      seen: false
-    });
-    expect(service.items()[0]).not.toHaveProperty('watched');
+    expect(service.watchedCount()).toBe(0);
   });
 
-  it('does not add the same movie twice', () => {
-    service.add(movie(1, 'Movie One'));
-    service.add(movie(1, 'Movie One'));
+  it('toggleWatched flips seen and watchedCount counts seen items', () => {
+    service.add({ id: 1, title: 'Alien', poster_path: null, release_date: '1979-05-25', overview: '' });
+    service.add({ id: 2, title: 'Aliens', poster_path: null, release_date: '1986-07-18', overview: '' });
 
-    expect(service.count()).toBe(1);
+    service.toggleWatched(1);
+
+    expect(service.items()[0].seen).toBe(true);
+    expect(service.watchedCount()).toBe(1);
+
+    service.toggleWatched(1);
+
+    expect(service.items()[0].seen).toBe(false);
+    expect(service.watchedCount()).toBe(0);
   });
 
-  it('removes an item by id', () => {
-    service.add(movie(1, 'Movie One'));
-    service.add(movie(2, 'Movie Two'));
+  it('remove(id) keeps the items that do not match', () => {
+    service.add({ id: 1, title: 'Alien', poster_path: null, release_date: '1979-05-25', overview: '' });
+    service.add({ id: 2, title: 'Aliens', poster_path: null, release_date: '1986-07-18', overview: '' });
 
     service.remove(1);
 
     expect(service.items()).toEqual([
-      { id: 2, title: 'Movie Two', poster_path: '/poster-2.jpg', release_date: '2024-01-01', seen: false }
+      { id: 2, title: 'Aliens', poster_path: null, release_date: '1986-07-18', seen: false },
     ]);
+    expect(service.count()).toBe(1);
   });
 
-  it('toggleWatched flips the seen flag', () => {
-    service.add(movie(1, 'Movie One'));
-
-    expect(service.items()[0].seen).toBe(false);
-
-    service.toggleWatched(1);
-    expect(service.items()[0].seen).toBe(true);
-
-    service.toggleWatched(1);
-    expect(service.items()[0].seen).toBe(false);
-  });
-
-  it('watchedCount counts items whose seen is true', () => {
-    service.add(movie(1, 'Movie One'));
-    service.add(movie(2, 'Movie Two'));
-    service.add(movie(3, 'Movie Three'));
-
-    service.toggleWatched(1);
-    service.toggleWatched(2);
-    service.toggleWatched(2);
-
-    expect(service.count()).toBe(3);
-    expect(service.watchedCount()).toBe(1);
-  });
-
-  it('loads persisted items reading the seen field', () => {
-    TestBed.resetTestingModule();
+  it('loads persisted items using seen, falling back to legacy watched, and strips watched', () => {
     localStorage.setItem('watchlist', JSON.stringify([
-      { id: 7, title: 'Seeded', seen: true },
-      { id: 8, title: 'Seeded Too', seen: false }
+      { id: 1, title: 'Seen true', seen: true, watched: false },
+      { id: 2, title: 'Seen false wins', seen: false, watched: true },
+      { id: 3, title: 'Legacy flag true', watched: true },
+      { id: 4, title: 'Legacy flag false', watched: false },
+      { id: 5, title: 'Neither present' },
     ]));
-    TestBed.configureTestingModule({});
-    const fresh = TestBed.inject(WatchlistStore);
+    const store = TestBed.runInInjectionContext(() => new WatchlistStore());
 
-    expect(fresh.count()).toBe(2);
-    expect(fresh.watchedCount()).toBe(1);
-    expect(fresh.items()[0]).toEqual({ id: 7, title: 'Seeded', seen: true });
+    expect(store.items().map(item => item.seen)).toEqual([true, false, true, false, false]);
+    expect(store.items().every(item => !('watched' in item))).toBe(true);
+    expect(JSON.stringify(store.items())).not.toContain('watched');
+    expect(store.watchedCount()).toBe(2);
   });
 });

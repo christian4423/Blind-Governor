@@ -34,4 +34,8 @@ export class WatchlistStore {
             items.map(m => m.id === id ? { ...m, watched: !m.watched } : m)
         );
     }
+
+    clearWatched(): void {
+        this._items.update(items => items.filter(m => !m.watched));
+    }
 }

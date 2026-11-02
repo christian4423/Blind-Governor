@@ -5,38 +5,72 @@
   "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "rate_limited",
+  "rounds": 1,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist"
+    ]
+  ],
   "governorIsolation": "n/a",
   "showBehaviour": false,
   "acceptanceTestsWritten": 0,
   "testGuard": {
     "rejectedSubmissions": 0,
-    "requests": [],
-    "approvals": []
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when the checkbox is clicked",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when blank space on the row is clicked",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 1,
+        "title": "Watchlist > toggles watched when the checkbox is clicked"
+      },
+      {
+        "round": 1,
+        "title": "Watchlist > toggles watched when blank space on the row is clicked"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
   "heldout": {
     "slug": "sort",
-    "pass": false,
+    "pass": true,
     "total": 1,
-    "failed": 1,
-    "failures": [
-      "held-out: unwatched before watched lists unwatched movies first, keeping the original order within each group: AssertionError: expected [ 'A', 'B', 'C', 'D' ] to deeply equal [ 'B', 'D', 'A', 'C' ]"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 73201,
+    "output": 12029
   },
+  "tokensByRole": {
+    "single": {
+      "calls": 12,
+      "input": 73201,
+      "output": 12029
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 1241,
+    "maxPromptTokens": 8664,
+    "maxEstimate": 10794,
     "overBudget": 0,
     "violations": 0
   },

@@ -6,7 +6,7 @@
   "provider": "ollama-cloud",
   "model": "glm-5.3",
   "rounds": 0,
-  "status": "rate_limited",
+  "status": "over_budget",
   "clarifications": 0,
   "finalOracle": "not run",
   "instructedUnits": [],
@@ -30,14 +30,22 @@
     ]
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 90987,
+    "output": 15684
   },
+  "tokensByRole": {
+    "single": {
+      "calls": 28,
+      "input": 90987,
+      "output": 15684
+    }
+  },
+  "repoTokens": 12710,
   "budget": 6000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 1237,
-    "overBudget": 0,
+    "maxPromptTokens": 4353,
+    "maxEstimate": 6085,
+    "overBudget": 1,
     "violations": 0
   },
   "usd": 0

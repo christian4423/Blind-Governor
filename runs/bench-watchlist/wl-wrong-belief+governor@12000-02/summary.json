@@ -5,14 +5,19 @@
   "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "rate_limited",
+  "rounds": 1,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
-  "governorIsolation": "clean",
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "LEAK",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 2,
   "testGuard": {
     "rejectedSubmissions": 0,
     "requests": [],
@@ -22,21 +27,32 @@
   "behaviour": null,
   "heldout": {
     "slug": "wrong-belief",
-    "pass": false,
+    "pass": true,
     "total": 1,
-    "failed": 1,
-    "failures": [
-      "held-out: clear watched movies a clear button removes watched movies, keeps the rest, and keeps the saved field name: AssertionError: a button whose text mentions \"clear\": expected undefined to be truthy"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 11985,
+    "output": 57853
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 2,
+      "input": 6662,
+      "output": 20651
+    },
+    "owner": {
+      "calls": 2,
+      "input": 5323,
+      "output": 37202
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2950,
+    "maxPromptTokens": 4185,
+    "maxEstimate": 5066,
     "overBudget": 0,
     "violations": 0
   },

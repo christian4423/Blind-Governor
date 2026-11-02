@@ -63,7 +63,7 @@ describe('Watchlist', () => {
 
     link.click();
     await fixture.whenStable();
-    expect(store.items()[0].watched).toBe(false);
+    expect(store.items()[0].seen).toBe(false);
   });
 
   it('removes a movie and announces it to screen readers', async () => {

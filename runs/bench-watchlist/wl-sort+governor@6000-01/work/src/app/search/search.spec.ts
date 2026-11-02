@@ -1,17 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { vi } from 'vitest';
 import { Search } from './search';
 import { MovieService } from '../movie.service';
 import { WatchlistStore } from '../watchlist-store';
 import { TmdbMovie } from '../movie';
 import { expectNoA11yViolations } from '../../testing/axe';
-
-// Preventive infra tweak only: axe scans of this kind have been timing out at
-// the default 5000ms in this environment. Raising the per-file timeouts is a
-// pure addition and does not change any test's asserted behaviour.
-vi.setConfig({ testTimeout: 30000, hookTimeout: 30000 });
 
 const trending: TmdbMovie[] = [
   { id: 42, title: 'Test Movie', release_date: '2024-05-01', poster_path: '/p.jpg', overview: '' },

@@ -1,8 +1,11 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-wrong-belief+governor@12000-02
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-wrong-belief+governor@12000-02
 provider: ollama-cloud (glm-5.3)
 request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
 
-governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 051d10fe-229b-46ea-a748-0c0e4471898b)"},"request_id":"req_b3a209f99894d3bb303e6fba"}
+governor turn 1: plan -> watchlist-store, watchlist  (The request's 'seen' flag maps to the existing WatchItem.watched boolean (no 'seen' field exists anywhere in the codebase). Two units change: watchlist-store gains clearWatched(), which removes every watched item and persists the result, and the watchlist view gains a 'Clear watched' button wired to it, disabled while nothing is watched. Acceptance tests pin both levels.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle GREEN
+!! GOVERNOR ISOLATION LEAK: 1 source line(s) in governor prompt
+governor turn 2: accept  (Both units delivered their changes: WatchlistStore gained clearWatched(): void (persisted, order-preserving, no-op safe) and the watchlist component gained a 'Clear watched' button that is disabled at zero watched count and removes all watched movies when clicked. Oracle is green (tsc exit 0, 43 tests passing) and both acceptance tests covering the store behaviour and the button pass, so the request is satisfied.)
 
 {
   "target": "watchlist",
@@ -11,14 +14,19 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 051d10fe-229b-46ea-a748-0c0e4471898b)\"},\"request_id\":\"req_b3a209f99894d3bb303e6fba\"}",
+  "rounds": 1,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
-  "governorIsolation": "clean",
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "LEAK",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 2,
   "testGuard": {
     "rejectedSubmissions": 0,
     "requests": [],
@@ -28,21 +36,32 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "behaviour": null,
   "heldout": {
     "slug": "wrong-belief",
-    "pass": false,
+    "pass": true,
     "total": 1,
-    "failed": 1,
-    "failures": [
-      "held-out: clear watched movies a clear button removes watched movies, keeps the rest, and keeps the saved field name: AssertionError: a button whose text mentions \"clear\": expected undefined to be truthy"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 11985,
+    "output": 57853
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 2,
+      "input": 6662,
+      "output": 20651
+    },
+    "owner": {
+      "calls": 2,
+      "input": 5323,
+      "output": 37202
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2950,
+    "maxPromptTokens": 4185,
+    "maxEstimate": 5066,
     "overBudget": 0,
     "violations": 0
   },

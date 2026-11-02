@@ -5,23 +5,27 @@
   "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 1,
-  "status": "over_budget",
+  "rounds": 3,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "red",
+  "finalOracle": "green",
   "instructedUnits": [
     [
       "movie",
       "watchlist-store",
-      "watchlist",
-      "movie-detail",
-      "search",
-      "app"
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
     ]
   ],
   "governorIsolation": "clean",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 1,
+  "acceptanceTestsWritten": 5,
   "testGuard": {
     "rejectedSubmissions": 1,
     "requests": [
@@ -29,32 +33,50 @@
         "unit": "watchlist",
         "title": "Watchlist > navigates via the title link without toggling watched",
         "kind": "modified",
-        "reason": "The store's WatchItem field was renamed from `watched` to `seen`. This test reads `store.items()[0].watched`, which no longer exists on the type, so it would fail to compile/return undefined. I changed only the field reference to `store.items()[0].seen`; the assertion (expecting the item to remain un-seen after clicking the link) and the test's intent are unchanged.",
+        "reason": "The test asserts `store.items()[0].watched` to verify the link click did not toggle the flag. `WatchItem` now carries `seen: boolean` instead of `watched: boolean`, so the assertion was updated to read `.seen`. The test's intent and behaviour are unchanged.",
         "round": 1
       }
     ],
-    "approvals": []
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
   "heldout": {
     "slug": "rename",
     "pass": false,
-    "total": 0,
-    "failed": 0,
+    "total": 2,
+    "failed": 1,
     "failures": [
-      "held-out test did not run (build failed)"
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
     ]
   },
   "tokens": {
-    "input": 39775,
-    "output": 140155
+    "input": 52824,
+    "output": 98906
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 17632,
+      "output": 42814
+    },
+    "owner": {
+      "calls": 10,
+      "input": 35192,
+      "output": 56092
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 7997,
-    "maxEstimate": 12903,
-    "overBudget": 1,
+    "maxPromptTokens": 6844,
+    "maxEstimate": 8235,
+    "overBudget": 0,
     "violations": 0
   },
   "usd": 0

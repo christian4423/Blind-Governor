@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal, Signal } from '@angular/core';
+import { Component, inject, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { WatchItem } from '../movie';
 import { WatchlistStore } from '../watchlist-store';
@@ -12,13 +12,17 @@ import { WatchlistStore } from '../watchlist-store';
 export class Watchlist {
   store = inject(WatchlistStore)
 
-  // Unwatched movies first, then watched ones. The sort is stable, so each group
-  // keeps the order the movies were added in. We always sort a copy of the
-  // store's items — the store's own array is never mutated.
-  movies: Signal<WatchItem[]> = computed(() => {
-    const sorted = [...this.store.items()]
-    sorted.sort((a, b) => Number(a.watched) - Number(b.watched))
-    return sorted
+  // Stable partition of the store's items: every unwatched movie first, then
+  // every watched one, keeping the store's order within each group. The items
+  // are the exact same objects the store holds - nothing added, dropped or
+  // duplicated - and since it derives from the store's signal, toggling a
+  // movie's watched status immediately regroups the list.
+  movies = computed(() => {
+    const items = this.store.items();
+    return [
+      ...items.filter(item => !item.watched),
+      ...items.filter(item => item.watched),
+    ];
   })
 
   readonly imageBase = 'https://image.tmdb.org/t/p/w92';

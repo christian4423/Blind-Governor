@@ -3,7 +3,7 @@ export interface Movie {
     title: string;
     releaseDate: string;
     rating: number;
-    watched: boolean;
+    seen: boolean;
 }
 
 export interface TmdbMovie {
@@ -44,7 +44,7 @@ export interface TmdbMovieDetail extends TmdbMovie {
 export interface WatchItem {
     id: number;
     title: string;
-    watched: boolean;
+    seen: boolean;
     // Optional so items saved before these fields existed still load
     poster_path?: string | null;
     release_date?: string;

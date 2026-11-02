@@ -11,7 +11,11 @@ import { WatchlistStore } from '../watchlist-store';
 })
 export class Watchlist {
   store = inject(WatchlistStore)
-  movies = this.store.items
+  // Unwatched movies come first; the original order is kept within each group.
+  movies = computed(() => {
+    const items = this.store.items()
+    return [...items.filter(m => !m.watched), ...items.filter(m => m.watched)]
+  })
 
   readonly imageBase = 'https://image.tmdb.org/t/p/w92';
 

@@ -1,8 +1,15 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-wrong-belief+governor@6000-03
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-wrong-belief+governor@6000-03
 provider: ollama-cloud (glm-5.3)
 request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
 
-governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: d6b18642-eb99-403e-ac78-f9f51372f696)"},"request_id":"req_b7c9d935ae0db6431b2572de"}
+governor turn 1: plan -> watchlist-store, watchlist  (The request's "seen" flag maps to the app's existing `watched` concept (WatchItem.watched, store.watchedCount) — the only seen-like state in the system. Two units change, purely additively: watchlist-store gains `clearWatched(): void` (removes watched items, preserves order, persists), and the watchlist view gains a "Clear watched" button wired to it. Both are pinned by acceptance tests.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+!! GOVERNOR ISOLATION LEAK: 1 source line(s) in governor prompt
+governor turn 2: plan -> watchlist-store  (Round 1 oracle is RED solely because WatchlistStore's constructor calls effect() (NG0203): a plain `new WatchlistStore()` throws, which aborts all acceptance tests for watchlist-store and watchlist before any assertion runs. tsc is green and the clearWatched API is already in place on both units, so only watchlist-store needs changes: it must be constructible outside an injection context and persist synchronously without effects.)
+round 2: owners watchlist-store=ok; oracle RED
+governor turn 3: plan -> watchlist  (tsc is clean and 41/43 tests pass (store acceptance tests now green). The two remaining failures are the governor's watchlist acceptance harness, which failed at render with NG0201 because the harness's TestBed lacked the router providers that the watchlist template's routerLink directives require. No unit behaviour is implicated: I am replacing the harness with a corrected version that provides provideRouter, and instructing the watchlist owner to keep behaviour as-is, fixing only any gap the corrected harness reveals.)
+round 3: owners watchlist=ok; oracle RED
+governor turn 4: plan -> watchlist  (The red oracle is caused entirely by TypeScript errors inside the governor's own acceptance harness (src/acceptance/watchlist.spec.ts: TS2347/TS18046/TS2339 from passing type arguments to querySelectorAll on the any-typed fixture.nativeElement), which also aborted the vitest build before any test ran. No owner unit is implicated. I am replacing that harness with a type-clean equivalent asserting the identical contract (now via an HTMLElement cast, still with provideRouter to avoid the earlier NG0201), and instructing the watchlist owner only to re-verify against it, changing nothing unless the new oracle shows a real failure.)
 
 {
   "target": "watchlist",
@@ -11,14 +18,25 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: d6b18642-eb99-403e-ac78-f9f51372f696)\"},\"request_id\":\"req_b7c9d935ae0db6431b2572de\"}",
+  "rounds": 3,
+  "status": "cap_hit",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
-  "governorIsolation": "clean",
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "LEAK",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 4,
   "testGuard": {
     "rejectedSubmissions": 0,
     "requests": [],
@@ -28,21 +46,32 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "behaviour": null,
   "heldout": {
     "slug": "wrong-belief",
-    "pass": false,
+    "pass": true,
     "total": 1,
-    "failed": 1,
-    "failures": [
-      "held-out: clear watched movies a clear button removes watched movies, keeps the rest, and keeps the saved field name: AssertionError: a button whose text mentions \"clear\": expected undefined to be truthy"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 34374,
+    "output": 106904
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 15696,
+      "output": 61602
+    },
+    "owner": {
+      "calls": 6,
+      "input": 18678,
+      "output": 45302
+    }
+  },
+  "repoTokens": 12710,
   "budget": 6000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2950,
+    "maxPromptTokens": 4748,
+    "maxEstimate": 5383,
     "overBudget": 0,
     "violations": 0
   },

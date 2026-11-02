@@ -34,4 +34,17 @@ export class WatchlistStore {
             items.map(m => m.id === id ? { ...m, watched: !m.watched } : m)
         );
     }
+
+    /**
+     * Removes every watched item from the watchlist.
+     * @returns the number of items that were removed (0 when nothing is watched).
+     */
+    clearWatched(): number {
+        const watchedCount = this._items().filter(m => m.watched).length;
+        if (watchedCount === 0) {
+            return 0;
+        }
+        this._items.update(items => items.filter(m => !m.watched));
+        return watchedCount;
+    }
 }

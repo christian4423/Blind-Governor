@@ -1,0 +1,68 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-wrong-belief+governor@6000-01
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (The request's "seen" flag maps to WatchItem.watched (the only such flag in the model). The store owns list state and persistence, so it gains clearWatched(); the watchlist page gains a "Clear watched" button that delegates to it. Additive change — other WatchlistStore importers (movie-detail, search) are unaffected.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2 failed: prompt of ~6195 tokens exceeds the 6000-token budget
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "over_budget",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 13873,
+    "output": 75566
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 1,
+      "input": 2477,
+      "output": 16682
+    },
+    "owner": {
+      "calls": 4,
+      "input": 11396,
+      "output": 58884
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "budgetStats": {
+    "maxPromptTokens": 4192,
+    "maxEstimate": 6195,
+    "overBudget": 1,
+    "violations": 0
+  },
+  "usd": 0
+}

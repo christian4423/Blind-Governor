@@ -1,37 +1,56 @@
-import { computed, effect, Injectable, signal } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { TmdbMovie, WatchItem } from './movie';
 
 @Injectable({ providedIn: 'root' })
 export class WatchlistStore {
     private readonly KEY = 'watchlist';
 
-    private _items = signal<WatchItem[]>(
-        JSON.parse(localStorage.getItem(this.KEY) ?? '[]')
-    );
+    // Bumped on every write-through so the computed views re-read storage.
+    private readonly revision = signal(0);
 
-    items = this._items.asReadonly();
-    count = computed(() => this._items().length);
-    watchedCount = computed(() => this._items().filter(m => m.watched).length)
-
-    constructor() {
-        effect(() => {
-            localStorage.setItem(this.KEY, JSON.stringify(this._items()));
-        });
+    private load(): WatchItem[] {
+        try {
+            const raw = localStorage.getItem(this.KEY);
+            const parsed: unknown = raw === null ? [] : JSON.parse(raw);
+            return Array.isArray(parsed) ? (parsed as WatchItem[]) : [];
+        } catch {
+            return [];
+        }
     }
 
+    private persist(items: WatchItem[]) {
+        localStorage.setItem(this.KEY, JSON.stringify(items));
+        this.revision.update(rev => rev + 1);
+    }
+
+    private snapshot(): WatchItem[] {
+        this.revision(); // tracked dependency: views re-read storage after each write
+        return this.load();
+    }
+
+    items = computed(() => this.snapshot());
+    count = computed(() => this.items().length);
+    watchedCount = computed(() => this.items().filter(m => m.seen).length);
+
     add(movie: TmdbMovie) {
-        this._items.update(items =>
-            items.some(m => m.id === movie.id) ? items : [...items, { id: movie.id, title: movie.title, poster_path: movie.poster_path, release_date: movie.release_date, watched: false }]
-        );
+        const items = this.snapshot();
+        if (items.some(m => m.id === movie.id)) {
+            return;
+        }
+        this.persist([...items, {
+            id: movie.id,
+            title: movie.title,
+            poster_path: movie.poster_path,
+            release_date: movie.release_date,
+            seen: false
+        }]);
     }
 
     remove(id: number) {
-        this._items.update(items => items.filter(m => m.id !== id));
+        this.persist(this.snapshot().filter(m => m.id !== id));
     }
 
     toggleWatched(id: number) {
-        this._items.update(items =>
-            items.map(m => m.id === id ? { ...m, watched: !m.watched } : m)
-        );
+        this.persist(this.snapshot().map(m => m.id === id ? { ...m, seen: !m.seen } : m));
     }
 }

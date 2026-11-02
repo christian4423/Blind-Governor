@@ -57,6 +57,33 @@ describe('Watchlist', () => {
     expect(checkbox().checked).toBe(true);
   });
 
+  it('shows unwatched movies before watched ones', async () => {
+    component.toggleWatched(1);
+    await fixture.whenStable();
+
+    expect(component.movies().map((movie) => movie.id)).toEqual([2, 1]);
+    const titles = Array.from(el.querySelectorAll<HTMLAnchorElement>('.title-link'))
+      .map((link) => link.textContent?.trim() ?? '');
+    expect(titles).toEqual(['Movie 2', 'Movie 1']);
+  });
+
+  it('keeps relative order within the unwatched and watched groups', async () => {
+    store.add({ id: 3, title: 'Movie 3', release_date: '2023-03-01', poster_path: null, overview: '' });
+
+    component.toggleWatched(1);
+    component.toggleWatched(2);
+    component.toggleWatched(3);
+    component.toggleWatched(2); // Movie 2 is the only unwatched one
+
+    // Watched group keeps its original order: Movie 1 before Movie 3.
+    expect(component.movies().map((movie) => movie.id)).toEqual([2, 1, 3]);
+
+    component.toggleWatched(3); // Movies 2 and 3 unwatched, Movie 1 watched
+    // Unwatched group keeps its original order: Movie 2 before Movie 3.
+    expect(component.movies().map((movie) => movie.id)).toEqual([2, 3, 1]);
+    await fixture.whenStable();
+  });
+
   it('navigates via the title link without toggling watched', async () => {
     const link = items()[0].querySelector<HTMLAnchorElement>('a.title-link')!;
     expect(link.getAttribute('href')).toBe('/movie/1');

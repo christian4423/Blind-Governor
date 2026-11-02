@@ -6,40 +6,17 @@
   max-width: 800px;
 }
 
-.header-actions {
+// Toolbar holding the list controls: watched progress + clear watched action
+.list-controls {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-}
-
-.clear-watched-btn {
-  flex-shrink: 0;
-  padding: 6px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background-color: var(--surface);
-  color: var(--text-muted);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
-
-  &:hover:not(:disabled) {
-    border-color: var(--danger);
-    color: var(--danger);
-  }
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
+  gap: 12px;
+  margin: -8px 0 20px;
 }
 
 .progress {
+  flex: 1;
   height: 6px;
-  margin: -8px 0 20px;
   border-radius: 999px;
   background-color: var(--surface-muted);
   overflow: hidden;
@@ -49,6 +26,30 @@
   height: 100%;
   background-color: var(--success);
   transition: width 0.3s ease;
+}
+
+.clear-watched-btn {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+
+  &:hover:not(:disabled) {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .watchlist {

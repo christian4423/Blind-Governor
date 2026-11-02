@@ -1,4 +1,4 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-wrong-belief+single@12000-02
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-wrong-belief+single@12000-02
 provider: ollama-cloud (glm-5.3)
 request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
 
@@ -11,7 +11,7 @@ request: Add a button that clears every movie whose `seen` flag is true from the
   "provider": "ollama-cloud",
   "model": "glm-5.3",
   "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 12026b79-087d-41a0-9aed-cb94f537e12f)\"},\"request_id\":\"req_e9f98714045b3bd8012356de\"}",
+  "status": "turn_limit",
   "clarifications": 0,
   "finalOracle": "not run",
   "instructedUnits": [],
@@ -27,21 +27,27 @@ request: Add a button that clears every movie whose `seen` flag is true from the
   "behaviour": null,
   "heldout": {
     "slug": "wrong-belief",
-    "pass": false,
+    "pass": true,
     "total": 1,
-    "failed": 1,
-    "failures": [
-      "held-out: clear watched movies a clear button removes watched movies, keeps the rest, and keeps the saved field name: AssertionError: a button whose text mentions \"clear\": expected undefined to be truthy"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 267722,
+    "output": 26031
   },
+  "tokensByRole": {
+    "single": {
+      "calls": 40,
+      "input": 267722,
+      "output": 26031
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 1242,
+    "maxPromptTokens": 8511,
+    "maxEstimate": 10796,
     "overBudget": 0,
     "violations": 0
   },

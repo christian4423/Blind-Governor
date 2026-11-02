@@ -23,6 +23,14 @@ export class Watchlist {
     this.store.toggleWatched(id)
   }
 
+  clearWatched() {
+    const count = this.watchedCount()
+    this.store.clearWatched()
+    this.announcement.set(count === 0
+      ? 'There were no watched movies to remove'
+      : `Removed ${count} watched ${count === 1 ? 'movie' : 'movies'} from your watchlist`)
+  }
+
   // Mouse convenience: clicking blank space on a row toggles it, but clicks on the
   // checkbox, title link or remove button keep their own behaviour.
   onRowClick(event: MouseEvent, id: number) {
@@ -35,12 +43,5 @@ export class Watchlist {
   remove(movie: WatchItem) {
     this.store.remove(movie.id)
     this.announcement.set(`Removed ${movie.title} from your watchlist`)
-  }
-
-  // Page-level action: removes every watched movie in one click, no confirmation.
-  clearWatched() {
-    const n = this.watchedCount();
-    this.store.clearWatched();
-    this.announcement.set(`Cleared ${n} watched ${n === 1 ? 'movie' : 'movies'}`);
   }
 }

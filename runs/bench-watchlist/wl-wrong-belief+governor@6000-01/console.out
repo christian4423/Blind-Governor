@@ -1,0 +1,73 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-wrong-belief+governor@6000-01
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (The request's 'seen' flag maps to the existing WatchItem.watched boolean (the only seen/watched concept in the codebase). Cleanest design: one new store operation WatchlistStore.clearWatched() plus a button on the watchlist page that calls it, disabled via the disabled attribute when watchedCount() === 0. The watchlist owner is explicitly told about the new store method so the parallel owners agree on the cross-unit contract.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist  (tsc is clean and all owner tests pass; the 2 failures are harness errors in my acceptance test (no router providers for the RouterLink directive in the watchlist template). I replace the watchlist acceptance test with a correctly configured one, restating the unchanged contract so the owner only changes code if the now-runnable test reveals a real gap.)
+round 2: owners watchlist=ok; oracle GREEN
+governor turn 3: accept  (Oracle is green (tsc exit 0, 42/42 tests pass). The acceptance tests confirm the requested behaviour end-to-end: the watchlist page shows a clear-watched button, disabled when nothing is watched, and clicking it removes every watched movie via WatchlistStore.clearWatched(), leaving only unwatched items and resetting watchedCount to 0.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 3,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 22343,
+    "output": 109004
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 10802,
+      "output": 38784
+    },
+    "owner": {
+      "calls": 4,
+      "input": 11541,
+      "output": 70220
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "budgetStats": {
+    "maxPromptTokens": 4496,
+    "maxEstimate": 5272,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

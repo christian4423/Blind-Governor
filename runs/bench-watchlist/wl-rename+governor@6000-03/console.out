@@ -1,8 +1,14 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-rename+governor@6000-03
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-rename+governor@6000-03
 provider: ollama-cloud (glm-5.3)
 request: Rename the `watched` field of watchlist items to `seen` everywhere.
 
-governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 6bb1b597-7ad9-46b4-a3ef-b9573ef9f219)"},"request_id":"req_3075a3758c4014d28b038e96"}
+governor turn 1: plan -> movie, watchlist-store, watchlist  (Pure data-field rename: WatchItem.watched becomes WatchItem.seen. movie re-exports the exact new shape; watchlist-store must create/persist/count items via `seen`; watchlist must render it. The request targets the field only, so member names (toggleWatched, watchedCount) and UI wording stay unchanged, and search/movie-detail/app never touch the field. Test edits that follow from the rename will be bounced to me and approved next round.)
+round 1: owners movie=ok watchlist-store=ok watchlist=rejected; oracle RED
+governor turn 2: plan -> watchlist  (movie and watchlist-store are done and green; the only red is watchlist, whose round-1 submission was rejected purely because it updated an existing test that asserts the renamed field. That edit is precisely what the rename requires, so I approve it and re-instruct watchlist to re-apply the full change (template and spec still reference the old `watched` field).)
+round 2: owners watchlist=ok; oracle RED
+governor turn 3: plan -> watchlist  (The watched→seen rename is finished: tsc is green and all owner tests pass. The only red tests are my two watchlist acceptance tests, which fail with NG0201 because my test file rendered the component without router providers even though its template uses RouterLink — a defect in my acceptance test, not in any owner's code. No unit code needs changing; I replace the watchlist acceptance test with a router-configured version that verifies seen state end-to-end.)
+round 3: owners watchlist=ok; oracle GREEN
+governor turn 4: accept  (Oracle is fully green (tsc exit 0, 43/43 tests passing). The watched→seen rename of watchlist items is complete and verified end-to-end: acceptance tests confirm WatchItem exposes a boolean `seen` field with no `watched` property, the store adds items as not yet seen and toggles the `seen` flag, and the watchlist component renders the correct seen state and flips it through toggleWatched. The previously failing watchlist acceptance test was my own defect (missing router providers) and now passes against the unchanged, correct implementation. The request is satisfied.)
 
 {
   "target": "watchlist",
@@ -11,38 +17,74 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 6bb1b597-7ad9-46b4-a3ef-b9573ef9f219)\"},\"request_id\":\"req_3075a3758c4014d28b038e96\"}",
+  "rounds": 3,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
   "governorIsolation": "clean",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 5,
   "testGuard": {
-    "rejectedSubmissions": 0,
-    "requests": [],
-    "approvals": []
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The test asserted `store.items()[0].watched`, but `WatchItem` now exposes the boolean as `seen`, so the assertion was changed to read `store.items()[0].seen`. The governor's instruction explicitly pre-approved changing test references from the old `watched` field to `seen`.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
   "heldout": {
     "slug": "rename",
-    "pass": false,
+    "pass": true,
     "total": 2,
-    "failed": 1,
-    "failures": [
-      "held-out: rename watched -> seen toggling a movie saves the new field name, not the old one: AssertionError: expected false to be true // Object.is equality"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 30982,
+    "output": 113741
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 14816,
+      "output": 58882
+    },
+    "owner": {
+      "calls": 6,
+      "input": 16166,
+      "output": 54859
+    }
+  },
+  "repoTokens": 12710,
   "budget": 6000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2946,
+    "maxPromptTokens": 4496,
+    "maxEstimate": 5308,
     "overBudget": 0,
     "violations": 0
   },

@@ -1,0 +1,80 @@
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "over_budget",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist",
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 5,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The `WatchItem.watched` field no longer exists (renamed to `seen`), so the test's assertion `expect(store.items()[0].watched).toBe(false)` no longer compiles. Updated only that field reference to `store.items()[0].seen`, as the instruction's spec update to the new field name requires. The test's title, setup and verified behaviour (clicking a title link must not toggle the watched state) are otherwise unchanged.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 2,
+    "failed": 1,
+    "failures": [
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
+    ]
+  },
+  "tokens": {
+    "input": 37526,
+    "output": 133145
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 9831,
+      "output": 79840
+    },
+    "owner": {
+      "calls": 10,
+      "input": 27695,
+      "output": 53305
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "budgetStats": {
+    "maxPromptTokens": 4881,
+    "maxEstimate": 6154,
+    "overBudget": 1,
+    "violations": 0
+  },
+  "usd": 0
+}

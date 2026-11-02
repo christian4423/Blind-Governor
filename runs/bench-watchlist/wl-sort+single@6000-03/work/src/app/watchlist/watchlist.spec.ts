@@ -33,6 +33,11 @@ describe('Watchlist', () => {
 
   const items = () => el.querySelectorAll<HTMLLIElement>('.watchlist-item');
   const checkbox = (i = 0) => items()[i].querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+  // Finds the checkbox of a specific movie, so tests keep working when the
+  // watched movie moves to the end of the list.
+  const checkboxFor = (title: string) =>
+    [...items()].find(li => li.querySelector('.title-link')?.textContent?.trim() === title)!
+      .querySelector<HTMLInputElement>('input[type="checkbox"]')!;
 
   it('should create', () => {
     expect(component).toBeTruthy();
@@ -43,10 +48,19 @@ describe('Watchlist', () => {
     expect(checkbox().checked).toBe(false);
   });
 
-  it('toggles watched when the checkbox is clicked', async () => {
-    checkbox().click();
+  it('shows unwatched movies before watched ones', async () => {
+    // Movie 1 was added first; once it is watched it should move below Movie 2.
+    store.toggleWatched(1);
     await fixture.whenStable();
-    expect(checkbox().checked).toBe(true);
+
+    const titles = [...items()].map(li => li.querySelector('.title-link')?.textContent?.trim());
+    expect(titles).toEqual(['Movie 2', 'Movie 1']);
+  });
+
+  it('toggles watched when the checkbox is clicked', async () => {
+    checkboxFor('Movie 1').click();
+    await fixture.whenStable();
+    expect(checkboxFor('Movie 1').checked).toBe(true);
     expect(component.watchedCount()).toBe(1);
     expect(el.querySelector('.subtitle')?.textContent).toContain('1 of 2 watched');
   });
@@ -54,7 +68,7 @@ describe('Watchlist', () => {
   it('toggles watched when blank space on the row is clicked', async () => {
     items()[0].click();
     await fixture.whenStable();
-    expect(checkbox().checked).toBe(true);
+    expect(checkboxFor('Movie 1').checked).toBe(true);
   });
 
   it('navigates via the title link without toggling watched', async () => {

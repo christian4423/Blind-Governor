@@ -6,7 +6,7 @@
   "provider": "ollama-cloud",
   "model": "glm-5.3",
   "rounds": 0,
-  "status": "rate_limited",
+  "status": "turn_limit",
   "clarifications": 0,
   "finalOracle": "not run",
   "instructedUnits": [],
@@ -22,21 +22,27 @@
   "behaviour": null,
   "heldout": {
     "slug": "wrong-belief",
-    "pass": false,
+    "pass": true,
     "total": 1,
-    "failed": 1,
-    "failures": [
-      "held-out: clear watched movies a clear button removes watched movies, keeps the rest, and keeps the saved field name: AssertionError: a button whose text mentions \"clear\": expected undefined to be truthy"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 272565,
+    "output": 22073
   },
+  "tokensByRole": {
+    "single": {
+      "calls": 40,
+      "input": 272565,
+      "output": 22073
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 1242,
+    "maxPromptTokens": 8537,
+    "maxEstimate": 10770,
     "overBudget": 0,
     "violations": 0
   },

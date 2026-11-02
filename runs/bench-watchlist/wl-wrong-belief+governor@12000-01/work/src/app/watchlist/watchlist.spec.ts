@@ -75,46 +75,6 @@ describe('Watchlist', () => {
     expect(el.querySelector('[role="status"]')?.textContent).toContain('Removed Movie 1 from your watchlist');
   });
 
-  it('renders exactly one page-level Clear watched button, disabled while nothing is watched', async () => {
-    const pageButtons = Array.from(el.querySelectorAll('button'))
-      .filter(b => !b.classList.contains('remove-btn'));
-    expect(pageButtons.length).toBe(1);
-
-    expect(clearWatchedBtn().textContent?.trim()).toBe('Clear watched');
-    expect(clearWatchedBtn().disabled).toBe(true);
-
-    checkbox().click();
-    await fixture.whenStable();
-
-    expect(clearWatchedBtn().disabled).toBe(false);
-  });
-
-  it('clears every watched movie in one click and announces the plural count', async () => {
-    checkbox(0).click();
-    checkbox(1).click();
-    await fixture.whenStable();
-
-    clearWatchedBtn().click();
-    await fixture.whenStable();
-
-    expect(items().length).toBe(0);
-    expect(el.querySelector('.empty-state')).toBeTruthy();
-    expect(el.querySelector('[role="status"]')?.textContent).toContain('Cleared 2 watched movies');
-  });
-
-  it('clears only the watched movies and announces the singular count', async () => {
-    checkbox(0).click();
-    await fixture.whenStable();
-
-    clearWatchedBtn().click();
-    await fixture.whenStable();
-
-    expect(items().length).toBe(1);
-    expect(store.items()[0].title).toBe('Movie 2');
-    expect(store.items()[0].watched).toBe(false);
-    expect(el.querySelector('[role="status"]')?.textContent).toContain('Cleared 1 watched movie');
-  });
-
   it('shows an empty state with a link to search', async () => {
     store.remove(1);
     store.remove(2);
@@ -132,5 +92,43 @@ describe('Watchlist', () => {
     store.remove(2);
     await fixture.whenStable();
     await expectNoA11yViolations(el);
+  });
+
+  it('shows a Clear watched button that is disabled when nothing is watched', () => {
+    const btn = clearWatchedBtn();
+    expect(btn.textContent).toContain('Clear watched');
+    expect(btn.disabled).toBe(true);
+  });
+
+  it('clears watched movies and announces how many were removed', async () => {
+    store.toggleWatched(1);
+    store.toggleWatched(2);
+    await fixture.whenStable();
+
+    const btn = clearWatchedBtn();
+    expect(btn.disabled).toBe(false);
+    btn.click();
+    await fixture.whenStable();
+
+    expect(store.items().length).toBe(0);
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('Removed 2 watched movies from your watchlist');
+  });
+
+  it('leaves unwatched movies untouched when clearing watched', async () => {
+    store.toggleWatched(2);
+    await fixture.whenStable();
+
+    clearWatchedBtn().click();
+    await fixture.whenStable();
+
+    expect(store.items().map((movie) => movie.id)).toEqual([1]);
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('Removed 1 watched movie from your watchlist');
+  });
+
+  it('announces when there were no watched movies to remove', () => {
+    component.clearWatched();
+
+    expect(store.items().length).toBe(2);
+    expect(component.announcement()).toContain('There were no watched movies to remove');
   });
 });

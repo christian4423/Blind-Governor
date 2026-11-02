@@ -1,0 +1,80 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-wrong-belief+governor@12000-02
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (The request's "seen" flag maps to the existing `watched` flag on `WatchItem` (the only seen-like flag in the domain; the store already exposes `watchedCount`/`toggleWatched`). "Clears ... from the watchlist" means removing those items. Plan: add `WatchlistStore.clearWatched()` and a "Clear watched" button in the watchlist view that calls it. Adding a method is backward compatible, so no other unit changes.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist-store, watchlist  (tsc is green and the feature is pinned by the acceptance tests, so the 12 failures are test-side. All 7 visible failures are in watchlist-store.spec.ts with the TestBed error 'Cannot configure the test module when the test module has already been instantiated' (inject before configureTestingModule); the 5 hidden failures are almost certainly the other changed unit's new tests in watchlist.spec.ts. Instruct both owners to repair their own new tests, leaving the implementations and every existing test unchanged.)
+round 2: owners watchlist-store=fail watchlist=fail; oracle RED
+governor turn 3: plan -> watchlist-store, watchlist  (tsc is green; all 12 failures are test-setup issues. Root cause: WatchlistStore's constructor calls effect() so direct construction throws NG0203 (breaking 3 acceptance tests and forcing the owner into a broken TestBed setup causing 7 spec failures); my watchlist acceptance test lacked router providers (NG0201 ActivatedRoute); 1 more failure sits in the watchlist spec. Fix: remove the constructor effect in favour of synchronous per-mutator persistence, repair both spec files with minimal edits, and re-issue the watchlist acceptance test with provideRouter([]).)
+round 3: owners watchlist-store=ok watchlist=fail; oracle GREEN
+governor turn 4: accept  (Oracle is green (tsc exit 0, 45 vitest tests, 0 failed). The clear-watched feature is complete and verified: WatchlistStore.clearWatched() removes all watched items in one atomic update with synchronous persistence, and the Watchlist component renders a button.clear-watched that calls it, both pinned by the acceptance tests in place.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 6,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 94429,
+    "output": 514908
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 30030,
+      "output": 98660
+    },
+    "owner": {
+      "calls": 15,
+      "input": 64399,
+      "output": 416248
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 7785,
+    "maxEstimate": 9417,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

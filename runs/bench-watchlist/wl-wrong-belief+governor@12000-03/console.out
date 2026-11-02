@@ -1,8 +1,14 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-wrong-belief+governor@12000-03
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-wrong-belief+governor@12000-03
 provider: ollama-cloud (glm-5.3)
 request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
 
-governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 5dc3ab61-70e7-439e-8fed-01c046623e84)"},"request_id":"req_c7d06effc7f55a0a6126e234"}
+governor turn 1: plan -> watchlist-store, watchlist  (The request's "seen" flag maps to the app's existing `watched` flag (WatchItem.watched / toggleWatched / watchedCount — there is no other flag on watchlist items). Plan: the store gains a bulk-removal method `clearWatched()`, and the watchlist page gains a "Clear seen movies" button that calls it — rendered only while at least one movie is watched, with a screen-reader announcement reporting how many were removed. Only watchlist-store and watchlist need to change; all other units are untouched.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+!! GOVERNOR ISOLATION LEAK: 1 source line(s) in governor prompt
+governor turn 2: plan -> watchlist-store, watchlist  (All 7 failures were in the acceptance tests' own setup, not the implementations: the store must be created inside an injection context (NG0203, its constructor registers a signal effect) and the watchlist page's routerLink needs router providers (NG0201). Rewriting both acceptance tests accordingly; the round-1 clearWatched contracts are unchanged and re-issued as verification instructions.)
+round 2: owners watchlist-store=ok watchlist=ok; oracle GREEN
+!! GOVERNOR ISOLATION LEAK: 1 source line(s) in governor prompt
+governor turn 3: accept  (The oracle is fully green (tsc exit 0, 46 vitest tests passing). WatchlistStore exposes clearWatched(): void which removes every watched (seen) item, keeps items/count/watchedCount consistent, persists the result, and is a safe no-op when nothing is watched; the Watchlist page renders a "Clear seen movies" button (only while at least one movie is seen) that calls it and announces how many were removed. The acceptance tests for both units exercise this end-to-end behaviour and all pass, so the request is satisfied.)
 
 {
   "target": "watchlist",
@@ -11,14 +17,23 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 5dc3ab61-70e7-439e-8fed-01c046623e84)\"},\"request_id\":\"req_c7d06effc7f55a0a6126e234\"}",
+  "rounds": 2,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
-  "governorIsolation": "clean",
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "LEAK",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 4,
   "testGuard": {
     "rejectedSubmissions": 0,
     "requests": [],
@@ -28,21 +43,32 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "behaviour": null,
   "heldout": {
     "slug": "wrong-belief",
-    "pass": false,
+    "pass": true,
     "total": 1,
-    "failed": 1,
-    "failures": [
-      "held-out: clear watched movies a clear button removes watched movies, keeps the rest, and keeps the saved field name: AssertionError: a button whose text mentions \"clear\": expected undefined to be truthy"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 44720,
+    "output": 98169
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 14855,
+      "output": 50667
+    },
+    "owner": {
+      "calls": 7,
+      "input": 29865,
+      "output": 47502
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2950,
+    "maxPromptTokens": 7328,
+    "maxEstimate": 8357,
     "overBudget": 0,
     "violations": 0
   },

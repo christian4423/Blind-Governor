@@ -1,0 +1,71 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-rename+governor@6000-01
+provider: ollama-cloud (glm-5.3)
+request: Rename the `watched` field of watchlist items to `seen` everywhere.
+
+governor turn 1: plan -> movie, watchlist-store, watchlist  (The request is a data-field rename: `watched` → `seen` on watchlist items. It is defined in the movie unit (Movie, WatchItem) and consumed by watchlist-store (add/toggleWatched/watchedCount/persistence) and the watchlist component (template bindings and derived counts). Exported API names (watchedCount, toggleWatched, etc.) are deliberately unchanged, so no other unit is affected; acceptance tests pin the new field name through each unit's exports.)
+round 1: owners movie=ok watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist  (The rename itself is complete and type-checks; the only remaining oracle error is watchlist.spec.ts:66 accessing the removed `watched` data field (TS2339), which also aborts the vitest build. The watchlist owner must update its spec to `seen` and flag the pre-existing test(s) it must modify so the governor can approve them next round.)
+round 2: owners watchlist=rejected; oracle RED
+governor turn 3 failed: prompt of ~6463 tokens exceeds the 6000-token budget
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "over_budget",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 3,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "modified assertion (single property access): item data field renamed from `watched` to `seen` per the governor's request — `expect(store.items()[0].watched).toBe(false)` becomes `expect(store.items()[0].seen).toBe(false)`. This was the only occurrence of the old data field name in the file (the tsc error at line 66, col 29); all other `watched` occurrences are the unchanged `watchedCount` API, user-visible text, or test titles, none of which were altered. Test title and all other expectations are identical; no assertions weakened, skipped, or deleted.",
+        "round": 2
+      }
+    ],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 2,
+    "failed": 1,
+    "failures": [
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
+    ]
+  },
+  "tokens": {
+    "input": 21870,
+    "output": 88546
+  },
+  "budget": 6000,
+  "budgetStats": {
+    "maxPromptTokens": 4732,
+    "maxEstimate": 6463,
+    "overBudget": 1,
+    "violations": 0
+  },
+  "usd": 0
+}

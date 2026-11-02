@@ -1,0 +1,101 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-sort+governor@6000-03
+provider: ollama-cloud (glm-5.3)
+request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
+
+governor turn 1: plan -> watchlist  (The request is purely a display-order concern of the watchlist page, so the sort belongs in the watchlist component (a computed derived from the store), leaving WatchlistStore's insertion order intact for other consumers (app header, search, movie-detail). No exported signature changes.)
+round 1: owners watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist  (The sorted display landed correctly (acceptance test green, tsc green), but the template rewiring broke interaction: clicking a row's checkbox or blank space no longer toggles that movie in the store. Only watchlist needs a targeted fix to its event wiring.)
+round 2: owners watchlist=rejected; oracle RED
+governor turn 3: plan -> watchlist  (The owner's diagnosis is sound: the two failing tests re-query the checkbox by rendered row index, which is unsatisfiable under the required unwatched-first order (the clicked movie moves below the still-unwatched one). Their minimal edits keep the tested interactions and only locate the clicked movie's checkbox by title, so I approve exactly those two changes. Separately, the oracle error is a type error in my own acceptance test (Element lacks click), which I am fixing by re-issuing the file with a typed querySelectorAll<HTMLInputElement>.)
+round 3: owners watchlist=ok; oracle GREEN
+governor turn 4: accept  (The watchlist now renders unwatched movies before watched ones (stable within groups, fully reactive, id-based interactions). Oracle is green: tsc exits 0 and all 33 tests pass, including the acceptance test that verifies the display order. The request is satisfied with no open issues.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 3,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when the checkbox is clicked",
+        "kind": "modified",
+        "reason": "Reporting a conflict with the required sorted display order for approval, as the instruction directs. The premise that the template wiring is broken does not hold: with the current files, clicking Movie 1's checkbox DOES flip its watched flag in the store — this test's own later assertions (watchedCount() === 1 and subtitle '1 of 2 watched') pass. The failure is in the test's index-based re-query: once Movie 1 becomes watched, the required sort (unwatched before watched) immediately renders it below the still-unwatched Movie 2, so checkbox() — which re-queries row 0 — now returns Movie 2's unchecked checkbox. expect(checkbox().checked).toBe(true) is therefore unsatisfiable under the required sorting for ANY implementation, unchanged. Minimal change made (requesting approval): that single assertion now locates the clicked movie's checkbox by its title via a new checkboxFor('Movie 1') helper instead of row index, mirroring the instruction's own rule that movies must be identified by id and never by render index. The click, the store assertions and the tested behaviour (the clicked row's movie is toggled) are unchanged.",
+        "round": 2
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when blank space on the row is clicked",
+        "kind": "modified",
+        "reason": "Same conflict with the sorted display order, reported for approval. The blank-space row click DOES flip Movie 1's watched flag in the store, but the required sort then renders the now-watched Movie 1 after the still-unwatched Movie 2, so the test's index-based checkbox() lookup returns Movie 2's unchecked checkbox. expect(checkbox().checked).toBe(true) cannot pass while unwatched movies are listed first — either the flag flips (Movie 1 leaves row 0) or it doesn't (the checkbox stays unchecked), so no implementation can satisfy it together with the required sorting. Minimal change made (requesting approval): the assertion now finds the clicked movie's checkbox by title (checkboxFor('Movie 1')); the click itself and the tested behaviour (a blank-space row click toggles that row's movie) are unchanged.",
+        "round": 2
+      }
+    ],
+    "approvals": [
+      {
+        "round": 3,
+        "title": "Watchlist > toggles watched when the checkbox is clicked"
+      },
+      {
+        "round": 3,
+        "title": "Watchlist > toggles watched when blank space on the row is clicked"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 45563,
+    "output": 146882
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 15143,
+      "output": 39513
+    },
+    "owner": {
+      "calls": 7,
+      "input": 30420,
+      "output": 107369
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "budgetStats": {
+    "maxPromptTokens": 4752,
+    "maxEstimate": 5887,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

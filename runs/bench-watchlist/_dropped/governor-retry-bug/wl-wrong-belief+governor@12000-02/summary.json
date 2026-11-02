@@ -1,0 +1,68 @@
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 6,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 94429,
+    "output": 514908
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 30030,
+      "output": 98660
+    },
+    "owner": {
+      "calls": 15,
+      "input": 64399,
+      "output": 416248
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 7785,
+    "maxEstimate": 9417,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

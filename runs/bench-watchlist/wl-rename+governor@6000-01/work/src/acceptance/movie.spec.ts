@@ -1,36 +1,27 @@
 import { describe, it, expect } from 'vitest';
-import { Movie, WatchItem } from '../app/movie';
+import type { WatchItem } from '../app/movie';
 
-describe('movie interfaces (seen field)', () => {
-  it('WatchItem exposes a boolean seen field instead of watched', () => {
-    const item: WatchItem = { id: 1, title: 'Alpha', seen: false };
-    expect(item.seen).toBe(false);
-    expect('watched' in item).toBe(false);
-  });
-
-  it('WatchItem keeps its other fields', () => {
-    const item: WatchItem = {
+describe('WatchItem', () => {
+  it('tracks the watchlist status on a `seen` boolean field', () => {
+    const fresh: WatchItem = { id: 1, title: 'Fresh', seen: false };
+    const done: WatchItem = {
       id: 2,
-      title: 'Beta',
+      title: 'Done',
       seen: true,
-      poster_path: '/beta.jpg',
-      release_date: '2024-02-02',
+      poster_path: null,
+      release_date: '1999-12-31',
     };
-    expect(item.id).toBe(2);
-    expect(item.title).toBe('Beta');
-    expect(item.poster_path).toBe('/beta.jpg');
-    expect(item.release_date).toBe('2024-02-02');
+    expect(fresh.seen).toBe(false);
+    expect(done.seen).toBe(true);
   });
 
-  it('Movie exposes a boolean seen field instead of watched', () => {
-    const movie: Movie = {
-      id: 3,
-      title: 'Gamma',
-      releaseDate: '2024-03-03',
-      rating: 8,
-      seen: true,
-    };
-    expect(movie.seen).toBe(true);
-    expect('watched' in movie).toBe(false);
+  it('no longer exposes a `watched` field at the type level', () => {
+    // Compile-time pin: if WatchItem still required `watched`, these object
+    // literals (which only provide `seen`) would not type-check.
+    const items: WatchItem[] = [
+      { id: 1, title: 'A', seen: false },
+      { id: 2, title: 'B', seen: true, poster_path: '/b.jpg', release_date: '2000-01-01' },
+    ];
+    expect(items.filter((i) => i.seen)).toHaveLength(1);
   });
 });

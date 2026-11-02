@@ -141,3 +141,21 @@
     color: var(--danger);
   }
 }
+
+// Bulk action button in the page header: clears every watched movie
+.clear-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+
+  &:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+}

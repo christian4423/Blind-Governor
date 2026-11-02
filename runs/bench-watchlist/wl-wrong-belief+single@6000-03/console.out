@@ -1,4 +1,4 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-wrong-belief+single@6000-03
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-wrong-belief+single@6000-03
 provider: ollama-cloud (glm-5.3)
 request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
 
@@ -11,7 +11,7 @@ request: Add a button that clears every movie whose `seen` flag is true from the
   "provider": "ollama-cloud",
   "model": "glm-5.3",
   "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 3db13d05-798a-4748-ab1a-a9bade10c5d9)\"},\"request_id\":\"req_7149367f606508e944463e3d\"}",
+  "status": "turn_limit",
   "clarifications": 0,
   "finalOracle": "not run",
   "instructedUnits": [],
@@ -35,13 +35,21 @@ request: Add a button that clears every movie whose `seen` flag is true from the
     ]
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 133060,
+    "output": 4176
   },
+  "tokensByRole": {
+    "single": {
+      "calls": 40,
+      "input": 133060,
+      "output": 4176
+    }
+  },
+  "repoTokens": 12710,
   "budget": 6000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 1242,
+    "maxPromptTokens": 4365,
+    "maxEstimate": 5390,
     "overBudget": 0,
     "violations": 0
   },

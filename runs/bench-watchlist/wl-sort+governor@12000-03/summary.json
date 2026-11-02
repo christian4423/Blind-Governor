@@ -5,14 +5,24 @@
   "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "rate_limited",
+  "rounds": 3,
+  "status": "cap_hit",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
   "governorIsolation": "clean",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 3,
   "testGuard": {
     "rejectedSubmissions": 0,
     "requests": [],
@@ -22,21 +32,32 @@
   "behaviour": null,
   "heldout": {
     "slug": "sort",
-    "pass": false,
+    "pass": true,
     "total": 1,
-    "failed": 1,
-    "failures": [
-      "held-out: unwatched before watched lists unwatched movies first, keeping the original order within each group: AssertionError: expected [ 'A', 'B', 'C', 'D' ] to deeply equal [ 'B', 'D', 'A', 'C' ]"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 62889,
+    "output": 320615
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 19968,
+      "output": 103931
+    },
+    "owner": {
+      "calls": 8,
+      "input": 42921,
+      "output": 216684
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2950,
+    "maxPromptTokens": 7249,
+    "maxEstimate": 8685,
     "overBudget": 0,
     "violations": 0
   },

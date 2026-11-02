@@ -23,6 +23,11 @@ export class Watchlist {
     this.store.toggleWatched(id)
   }
 
+  clearWatched(): void {
+    const cleared = this.store.clearWatched()
+    this.announcement.set(cleared === 1 ? 'Cleared 1 watched movie' : `Cleared ${cleared} watched movies`)
+  }
+
   // Mouse convenience: clicking blank space on a row toggles it, but clicks on the
   // checkbox, title link or remove button keep their own behaviour.
   onRowClick(event: MouseEvent, id: number) {

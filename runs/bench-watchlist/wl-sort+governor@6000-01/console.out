@@ -1,13 +1,12 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-sort+governor@6000-01
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-sort+governor@6000-01
 provider: ollama-cloud (glm-5.3)
 request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
 
-governor turn 1: plan -> watchlist  (The request is a presentation change to the watchlist view: unwatched movies must be listed before watched ones. Only the watchlist unit needs to change - it can derive the ordered list from the store's existing items signal without any cross-unit interface changes.)
+governor turn 1: plan -> watchlist  (Request is purely a watchlist display-order change: sort unwatched before watched. Targeting only the watchlist component's `movies` signal (stable unwatched-first partition of store items) keeps watchlist-store and all other consumers untouched, needs no interface change, and the acceptance test pins both signal order and DOM order, including reactive re-ordering on toggle/remove.)
 round 1: owners watchlist=rejected; oracle RED
-governor turn 2: plan -> watchlist, app, movie-detail, search  (Re-issuing the watchlist plan and approving the two test edits it was rejected for: the requested unwatched-first ordering legitimately moves a just-watched movie to a later row, so position-based checkbox lookups must become aria-label lookups (same asserted behaviour). My acceptance test now provides router providers, since the Watchlist template's RouterLink requires ActivatedRoute. The axe-scan timeouts in app and movie-detail specs are infra failures blocking a green oracle and must be diagnosed/fixed by their owners; search gets a preventive instruction because the oracle's 5th failure was truncated and its spec contains the same class of axe scan.)
-round 2: owners watchlist=ok app=ok movie-detail=fail search=ok; oracle GREEN
-!! GOVERNOR ISOLATION LEAK: 2 source line(s) in governor prompt
-governor turn 3 failed: prompt of ~6234 tokens exceeds the 6000-token budget
+governor turn 2: plan -> watchlist  (The watchlist submission was rejected only because two existing tests use index-based DOM lookups that assume store order; the requested unwatched-first ordering necessarily sinks a just-toggled-to-watched movie, so the owner's minimal checkbox-index adaptations preserve those tests' intent and I approve them. Separately, one oracle failure was in my own acceptance test: the Watchlist template's RouterLink needs ActivatedRoute, which an empty TestBed doesn't provide (NG0201) — fixed by adding provideRouter([]). The remaining assertion failure simply reflects that the watchlist change has not been applied yet, so I re-issue the plan.)
+round 2: owners watchlist=ok; oracle GREEN
+governor turn 3: accept  (Oracle is green (tsc clean, 32/32 tests pass). The watchlist component now partitions store items unwatched-first with a stable, reactive order (add/remove/toggle all update immediately) and the template renders through the movies signal, verified by the acceptance tests. The two pre-existing checkbox/row-click tests were adapted only in their index-based lookup, as approved last round, with intent intact.)
 
 {
   "target": "watchlist",
@@ -17,7 +16,7 @@ governor turn 3 failed: prompt of ~6234 tokens exceeds the 6000-token budget
   "provider": "ollama-cloud",
   "model": "glm-5.3",
   "rounds": 2,
-  "status": "over_budget",
+  "status": "accepted",
   "clarifications": 0,
   "finalOracle": "green",
   "instructedUnits": [
@@ -25,13 +24,10 @@ governor turn 3 failed: prompt of ~6234 tokens exceeds the 6000-token budget
       "watchlist"
     ],
     [
-      "watchlist",
-      "app",
-      "movie-detail",
-      "search"
+      "watchlist"
     ]
   ],
-  "governorIsolation": "LEAK",
+  "governorIsolation": "clean",
   "showBehaviour": false,
   "acceptanceTestsWritten": 2,
   "testGuard": {
@@ -41,14 +37,14 @@ governor turn 3 failed: prompt of ~6234 tokens exceeds the 6000-token budget
         "unit": "watchlist",
         "title": "Watchlist > toggles watched when the checkbox is clicked",
         "kind": "modified",
-        "reason": "With the required unwatched-first ordering, clicking Movie 1's checkbox marks it watched, which immediately moves it behind the still-unwatched Movie 2. The original position-based assertion `checkbox()` therefore reads Movie 2's unchecked checkbox and fails regardless of implementation. I changed only that lookup to find Movie 1's checkbox by its aria-label, so the test still asserts exactly the same behaviour (the clicked movie's checkbox becomes checked). All other assertions in the test are untouched.",
+        "reason": "This test clicks row 0's checkbox (Movie 1) and then re-queries checkbox() by index. Under the required unwatched-first ordering, the movie just toggled to watched moves to the end of the list, so the index-0 checkbox now belongs to the still-unwatched Movie 2 and the original assertion (checkbox() is checked) would fail. Changed the assertion to checkbox(1), which is the checkbox of the movie that was clicked (it now renders last). The test's intent — clicking a checkbox toggles watched, updates watchedCount and the subtitle — is unchanged.",
         "round": 1
       },
       {
         "unit": "watchlist",
         "title": "Watchlist > toggles watched when blank space on the row is clicked",
         "kind": "modified",
-        "reason": "Same unavoidable consequence of the new ordering: clicking Movie 1's row marks it watched, moving it to the end of the list, so `checkbox()` (first item) no longer refers to Movie 1 and its `checked` would be false. The assertion now looks up Movie 1's checkbox by its aria-label; the row-click toggle behaviour being tested is unchanged.",
+        "reason": "Same cause: the test clicks blank space on row 0 (Movie 1), making it watched, which the new ordering moves to the end of the list; the index-based checkbox() lookup then resolves to Movie 2's unchecked checkbox. Changed the assertion to checkbox(1) so it still verifies that the clicked movie's checkbox is checked. The test's intent — clicking blank row space toggles watched — is unchanged.",
         "round": 1
       }
     ],
@@ -73,14 +69,27 @@ governor turn 3 failed: prompt of ~6234 tokens exceeds the 6000-token budget
     "failures": []
   },
   "tokens": {
-    "input": 26466,
-    "output": 91950
+    "input": 18862,
+    "output": 62839
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 11121,
+      "output": 33832
+    },
+    "owner": {
+      "calls": 2,
+      "input": 7741,
+      "output": 29007
+    }
+  },
+  "repoTokens": 12710,
   "budget": 6000,
   "budgetStats": {
-    "maxPromptTokens": 5033,
-    "maxEstimate": 6234,
-    "overBudget": 2,
+    "maxPromptTokens": 4520,
+    "maxEstimate": 5184,
+    "overBudget": 0,
     "violations": 0
   },
   "usd": 0

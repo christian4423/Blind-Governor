@@ -6,7 +6,7 @@
   "provider": "ollama-cloud",
   "model": "glm-5.3",
   "rounds": 2,
-  "status": "over_budget",
+  "status": "accepted",
   "clarifications": 0,
   "finalOracle": "green",
   "instructedUnits": [
@@ -14,13 +14,10 @@
       "watchlist"
     ],
     [
-      "watchlist",
-      "app",
-      "movie-detail",
-      "search"
+      "watchlist"
     ]
   ],
-  "governorIsolation": "LEAK",
+  "governorIsolation": "clean",
   "showBehaviour": false,
   "acceptanceTestsWritten": 2,
   "testGuard": {
@@ -30,14 +27,14 @@
         "unit": "watchlist",
         "title": "Watchlist > toggles watched when the checkbox is clicked",
         "kind": "modified",
-        "reason": "With the required unwatched-first ordering, clicking Movie 1's checkbox marks it watched, which immediately moves it behind the still-unwatched Movie 2. The original position-based assertion `checkbox()` therefore reads Movie 2's unchecked checkbox and fails regardless of implementation. I changed only that lookup to find Movie 1's checkbox by its aria-label, so the test still asserts exactly the same behaviour (the clicked movie's checkbox becomes checked). All other assertions in the test are untouched.",
+        "reason": "This test clicks row 0's checkbox (Movie 1) and then re-queries checkbox() by index. Under the required unwatched-first ordering, the movie just toggled to watched moves to the end of the list, so the index-0 checkbox now belongs to the still-unwatched Movie 2 and the original assertion (checkbox() is checked) would fail. Changed the assertion to checkbox(1), which is the checkbox of the movie that was clicked (it now renders last). The test's intent — clicking a checkbox toggles watched, updates watchedCount and the subtitle — is unchanged.",
         "round": 1
       },
       {
         "unit": "watchlist",
         "title": "Watchlist > toggles watched when blank space on the row is clicked",
         "kind": "modified",
-        "reason": "Same unavoidable consequence of the new ordering: clicking Movie 1's row marks it watched, moving it to the end of the list, so `checkbox()` (first item) no longer refers to Movie 1 and its `checked` would be false. The assertion now looks up Movie 1's checkbox by its aria-label; the row-click toggle behaviour being tested is unchanged.",
+        "reason": "Same cause: the test clicks blank space on row 0 (Movie 1), making it watched, which the new ordering moves to the end of the list; the index-based checkbox() lookup then resolves to Movie 2's unchecked checkbox. Changed the assertion to checkbox(1) so it still verifies that the clicked movie's checkbox is checked. The test's intent — clicking blank row space toggles watched — is unchanged.",
         "round": 1
       }
     ],
@@ -62,14 +59,27 @@
     "failures": []
   },
   "tokens": {
-    "input": 26466,
-    "output": 91950
+    "input": 18862,
+    "output": 62839
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 11121,
+      "output": 33832
+    },
+    "owner": {
+      "calls": 2,
+      "input": 7741,
+      "output": 29007
+    }
+  },
+  "repoTokens": 12710,
   "budget": 6000,
   "budgetStats": {
-    "maxPromptTokens": 5033,
-    "maxEstimate": 6234,
-    "overBudget": 2,
+    "maxPromptTokens": 4520,
+    "maxEstimate": 5184,
+    "overBudget": 0,
     "violations": 0
   },
   "usd": 0

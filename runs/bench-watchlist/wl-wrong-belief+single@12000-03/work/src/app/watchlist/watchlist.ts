@@ -36,4 +36,14 @@ export class Watchlist {
     this.store.remove(movie.id)
     this.announcement.set(`Removed ${movie.title} from your watchlist`)
   }
+
+  clearWatched() {
+    const removed = this.watchedCount()
+    this.store.clearWatched()
+    this.announcement.set(
+      removed === 1
+        ? 'Removed 1 watched movie from your watchlist'
+        : `Removed ${removed} watched movies from your watchlist`
+    )
+  }
 }

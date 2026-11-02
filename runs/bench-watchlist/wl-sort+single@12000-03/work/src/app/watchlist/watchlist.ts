@@ -11,7 +11,9 @@ import { WatchlistStore } from '../watchlist-store';
 })
 export class Watchlist {
   store = inject(WatchlistStore)
-  movies = this.store.items
+  // Unwatched movies come first so the ones still on the plate stay on top;
+  // the sort is stable, so within each group movies keep the order they were added.
+  movies = computed(() => [...this.store.items()].sort((a, b) => Number(a.watched) - Number(b.watched)))
 
   readonly imageBase = 'https://image.tmdb.org/t/p/w92';
 

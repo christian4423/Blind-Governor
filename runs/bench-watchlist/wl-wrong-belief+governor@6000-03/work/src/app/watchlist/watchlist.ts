@@ -23,6 +23,16 @@ export class Watchlist {
     this.store.toggleWatched(id)
   }
 
+  // Bulk action for the header button: removes every watched movie at once,
+  // unwatched movies stay on the list. Announced to screen reader users.
+  clearWatched(): void {
+    const cleared = this.watchedCount()
+    this.store.clearWatched()
+    if (cleared > 0) {
+      this.announcement.set(`Cleared ${cleared} watched ${cleared === 1 ? 'movie' : 'movies'} from your watchlist`)
+    }
+  }
+
   // Mouse convenience: clicking blank space on a row toggles it, but clicks on the
   // checkbox, title link or remove button keep their own behaviour.
   onRowClick(event: MouseEvent, id: number) {

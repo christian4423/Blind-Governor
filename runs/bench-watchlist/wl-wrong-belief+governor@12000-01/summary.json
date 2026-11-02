@@ -5,11 +5,15 @@
   "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 2,
-  "status": "accepted",
+  "rounds": 3,
+  "status": "cap_hit",
   "clarifications": 0,
-  "finalOracle": "green",
+  "finalOracle": "red",
   "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
     [
       "watchlist-store",
       "watchlist"
@@ -20,7 +24,7 @@
   ],
   "governorIsolation": "LEAK",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 3,
+  "acceptanceTestsWritten": 4,
   "testGuard": {
     "rejectedSubmissions": 0,
     "requests": [],
@@ -36,13 +40,26 @@
     "failures": []
   },
   "tokens": {
-    "input": 26562,
-    "output": 153512
+    "input": 57280,
+    "output": 249263
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 21878,
+      "output": 82180
+    },
+    "owner": {
+      "calls": 10,
+      "input": 35402,
+      "output": 167083
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 4800,
-    "maxEstimate": 5778,
+    "maxPromptTokens": 7415,
+    "maxEstimate": 8886,
     "overBudget": 0,
     "violations": 0
   },

@@ -6,6 +6,12 @@
         }
     </header>
 
+    <!-- Bulk actions; rendered unconditionally so the button is never hidden -->
+    <div class="toolbar">
+        <button type="button" class="clear-watched-btn" data-testid="clear-watched"
+            [disabled]="watchedCount() === 0" (click)="clearWatched()">Clear watched</button>
+    </div>
+
     <!-- Announces add/remove changes to screen reader users -->
     <p class="visually-hidden" role="status">{{ announcement() }}</p>
 

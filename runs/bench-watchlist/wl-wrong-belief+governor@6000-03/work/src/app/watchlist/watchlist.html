@@ -3,6 +3,7 @@
         <h1>My Watchlist</h1>
         @if (movies().length) {
             <p class="subtitle">{{ watchedCount() }} of {{ movies().length }} watched</p>
+            <button type="button" class="clear-btn" (click)="clearWatched()">Clear watched</button>
         }
     </header>
 

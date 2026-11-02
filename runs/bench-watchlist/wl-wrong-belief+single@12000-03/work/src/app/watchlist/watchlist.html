@@ -19,6 +19,12 @@
             <div class="progress-bar" [style.width.%]="progress()"></div>
         </div>
 
+        @if (watchedCount() > 0) {
+            <div class="toolbar">
+                <button type="button" class="btn clear-watched" (click)="clearWatched()">Clear watched</button>
+            </div>
+        }
+
         <ul class="watchlist" aria-label="Movies on your watchlist">
             @for (movie of movies(); track movie.id) {
                 <!-- Clicking empty space on the row toggles watched; the checkbox, link and button handle their own clicks -->

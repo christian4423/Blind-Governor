@@ -1,62 +1,66 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Watchlist } from '../app/watchlist/watchlist';
-import { WatchlistStore } from '../app/watchlist-store';
 import { TmdbMovie } from '../app/movie';
 
 function movie(id: number, title: string): TmdbMovie {
-  return {
-    id,
-    title,
-    release_date: '2024-01-01',
-    poster_path: null,
-    overview: 'acceptance fixture'
-  };
+  return { id, title, release_date: '2024-01-01', poster_path: null, overview: '' };
 }
 
-describe('watchlist ordering (unwatched first)', () => {
+describe('watchlist display order', () => {
   beforeEach(() => {
     localStorage.clear();
-    TestBed.configureTestingModule({
-      providers: [WatchlistStore, provideRouter([])]
-    });
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
   });
 
-  it('shows unwatched movies before watched movies', () => {
-    const store = TestBed.inject(WatchlistStore);
-
-    store.add(movie(1, 'Watched One'));
-    store.add(movie(2, 'Unwatched Two'));
-    store.add(movie(3, 'Watched Three'));
-    store.add(movie(4, 'Unwatched Four'));
-    store.toggleWatched(1);
-    store.toggleWatched(3);
-
+  it('renders unwatched movies before watched movies', () => {
     const fixture = TestBed.createComponent(Watchlist);
+    const comp = fixture.componentInstance;
+
+    comp.store.add(movie(1, 'Alpha'));
+    comp.store.add(movie(2, 'Bravo'));
+    comp.store.add(movie(3, 'Charlie'));
+    comp.store.toggleWatched(1); // Alpha becomes watched
+
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.movies().map((m) => m.id)).toEqual([2, 4, 1, 3]);
+    expect(comp.movies().map((m) => m.id)).toEqual([2, 3, 1]);
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    const bravo = text.indexOf('Bravo');
+    const charlie = text.indexOf('Charlie');
+    const alpha = text.indexOf('Alpha');
+    expect(bravo).toBeGreaterThan(-1);
+    expect(charlie).toBeGreaterThan(-1);
+    expect(alpha).toBeGreaterThan(-1);
+    expect(bravo).toBeLessThan(alpha);
+    expect(charlie).toBeLessThan(alpha);
   });
 
-  it('moves a movie to the watched group as soon as it is toggled', () => {
-    const store = TestBed.inject(WatchlistStore);
-
-    store.add(movie(1, 'Alpha'));
-    store.add(movie(2, 'Beta'));
-    store.add(movie(3, 'Gamma'));
-
+  it('re-orders reactively as watched flags change', () => {
     const fixture = TestBed.createComponent(Watchlist);
-    fixture.detectChanges();
-    expect(fixture.componentInstance.movies().map((m) => m.id)).toEqual([1, 2, 3]);
+    const comp = fixture.componentInstance;
 
-    store.toggleWatched(2);
-    fixture.detectChanges();
-    expect(fixture.componentInstance.movies().map((m) => m.id)).toEqual([1, 3, 2]);
+    comp.store.add(movie(1, 'Alpha'));
+    comp.store.add(movie(2, 'Bravo'));
+    comp.store.add(movie(3, 'Charlie'));
 
-    store.toggleWatched(2);
-    fixture.detectChanges();
-    const list = fixture.componentInstance.movies();
-    expect(list.every((m) => !m.watched)).toBe(true);
-    expect([...list.map((m) => m.id)].sort((a, b) => a - b)).toEqual([1, 2, 3]);
+    expect(comp.movies().map((m) => m.id)).toEqual([1, 2, 3]);
+
+    comp.toggleWatched(1); // Alpha watched -> sinks below unwatched
+    expect(comp.movies().map((m) => m.id)).toEqual([2, 3, 1]);
+
+    comp.toggleWatched(3); // Charlie watched
+    expect(comp.movies().map((m) => m.id)).toEqual([2, 1, 3]);
+
+    comp.store.remove(2); // Bravo removed
+    expect(comp.movies().map((m) => m.id)).toEqual([1, 3]);
+
+    comp.toggleWatched(1); // Alpha unwatched again -> rises to the top
+    expect(comp.movies().map((m) => m.id)).toEqual([1, 3]);
+    const unwatched = comp.movies().filter((m) => !m.watched).map((m) => m.id);
+    const watched = comp.movies().filter((m) => m.watched).map((m) => m.id);
+    expect(unwatched).toEqual([1]);
+    expect(watched).toEqual([3]);
   });
 });

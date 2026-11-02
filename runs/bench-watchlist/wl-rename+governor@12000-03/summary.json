@@ -5,18 +5,43 @@
   "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "rate_limited",
+  "rounds": 2,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist",
+      "movie-detail",
+      "search"
+    ],
+    [
+      "watchlist",
+      "watchlist-store"
+    ]
+  ],
   "governorIsolation": "clean",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 3,
   "testGuard": {
-    "rejectedSubmissions": 0,
-    "requests": [],
-    "approvals": []
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "This test reads the watchlist item field `store.items()[0].watched` in its final assertion. `WatchItem` now exposes `seen: boolean` instead of `watched: boolean`, so the read was renamed to `store.items()[0].seen`. No other part of the test (assertion value, name, or behaviour) was changed; this is the expected-field-rename path described in the instruction.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
@@ -26,17 +51,30 @@
     "total": 2,
     "failed": 1,
     "failures": [
-      "held-out: rename watched -> seen toggling a movie saves the new field name, not the old one: AssertionError: expected false to be true // Object.is equality"
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
     ]
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 54685,
+    "output": 115845
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 17162,
+      "output": 101471
+    },
+    "owner": {
+      "calls": 10,
+      "input": 37523,
+      "output": 14374
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2946,
+    "maxPromptTokens": 8095,
+    "maxEstimate": 9708,
     "overBudget": 0,
     "violations": 0
   },

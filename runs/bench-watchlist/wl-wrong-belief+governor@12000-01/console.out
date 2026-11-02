@@ -1,14 +1,17 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-wrong-belief+governor@12000-01
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-wrong-belief+governor@12000-01
 provider: ollama-cloud (glm-5.3)
 request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
 
-governor turn 1: plan -> watchlist-store, watchlist  (The request's "seen" flag maps to the existing `watched` boolean on WatchItem (the only watched/seen flag in the model). Plan: watchlist-store gains clearWatched() which removes every watched item, preserves unwatched order and persists like the other mutators; the watchlist page gets a page-level "Clear watched" button (disabled when nothing is watched) that calls it and announces how many movies were cleared.)
+governor turn 1: plan -> watchlist-store, watchlist  (The request's "seen" flag corresponds to the codebase's existing `watched` boolean on WatchItem (the only seen/unseen marker, surfaced via watchedCount/toggleWatched). Two units change: watchlist-store gains a `clearWatched()` mutation, and the watchlist view gains a "Clear watched" button that calls it. No other unit needs to change.)
 round 1: owners watchlist-store=ok watchlist=ok; oracle RED
 !! GOVERNOR ISOLATION LEAK: 1 source line(s) in governor prompt
-governor turn 2: plan -> watchlist-store  (tsc is clean and all watchlist (component) tests pass; the only red test is the watchlist-store persistence acceptance test — clearWatched() works in memory but leaves persisted state that a fresh store loads as empty. Only watchlist-store is implicated, so I am re-tasking just that unit to make the cleared list durable before clearWatched() returns.)
-round 2: owners watchlist-store=ok; oracle GREEN
+governor turn 2: plan -> watchlist-store, watchlist  (Both oracle failures were in my acceptance-test harnesses, not in the units: the watchlist spec lacked router providers (NG0201 for RouterLink), and the watchlist-store spec's try/catch TestBed fallback crashed when constructing a second instance within one test. Shipping corrected harnesses for both units; the new store harness also verifies clearWatched persistence directly (including the empty-list case), so any real persistence bug surfaces cleanly next round.)
+round 2: owners watchlist-store=ok watchlist=ok; oracle RED
 !! GOVERNOR ISOLATION LEAK: 1 source line(s) in governor prompt
-governor turn 3: accept  (Oracle is green (tsc exit 0, 42 tests passing) including both acceptance suites: the store removes and durably persists the unwatched-only list, and the watchlist page exposes a "Clear watched" button that clears all watched movies when clicked and is disabled when none are watched. The request is fully satisfied; existing acceptance tests are kept as regression guards.)
+governor turn 3: plan -> watchlist-store  (Only remaining failure is watchlist-store's clearWatched persistence contract: after add -> toggleWatched -> clearWatched, a brand-new store loads [] instead of the unwatched remainder [2], while in-memory state after clearWatched is correct. So what reaches localStorage across that chain is empty or unloadable. tsc and all other 44 tests (including the watchlist Clear-watched button) are green; only watchlist-store needs to change.)
+round 3: owners watchlist-store=ok; oracle RED
+!! GOVERNOR ISOLATION LEAK: 2 source line(s) in governor prompt
+governor turn 4: plan -> watchlist-store  (The build is red solely because of two TS7006 implicit-any errors on lambda parameter 'm' in the watchlist-store owner's own spec file (lines 242 and 303); vitest's angular-compiler plugin fails on them so no tests ran last round. Annotating those two parameters is a compile-only fix that unblocks the suite — including the already-written acceptance tests for clearWatched persistence and the Clear watched button — with no interface or behavior changes needed.)
 
 {
   "target": "watchlist",
@@ -17,11 +20,15 @@ governor turn 3: accept  (Oracle is green (tsc exit 0, 42 tests passing) includi
   "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 2,
-  "status": "accepted",
+  "rounds": 3,
+  "status": "cap_hit",
   "clarifications": 0,
-  "finalOracle": "green",
+  "finalOracle": "red",
   "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
     [
       "watchlist-store",
       "watchlist"
@@ -32,7 +39,7 @@ governor turn 3: accept  (Oracle is green (tsc exit 0, 42 tests passing) includi
   ],
   "governorIsolation": "LEAK",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 3,
+  "acceptanceTestsWritten": 4,
   "testGuard": {
     "rejectedSubmissions": 0,
     "requests": [],
@@ -48,13 +55,26 @@ governor turn 3: accept  (Oracle is green (tsc exit 0, 42 tests passing) includi
     "failures": []
   },
   "tokens": {
-    "input": 26562,
-    "output": 153512
+    "input": 57280,
+    "output": 249263
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 21878,
+      "output": 82180
+    },
+    "owner": {
+      "calls": 10,
+      "input": 35402,
+      "output": 167083
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 4800,
-    "maxEstimate": 5778,
+    "maxPromptTokens": 7415,
+    "maxEstimate": 8886,
     "overBudget": 0,
     "violations": 0
   },

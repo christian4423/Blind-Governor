@@ -1,8 +1,14 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-sort+governor@12000-03
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-sort+governor@12000-03
 provider: ollama-cloud (glm-5.3)
 request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
 
-governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 43f9d2c3-b998-423a-8783-d6f0d5e0df14)"},"request_id":"req_fa08888c651f5a0e87c2c42c"}
+governor turn 1: plan -> watchlist  (The request is purely presentational ordering in the watchlist view, so only the "watchlist" unit needs to change: its movies signal must list unwatched items before watched ones, stably and reactively, derived from the unchanged WatchlistStore. No interface changes are needed since movies is already the exported list signal; an acceptance test pins the ordering through the component and store public APIs.)
+round 1: owners watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist  (tsc is clean and the unwatched-first ordering works (acceptance tests pass, store-level toggles propagate to movies()), but the round-1 edit regressed click-to-toggle: two existing watchlist tests now fail with watched staying false after a single click. Only the watchlist unit is implicated; re-instruct it to restore the exact pre-existing single-toggle click behaviour on top of the ordering, without touching tests or the store.)
+round 2: owners watchlist=fail; oracle RED
+governor turn 3: plan -> watchlist  (tsc is clean and the unwatched-first ordering is implemented and green; only the two click-handling tests in the watchlist spec are still red. The previous fix round aborted (owner hit max_tokens), so I re-instruct the watchlist owner with a tighter, behaviour-focused instruction and extend the acceptance test to pin that a single rendered checkbox click toggles the store exactly once while keeping unwatched-first order.)
+round 3: owners watchlist=fail; oracle RED
+governor turn 4: plan -> watchlist  (tsc is clean and all acceptance tests pass, which proves click handling is already correct (one click flips exactly one store item, the right one, once) and that movies() reorders. The only cause consistent with both remaining failures is that the round-1 edit reorders the store's own array in place (e.g. .sort() on store.items()), so after a click the clicked movie is no longer the store's first item. Fix: make the derived signal pure (partition into a NEW array, never mutate store.items()), and let toggleWatched only delegate to the store. New acceptance tests pin that the store's insertion order is never disturbed.)
 
 {
   "target": "watchlist",
@@ -11,14 +17,24 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 43f9d2c3-b998-423a-8783-d6f0d5e0df14)\"},\"request_id\":\"req_fa08888c651f5a0e87c2c42c\"}",
+  "rounds": 3,
+  "status": "cap_hit",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
   "governorIsolation": "clean",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 3,
   "testGuard": {
     "rejectedSubmissions": 0,
     "requests": [],
@@ -28,21 +44,32 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "behaviour": null,
   "heldout": {
     "slug": "sort",
-    "pass": false,
+    "pass": true,
     "total": 1,
-    "failed": 1,
-    "failures": [
-      "held-out: unwatched before watched lists unwatched movies first, keeping the original order within each group: AssertionError: expected [ 'A', 'B', 'C', 'D' ] to deeply equal [ 'B', 'D', 'A', 'C' ]"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 62889,
+    "output": 320615
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 19968,
+      "output": 103931
+    },
+    "owner": {
+      "calls": 8,
+      "input": 42921,
+      "output": 216684
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2950,
+    "maxPromptTokens": 7249,
+    "maxEstimate": 8685,
     "overBudget": 0,
     "violations": 0
   },

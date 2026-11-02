@@ -1,0 +1,82 @@
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "over_budget",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "This test pinned the old WatchItem.watched field via `expect(store.items()[0].watched).toBe(false)`, which will no longer compile against the updated WatchItem interface where `watched` is renamed to `seen`. Updated the read to `store.items()[0].seen`; the expected value (false), the test's intent, and its title are unchanged. No workaround was possible since the field is removed by the interface change.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 2,
+    "failed": 1,
+    "failures": [
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
+    ]
+  },
+  "tokens": {
+    "input": 42039,
+    "output": 167864
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 17094,
+      "output": 71621
+    },
+    "owner": {
+      "calls": 9,
+      "input": 24945,
+      "output": 96243
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 6267,
+    "maxEstimate": 33123,
+    "overBudget": 1,
+    "violations": 0
+  },
+  "usd": 0
+}

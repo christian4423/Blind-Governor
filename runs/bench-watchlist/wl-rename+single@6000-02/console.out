@@ -1,4 +1,4 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-rename+single@6000-02
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-rename+single@6000-02
 provider: ollama-cloud (glm-5.3)
 request: Rename the `watched` field of watchlist items to `seen` everywhere.
 
@@ -11,7 +11,7 @@ request: Rename the `watched` field of watchlist items to `seen` everywhere.
   "provider": "ollama-cloud",
   "model": "glm-5.3",
   "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: edfd4a48-f422-4cb4-9beb-fed940160045)\"},\"request_id\":\"req_efb04e793131601148e4208b\"}",
+  "status": "over_budget",
   "clarifications": 0,
   "finalOracle": "not run",
   "instructedUnits": [],
@@ -35,14 +35,22 @@ request: Rename the `watched` field of watchlist items to `seen` everywhere.
     ]
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 90987,
+    "output": 15684
   },
+  "tokensByRole": {
+    "single": {
+      "calls": 28,
+      "input": 90987,
+      "output": 15684
+    }
+  },
+  "repoTokens": 12710,
   "budget": 6000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 1237,
-    "overBudget": 0,
+    "maxPromptTokens": 4353,
+    "maxEstimate": 6085,
+    "overBudget": 1,
     "violations": 0
   },
   "usd": 0

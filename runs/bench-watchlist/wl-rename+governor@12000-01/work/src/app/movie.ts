@@ -3,7 +3,7 @@ export interface Movie {
     title: string;
     releaseDate: string;
     rating: number;
-    watched: boolean;
+    seen: boolean;
 }
 
 export interface TmdbMovie {

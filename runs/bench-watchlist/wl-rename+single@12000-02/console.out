@@ -1,7 +1,10 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-rename+single@12000-02
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-rename+single@12000-02
 provider: ollama-cloud (glm-5.3)
 request: Rename the `watched` field of watchlist items to `seen` everywhere.
 
+single call 28: check  (Renamed the WatchItem.watched data field to seen everywhere it is referenced: the interface definitions in movie.ts (WatchItem and the legacy Movie model), the store's add/toggle/count logic, the watchlist template bindings ([class.watched], [checked], status-pill ternary), and the spec assertion on the field. I intentionally kept user-facing text ("Watched"/"To watch", "1 of 2 watched"), CSS classes (.watched/.watched-checkbox), and the status-related API names (watchedCount, toggleWatched) since those describe watched status rather than the field itself.)
+round 1: oracle GREEN
+single call 29: accept  (The watched field of watchlist items is renamed to seen everywhere. The model (WatchItem, plus the legacy Movie interface), the store logic (add/toggle/count), the template bindings, and the spec's direct field assertion were all updated. Deliberately unchanged: user-facing copy ("Watched"/"To watch", "1 of 2 watched"), CSS class names, and the watchedCount/toggleWatched API names, which describe watched status rather than the field itself. Oracle run: tsc --noEmit clean and all 28 tests pass.)
 
 {
   "target": "watchlist",
@@ -10,18 +13,37 @@ request: Rename the `watched` field of watchlist items to `seen` everywhere.
   "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 1f560e2c-32d3-4a0a-8051-74b467a4d429)\"},\"request_id\":\"req_4c042155f3a1444b9cc2eda6\"}",
+  "rounds": 1,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
   "governorIsolation": "n/a",
   "showBehaviour": false,
   "acceptanceTestsWritten": 0,
   "testGuard": {
     "rejectedSubmissions": 0,
-    "requests": [],
-    "approvals": []
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 1,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
@@ -31,17 +53,25 @@ request: Rename the `watched` field of watchlist items to `seen` everywhere.
     "total": 2,
     "failed": 1,
     "failures": [
-      "held-out: rename watched -> seen toggling a movie saves the new field name, not the old one: AssertionError: expected false to be true // Object.is equality"
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
     ]
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 199751,
+    "output": 18343
   },
+  "tokensByRole": {
+    "single": {
+      "calls": 30,
+      "input": 199751,
+      "output": 18343
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 1237,
+    "maxPromptTokens": 8686,
+    "maxEstimate": 10782,
     "overBudget": 0,
     "violations": 0
   },

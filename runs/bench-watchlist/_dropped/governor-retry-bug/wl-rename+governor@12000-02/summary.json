@@ -1,0 +1,85 @@
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "over_budget",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist",
+      "movie-detail",
+      "search",
+      "app"
+    ],
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "movie"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 4,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The assertion reads the watchlist item's watched state via `store.items()[0].watched`, but the `WatchItem` field was renamed from `watched` to `seen`. Keeping `.watched` would fail TypeScript compilation and read `undefined` at runtime. Updated the field reference to `.seen`; the test's intent (clicking the title link navigates without changing the watched state) is unchanged.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": true,
+    "total": 2,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 71160,
+    "output": 310878
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 26021,
+      "output": 104933
+    },
+    "owner": {
+      "calls": 18,
+      "input": 45139,
+      "output": 205945
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 6652,
+    "maxEstimate": 32384,
+    "overBudget": 1,
+    "violations": 0
+  },
+  "usd": 0
+}

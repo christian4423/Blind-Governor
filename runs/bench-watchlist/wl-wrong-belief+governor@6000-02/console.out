@@ -1,8 +1,14 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-wrong-belief+governor@6000-02
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-wrong-belief+governor@6000-02
 provider: ollama-cloud (glm-5.3)
 request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
 
-governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: facf5043-288f-4650-83cc-666e6e30eb2e)"},"request_id":"req_efa0cbc26a81da475cfb8798"}
+governor turn 1: plan -> watchlist-store, watchlist  (The request's 'seen' flag is WatchItem.watched in this codebase. Two units change: watchlist-store gains clearWatched(): number (removes all watched items, keeps the rest in order, persists like the other mutators, returns the removed count), and the watchlist page gains a native 'Clear watched' button that calls it, announces the cleared count via the existing announcement signal, and is disabled when watchedCount is 0. No other units are implicated.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist-store, watchlist  (tsc is green and the only 4 failing tests are all in my round-1 acceptance files, and both failure signatures point at test-harness defects, not unit code: (1) the watchlist-store persistence test read localStorage under a guessed key (it got '' — the store's key is private, so the test must not depend on it); (2) the three watchlist tests never provided router providers, so the template's routerLink directives crashed TestBed with NG0201 (No provider for ActivatedRoute) before any assertion ran. I am replacing both acceptance test files: the store test now verifies persistence key-agnostically (full localStorage dump plus a freshly constructed WatchlistStore), and the watchlist test now configures TestBed with provideRouter([]) and seeds the exact store instance the component uses. The owners should change nothing unless the re-pinned contract reveals a real defect; tsc and their own suites are already green.)
+round 2: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 3: plan -> watchlist-store  (All 4 failures are NG0203 raised inside my own watchlist-store acceptance test: it built the store with a bare `new WatchlistStore()`, so the constructor's persistence effect() ran outside an injection context and every test died before its first assertion. The production code is DI-instantiated and evidently already satisfies the contract (the component-level "Clear watched" acceptance tests pass). So this round changes no production behaviour — it replaces only the broken acceptance harness with one that constructs the store through TestBed and flushes effects with `await TestBed.tick()`. The watchlist unit is untouched; its passing acceptance test stays in place.)
+round 3: owners watchlist-store=ok; oracle GREEN
+governor turn 4: accept  (Oracle is green (tsc clean, 43/43 tests pass). The acceptance tests verify the full requested behaviour: the Watchlist component exposes a "Clear watched" button that removes every watched movie, keeps unwatched ones, announces the removed count, and is disabled when nothing is watched; WatchlistStore.clearWatched() implements the matching domain logic (remove watched items, return count, no-op on empty/none-watched, persist cleared state). The request is satisfied with no outstanding work.)
 
 {
   "target": "watchlist",
@@ -11,14 +17,26 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: facf5043-288f-4650-83cc-666e6e30eb2e)\"},\"request_id\":\"req_efa0cbc26a81da475cfb8798\"}",
+  "rounds": 3,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ]
+  ],
   "governorIsolation": "clean",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 5,
   "testGuard": {
     "rejectedSubmissions": 0,
     "requests": [],
@@ -28,21 +46,32 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "behaviour": null,
   "heldout": {
     "slug": "wrong-belief",
-    "pass": false,
+    "pass": true,
     "total": 1,
-    "failed": 1,
-    "failures": [
-      "held-out: clear watched movies a clear button removes watched movies, keeps the rest, and keeps the saved field name: AssertionError: a button whose text mentions \"clear\": expected undefined to be truthy"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 51255,
+    "output": 206754
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 20343,
+      "output": 116431
+    },
+    "owner": {
+      "calls": 10,
+      "input": 30912,
+      "output": 90323
+    }
+  },
+  "repoTokens": 12710,
   "budget": 6000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2950,
+    "maxPromptTokens": 4883,
+    "maxEstimate": 5602,
     "overBudget": 0,
     "violations": 0
   },

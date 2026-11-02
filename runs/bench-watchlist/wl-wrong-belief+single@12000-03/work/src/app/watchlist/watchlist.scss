@@ -20,6 +20,19 @@
   transition: width 0.3s ease;
 }
 
+// List-level actions, aligned with the right edge of the list
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: -8px 0 14px;
+}
+
+// Destructive: drops every movie that has been marked as watched
+.clear-watched,
+.clear-watched:hover {
+  color: var(--danger);
+}
+
 .watchlist {
   display: flex;
   flex-direction: column;

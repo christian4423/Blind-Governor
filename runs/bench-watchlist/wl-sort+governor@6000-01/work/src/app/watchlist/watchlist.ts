@@ -12,15 +12,12 @@ import { WatchlistStore } from '../watchlist-store';
 export class Watchlist {
   store = inject(WatchlistStore)
 
-  // Stable partition of the store's items: unwatched movies first, then watched
-  // ones, each group preserving the store's relative order. Derived from
-  // store.items() so adds, removes and toggles are reflected immediately.
-  movies = computed<WatchItem[]>(() => {
-    const items = this.store.items();
-    return [
-      ...items.filter((movie) => !movie.watched),
-      ...items.filter((movie) => movie.watched),
-    ];
+  // Stable partition of the store's items: unwatched movies come first, watched
+  // ones last. Relative order within each group is the store's own order, and the
+  // computed re-evaluates whenever the store signal changes (add/remove/toggle).
+  movies = computed(() => {
+    const items = this.store.items()
+    return [...items.filter(movie => !movie.watched), ...items.filter(movie => movie.watched)]
   })
 
   readonly imageBase = 'https://image.tmdb.org/t/p/w92';

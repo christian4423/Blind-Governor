@@ -1,8 +1,12 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-sort+governor@6000-03
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-sort+governor@6000-03
 provider: ollama-cloud (glm-5.3)
 request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
 
-governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: c66ca0c0-2a9c-40f5-b1e5-a04d687f93ef)"},"request_id":"req_fd0fb75c4a1776b0c390d604"}
+governor turn 1: plan -> watchlist  (The request only changes the order in which the watchlist view displays items. That is entirely a presentation concern inside the watchlist unit; the store's stored order and all other units are unaffected, so no interface changes are needed. An acceptance test pins the unwatched-first partition and its reactivity.)
+round 1: owners watchlist=rejected; oracle RED
+governor turn 2: plan -> watchlist  (The owner's implementation was correct; the only blocker was two existing tests that re-queried the first row after toggling — under the new display order that row legitimately changes, and the proposed edits preserve each test's intent (clicking the checkbox / blank row area toggles watched for that movie) while only fixing the element query, which the request's reordering genuinely requires. I approve both edits and re-issue the same plan. Separately, the NG0201 failure was in my acceptance-test harness (missing router providers for the template's routerLink), not in any unit; I am replacing that acceptance test with a corrected version.)
+round 2: owners watchlist=ok; oracle GREEN
+governor turn 3: accept  (Oracle is green (31 tests, 0 failed) and the acceptance tests confirm the request: the watchlist view now partitions items stably — unwatched movies first, watched after — and reorders immediately when a movie's watched status is toggled. The two approved test edits were applied by the owner and all other existing behaviour is unchanged.)
 
 {
   "target": "watchlist",
@@ -11,38 +15,80 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: c66ca0c0-2a9c-40f5-b1e5-a04d687f93ef)\"},\"request_id\":\"req_fd0fb75c4a1776b0c390d604\"}",
+  "rounds": 2,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
   "governorIsolation": "clean",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 2,
   "testGuard": {
-    "rejectedSubmissions": 0,
-    "requests": [],
-    "approvals": []
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when the checkbox is clicked",
+        "kind": "modified",
+        "reason": "The assertion re-queried `items()[0]` after the click. With the required ordering, toggling Movie 1 makes it watched, so it is partitioned to the end of the rendered list and the first row becomes Movie 2, whose checkbox is unchecked. I captured the clicked checkbox element before the click and assert on that element; the test's intent (clicking the checkbox toggles watched for that movie) and all other assertions are unchanged. Without this edit the test cannot pass together with the new display order.",
+        "round": 1
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when blank space on the row is clicked",
+        "kind": "modified",
+        "reason": "Same conflict: the final assertion re-queried `items()[0]`, which after the toggle is Movie 2 (now first because Movie 1 became watched and moved to the bottom). I capture the Movie 1 checkbox before the row click and assert on it; the interaction tested (clicking blank row space toggles watched) is unchanged.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > toggles watched when the checkbox is clicked"
+      },
+      {
+        "round": 2,
+        "title": "Watchlist > toggles watched when blank space on the row is clicked"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
   "heldout": {
     "slug": "sort",
-    "pass": false,
+    "pass": true,
     "total": 1,
-    "failed": 1,
-    "failures": [
-      "held-out: unwatched before watched lists unwatched movies first, keeping the original order within each group: AssertionError: expected [ 'A', 'B', 'C', 'D' ] to deeply equal [ 'B', 'D', 'A', 'C' ]"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 22596,
+    "output": 62642
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 10814,
+      "output": 27250
+    },
+    "owner": {
+      "calls": 3,
+      "input": 11782,
+      "output": 35392
+    }
+  },
+  "repoTokens": 12710,
   "budget": 6000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2950,
+    "maxPromptTokens": 4396,
+    "maxEstimate": 5048,
     "overBudget": 0,
     "violations": 0
   },

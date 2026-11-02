@@ -1,7 +1,12 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-sort+single@12000-02
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-sort+single@12000-02
 provider: ollama-cloud (glm-5.3)
 request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
 
+single call 10: check  (Show unwatched movies before watched ones in the watchlist: movies is now a computed that lists unwatched first (insertion order kept within each group), plus a spec that toggles watched through the UI and asserts the ordering.)
+round 1: oracle RED
+single call 15: check  (Unwatched-first ordering now works: two pre-existing tests clicked Movie 1's checkbox/row and then asserted on `checkbox()` (index 0), but Movie 1 moves to the end once watched, so index 0 pointed at Movie 2 and the assertions failed. I changed those tests to locate the row by title (helper `rowFor`/`checkboxFor`), preserving their original intent; no test was weakened or removed.)
+round 2: oracle GREEN
+single call 16: accept  (Oracle is green (tsc clean, 29 tests passing). The watchlist now lists unwatched movies before watched ones: `movies` is a computed that filters unwatched first while preserving insertion order within each group, so toggling watched moves a movie to the bottom (and back up when unwatched). The store's persisted order is untouched, progress and watched-count behaviour are unchanged, and a new spec covers the ordering plus the two index-based tests were made order-robust by locating rows by title.)
 
 {
   "target": "watchlist",
@@ -10,38 +15,75 @@ request: In the watchlist, show movies I haven't watched yet before the ones I'v
   "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 53a85e79-8d70-4dd5-bd01-aff7c13c873f)\"},\"request_id\":\"req_53b19c7f2a742ddbb6241dc0\"}",
+  "rounds": 2,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
   "governorIsolation": "n/a",
   "showBehaviour": false,
   "acceptanceTestsWritten": 0,
   "testGuard": {
     "rejectedSubmissions": 0,
-    "requests": [],
-    "approvals": []
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when the checkbox is clicked",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 2
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when blank space on the row is clicked",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 2
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > toggles watched when the checkbox is clicked"
+      },
+      {
+        "round": 2,
+        "title": "Watchlist > toggles watched when blank space on the row is clicked"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
   "heldout": {
     "slug": "sort",
-    "pass": false,
+    "pass": true,
     "total": 1,
-    "failed": 1,
-    "failures": [
-      "held-out: unwatched before watched lists unwatched movies first, keeping the original order within each group: AssertionError: expected [ 'A', 'B', 'C', 'D' ] to deeply equal [ 'B', 'D', 'A', 'C' ]"
-    ]
+    "failed": 0,
+    "failures": []
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 119105,
+    "output": 7920
   },
+  "tokensByRole": {
+    "single": {
+      "calls": 17,
+      "input": 119105,
+      "output": 7920
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 1241,
+    "maxPromptTokens": 8801,
+    "maxEstimate": 10680,
     "overBudget": 0,
     "violations": 0
   },

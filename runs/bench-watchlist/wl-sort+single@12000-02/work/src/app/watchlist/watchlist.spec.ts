@@ -33,6 +33,10 @@ describe('Watchlist', () => {
 
   const items = () => el.querySelectorAll<HTMLLIElement>('.watchlist-item');
   const checkbox = (i = 0) => items()[i].querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+  // Rows reorder when their watched state changes, so locate them by title instead of by index.
+  const rowFor = (title: string) =>
+    Array.from(items()).find(li => li.querySelector('.title-link')?.textContent?.trim() === title)!;
+  const checkboxFor = (title: string) => rowFor(title).querySelector<HTMLInputElement>('input[type="checkbox"]')!;
 
   it('should create', () => {
     expect(component).toBeTruthy();
@@ -44,17 +48,34 @@ describe('Watchlist', () => {
   });
 
   it('toggles watched when the checkbox is clicked', async () => {
-    checkbox().click();
+    checkboxFor('Movie 1').click();
     await fixture.whenStable();
-    expect(checkbox().checked).toBe(true);
+    expect(checkboxFor('Movie 1').checked).toBe(true);
     expect(component.watchedCount()).toBe(1);
     expect(el.querySelector('.subtitle')?.textContent).toContain('1 of 2 watched');
   });
 
-  it('toggles watched when blank space on the row is clicked', async () => {
-    items()[0].click();
+  it('lists unwatched movies before watched ones', async () => {
+    const titles = () =>
+      Array.from(items()).map(li => li.querySelector('.title-link')?.textContent?.trim());
+
+    checkbox(0).click(); // mark Movie 1 as watched, so Movie 2 moves above it
     await fixture.whenStable();
-    expect(checkbox().checked).toBe(true);
+    expect(titles()).toEqual(['Movie 2', 'Movie 1']);
+
+    checkbox(0).click(); // Movie 2 is first now; watch it too, so both keep their original order
+    await fixture.whenStable();
+    expect(titles()).toEqual(['Movie 1', 'Movie 2']);
+
+    checkbox(1).click(); // Movie 2 is unwatched again, so it moves back to the top
+    await fixture.whenStable();
+    expect(titles()).toEqual(['Movie 2', 'Movie 1']);
+  });
+
+  it('toggles watched when blank space on the row is clicked', async () => {
+    rowFor('Movie 1').click();
+    await fixture.whenStable();
+    expect(checkboxFor('Movie 1').checked).toBe(true);
   });
 
   it('navigates via the title link without toggling watched', async () => {

@@ -1,10 +1,14 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-rename+governor@12000-01
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-rename+governor@12000-01
 provider: ollama-cloud (glm-5.3)
 request: Rename the `watched` field of watchlist items to `seen` everywhere.
 
-governor turn 1: plan -> movie, watchlist-store, watchlist, movie-detail, search, app  (WatchItem.watched is the watchlist-item field, so the rename lands in movie (type owner), watchlist-store (create/toggle/count/persist logic), and watchlist (TS + template bindings). movie-detail, search and app only consume the store, so they get a conditional sweep in case they reference the field. Method/signal names (toggleWatched, watchedCount) and the separate Movie.watched field stay unchanged - the request renames the watchlist item field only, everywhere it appears.)
-round 1: owners movie=ok watchlist-store=fail watchlist=rejected movie-detail=ok search=ok app=ok; oracle RED
-governor turn 2 failed: prompt of ~12903 tokens exceeds the 12000-token budget
+governor turn 1: plan -> movie, watchlist-store, watchlist  (Pure field rename: the watchlist-item flag `watched` becomes `seen`. Only units that declare or directly use the field change: movie (declares it on Movie and WatchItem), watchlist-store (creates/toggles/persists it), watchlist (renders it). Non-field names (toggleWatched, watchedCount) stay, per the request's wording. Acceptance tests pin the new `seen` item shape.)
+round 1: owners movie=ok watchlist-store=ok watchlist=rejected; oracle RED
+governor turn 2: plan -> watchlist  (The field rename is already applied in movie and watchlist-store; only watchlist remains red, and its submission was rejected purely for the unapproved test edit. That edit is exactly what the rename requires (asserting `.seen` instead of `.watched` with unchanged intent), so I approve it and re-instruct watchlist to update its template and spec to the new `seen` field.)
+round 2: owners watchlist=ok; oracle RED
+governor turn 3: plan -> watchlist-store, watchlist  (The watched→seen rename is complete: tsc exits 0 and all unit specs pass. The three failing tests are governor acceptance tests with harness mistakes, not behaviour defects: WatchlistStore registers an effect() in its constructor, so it must be created inside an injection context (NG0203), and the Watchlist template's RouterLink needs router providers (NG0201). This round only replaces those two acceptance tests with corrected versions; no unit source changes are needed.)
+round 3: owners watchlist-store=ok watchlist=ok; oracle GREEN
+governor turn 4: accept  (Oracle is green (tsc exit 0, 44/44 tests pass). The watchlist item field `watched` is renamed to `seen` in the models (movie), storage and toggle logic (watchlist-store), and rendering (watchlist); the previously approved test assertion update in watchlist is applied and all acceptance tests confirm the new shape. Units that never referenced the field required no changes.)
 
 {
   "target": "watchlist",
@@ -13,23 +17,27 @@ governor turn 2 failed: prompt of ~12903 tokens exceeds the 12000-token budget
   "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 1,
-  "status": "over_budget",
+  "rounds": 3,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "red",
+  "finalOracle": "green",
   "instructedUnits": [
     [
       "movie",
       "watchlist-store",
-      "watchlist",
-      "movie-detail",
-      "search",
-      "app"
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
     ]
   ],
   "governorIsolation": "clean",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 1,
+  "acceptanceTestsWritten": 5,
   "testGuard": {
     "rejectedSubmissions": 1,
     "requests": [
@@ -37,32 +45,50 @@ governor turn 2 failed: prompt of ~12903 tokens exceeds the 12000-token budget
         "unit": "watchlist",
         "title": "Watchlist > navigates via the title link without toggling watched",
         "kind": "modified",
-        "reason": "The store's WatchItem field was renamed from `watched` to `seen`. This test reads `store.items()[0].watched`, which no longer exists on the type, so it would fail to compile/return undefined. I changed only the field reference to `store.items()[0].seen`; the assertion (expecting the item to remain un-seen after clicking the link) and the test's intent are unchanged.",
+        "reason": "The test asserts `store.items()[0].watched` to verify the link click did not toggle the flag. `WatchItem` now carries `seen: boolean` instead of `watched: boolean`, so the assertion was updated to read `.seen`. The test's intent and behaviour are unchanged.",
         "round": 1
       }
     ],
-    "approvals": []
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
   "heldout": {
     "slug": "rename",
     "pass": false,
-    "total": 0,
-    "failed": 0,
+    "total": 2,
+    "failed": 1,
     "failures": [
-      "held-out test did not run (build failed)"
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
     ]
   },
   "tokens": {
-    "input": 39775,
-    "output": 140155
+    "input": 52824,
+    "output": 98906
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 17632,
+      "output": 42814
+    },
+    "owner": {
+      "calls": 10,
+      "input": 35192,
+      "output": 56092
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 7997,
-    "maxEstimate": 12903,
-    "overBudget": 1,
+    "maxPromptTokens": 6844,
+    "maxEstimate": 8235,
+    "overBudget": 0,
     "violations": 0
   },
   "usd": 0

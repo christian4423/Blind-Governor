@@ -33,7 +33,11 @@ describe('Watchlist', () => {
 
   const items = () => el.querySelectorAll<HTMLLIElement>('.watchlist-item');
   const checkbox = (i = 0) => items()[i].querySelector<HTMLInputElement>('input[type="checkbox"]')!;
-  const titles = () => [...items()].map((item) => item.querySelector('.title-link')?.textContent);
+  const rowTitles = () => {
+    const titles: Array<string | undefined> = [];
+    items().forEach(row => titles.push(row.querySelector('a.title-link')?.textContent?.trim()));
+    return titles;
+  };
 
   it('should create', () => {
     expect(component).toBeTruthy();
@@ -45,8 +49,8 @@ describe('Watchlist', () => {
   });
 
   it('toggles watched when the checkbox is clicked', async () => {
-    // Capture the checkbox before clicking: once Movie 1 becomes watched its row
-    // moves below the unwatched rows, so re-querying would target the wrong row.
+    // Grab the checkbox before clicking: toggling regroups the list, so after
+    // the click the first row in the DOM belongs to a different movie.
     const box = checkbox();
     box.click();
     await fixture.whenStable();
@@ -56,12 +60,49 @@ describe('Watchlist', () => {
   });
 
   it('toggles watched when blank space on the row is clicked', async () => {
-    // Capture the checkbox before clicking: once Movie 1 becomes watched its row
-    // moves below the unwatched rows, so re-querying would target the wrong row.
-    const box = checkbox();
-    items()[0].click();
+    // Grab the row and its checkbox before clicking: toggling regroups the
+    // list, so after the click the first row in the DOM belongs to a different movie.
+    const row = items()[0];
+    const rowCheckbox = row.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    row.click();
     await fixture.whenStable();
-    expect(box.checked).toBe(true);
+    expect(rowCheckbox.checked).toBe(true);
+  });
+
+  it('lists unwatched movies before watched ones and regroups when watched changes', async () => {
+    // Both unwatched: the store's order is preserved
+    expect(component.movies().map(movie => movie.id)).toEqual([1, 2]);
+    expect(rowTitles()).toEqual(['Movie 1', 'Movie 2']);
+
+    // Movie 1 watched: it moves below the still unwatched Movie 2
+    store.toggleWatched(1);
+    await fixture.whenStable();
+    expect(component.movies().map(movie => movie.id)).toEqual([2, 1]);
+    expect(rowTitles()).toEqual(['Movie 2', 'Movie 1']);
+
+    // All watched: the store's order is preserved within the watched group
+    store.toggleWatched(2);
+    await fixture.whenStable();
+    expect(component.movies().map(movie => movie.id)).toEqual([1, 2]);
+
+    // Toggling through the component regroups immediately too
+    component.toggleWatched(2);
+    await fixture.whenStable();
+    expect(component.movies().map(movie => movie.id)).toEqual([2, 1]);
+    expect(rowTitles()).toEqual(['Movie 2', 'Movie 1']);
+  });
+
+  it('derives movies() from the store without adding, dropping or duplicating items', () => {
+    store.toggleWatched(1);
+    const storeItems = store.items();
+    const shown = component.movies();
+
+    expect(shown.length).toBe(storeItems.length);
+    // The exact same item references the store holds, with no duplicates
+    expect(new Set(shown).size).toBe(storeItems.length);
+    for (const item of shown) {
+      expect(storeItems.includes(item)).toBe(true);
+    }
   });
 
   it('navigates via the title link without toggling watched', async () => {
@@ -87,35 +128,6 @@ describe('Watchlist', () => {
     await fixture.whenStable();
 
     expect(el.querySelector('.empty-state a')?.getAttribute('href')).toBe('/search');
-  });
-
-  it('lists unwatched movies before watched ones', async () => {
-    component.toggleWatched(1);
-    await fixture.whenStable();
-
-    expect(titles()).toEqual(['Movie 2', 'Movie 1']);
-  });
-
-  it('keeps each group stable when a movie toggles back to unwatched', async () => {
-    component.toggleWatched(1);
-    component.toggleWatched(2);
-    await fixture.whenStable();
-    expect(titles()).toEqual(['Movie 1', 'Movie 2']);
-
-    component.toggleWatched(2);
-    await fixture.whenStable();
-    expect(titles()).toEqual(['Movie 2', 'Movie 1']);
-
-    component.toggleWatched(2);
-    await fixture.whenStable();
-    expect(titles()).toEqual(['Movie 1', 'Movie 2']);
-  });
-
-  it('sorts a copy without reordering the store', () => {
-    component.toggleWatched(1);
-
-    expect(store.items().map((m) => m.id)).toEqual([1, 2]);
-    expect(component.movies().map((m) => m.id)).toEqual([2, 1]);
   });
 
   it('has no axe accessibility violations', async () => {

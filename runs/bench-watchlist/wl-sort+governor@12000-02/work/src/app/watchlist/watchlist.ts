@@ -11,9 +11,15 @@ import { WatchlistStore } from '../watchlist-store';
 })
 export class Watchlist {
   store = inject(WatchlistStore)
-  movies = this.store.items
 
   readonly imageBase = 'https://image.tmdb.org/t/p/w92';
+
+  // Derived view order: unwatched movies first, watched ones last. Each group keeps
+  // the relative order of store.items(); the store array itself is never touched.
+  movies = computed(() => {
+    const items = this.store.items()
+    return [...items.filter(i => !i.watched), ...items.filter(i => i.watched)]
+  })
 
   watchedCount = this.store.watchedCount
   progress = computed(() => this.movies().length ? (this.watchedCount() / this.movies().length) * 100 : 0)

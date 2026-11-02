@@ -33,6 +33,7 @@ describe('Watchlist', () => {
 
   const items = () => el.querySelectorAll<HTMLLIElement>('.watchlist-item');
   const checkbox = (i = 0) => items()[i].querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+  const clearBtn = () => el.querySelector<HTMLButtonElement>('.clear-watched-btn')!;
 
   it('should create', () => {
     expect(component).toBeTruthy();
@@ -72,6 +73,54 @@ describe('Watchlist', () => {
 
     expect(items().length).toBe(1);
     expect(el.querySelector('[role="status"]')?.textContent).toContain('Removed Movie 1 from your watchlist');
+  });
+
+  it('clears watched movies and announces the singular count', async () => {
+    component.toggleWatched(1);
+    await fixture.whenStable();
+
+    clearBtn().click();
+    await fixture.whenStable();
+
+    expect(items().length).toBe(1);
+    expect(items()[0].querySelector('.title-link')?.textContent?.trim()).toBe('Movie 2');
+    expect(el.querySelector('[role="status"]')?.textContent).toBe('Cleared 1 watched movie');
+  });
+
+  it('clears all watched movies and announces the plural count', async () => {
+    component.toggleWatched(1);
+    component.toggleWatched(2);
+    await fixture.whenStable();
+
+    clearBtn().click();
+    await fixture.whenStable();
+
+    expect(items().length).toBe(0);
+    expect(store.items().length).toBe(0);
+    expect(el.querySelector('[role="status"]')?.textContent).toBe('Cleared 2 watched movies');
+  });
+
+  it('disables Clear watched until a movie is watched', async () => {
+    expect(clearBtn().disabled).toBe(true);
+
+    checkbox(0).click();
+    await fixture.whenStable();
+    expect(clearBtn().disabled).toBe(false);
+
+    clearBtn().click();
+    await fixture.whenStable();
+
+    // Only the watched movie is gone; nothing is watched any more, so it disables again
+    expect(items().length).toBe(1);
+    expect(clearBtn().disabled).toBe(true);
+  });
+
+  it('renders Clear watched as the only button whose name mentions clear', () => {
+    const clearButtons = [...el.querySelectorAll<HTMLButtonElement>('button')]
+      .filter(btn => /clear/i.test(`${btn.getAttribute('aria-label') ?? ''} ${btn.textContent ?? ''}`));
+
+    expect(clearButtons.length).toBe(1);
+    expect(clearButtons[0].textContent?.trim()).toBe('Clear watched');
   });
 
   it('shows an empty state with a link to search', async () => {

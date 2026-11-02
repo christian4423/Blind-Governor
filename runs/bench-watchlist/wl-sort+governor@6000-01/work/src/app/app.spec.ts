@@ -1,17 +1,8 @@
-import { vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { App } from './app';
 import { WatchlistStore } from './watchlist-store';
 import { expectNoA11yViolations } from '../testing/axe';
-
-// The page-level axe scan (document-wide landmark/region rules) is slow in jsdom
-// and can exceed vitest's default 5s per-test budget when the suite runs under
-// parallel load. App has no HttpClient and no pending router work, and the other
-// tests sharing the same render() helper settle within the default budget, so the
-// axe test is slow rather than hung. Raise the per-test timeout for this file
-// without altering any test body or assertion.
-vi.setConfig({ testTimeout: 30000 });
 
 describe('App', () => {
   beforeEach(async () => {

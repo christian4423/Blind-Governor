@@ -1,0 +1,158 @@
+{
+  "target": "watchlist",
+  "mode": "single",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "over_budget",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "n/a",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 0,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > should create",
+        "kind": "removed",
+        "reason": "(no reason given)",
+        "round": 2
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > labels each checkbox with its movie title",
+        "kind": "removed",
+        "reason": "(no reason given)",
+        "round": 2
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when the checkbox is clicked",
+        "kind": "removed",
+        "reason": "(no reason given)",
+        "round": 2
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when blank space on the row is clicked",
+        "kind": "removed",
+        "reason": "(no reason given)",
+        "round": 2
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "removed",
+        "reason": "(no reason given)",
+        "round": 2
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > removes a movie and announces it to screen readers",
+        "kind": "removed",
+        "reason": "(no reason given)",
+        "round": 2
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > shows an empty state with a link to search",
+        "kind": "removed",
+        "reason": "(no reason given)",
+        "round": 2
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > has no axe accessibility violations",
+        "kind": "removed",
+        "reason": "(no reason given)",
+        "round": 2
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > has no axe accessibility violations when empty",
+        "kind": "removed",
+        "reason": "(no reason given)",
+        "round": 2
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > should create"
+      },
+      {
+        "round": 2,
+        "title": "Watchlist > labels each checkbox with its movie title"
+      },
+      {
+        "round": 2,
+        "title": "Watchlist > toggles watched when the checkbox is clicked"
+      },
+      {
+        "round": 2,
+        "title": "Watchlist > toggles watched when blank space on the row is clicked"
+      },
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      },
+      {
+        "round": 2,
+        "title": "Watchlist > removes a movie and announces it to screen readers"
+      },
+      {
+        "round": 2,
+        "title": "Watchlist > shows an empty state with a link to search"
+      },
+      {
+        "round": 2,
+        "title": "Watchlist > has no axe accessibility violations"
+      },
+      {
+        "round": 2,
+        "title": "Watchlist > has no axe accessibility violations when empty"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 103488,
+    "output": 8243
+  },
+  "tokensByRole": {
+    "single": {
+      "calls": 30,
+      "input": 103488,
+      "output": 8243
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "budgetStats": {
+    "maxPromptTokens": 4305,
+    "maxEstimate": 7062,
+    "overBudget": 1,
+    "violations": 0
+  },
+  "usd": 0
+}

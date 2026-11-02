@@ -1,7 +1,10 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-rename+single@12000-03
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-rename+single@12000-03
 provider: ollama-cloud (glm-5.3)
 request: Rename the `watched` field of watchlist items to `seen` everywhere.
 
+single call 11: check  (Renamed the watchlist item field `watched` to `seen` across all files: the `WatchItem` type in movie.ts, the store logic in watchlist-store.ts (watchedCount filter, add() initial value, toggleWatched() spread), all three template bindings in watchlist.html, and the one assertion in watchlist.spec.ts that reads the item field. I left the dead `Movie.watched` interface (not a watchlist item type) and all non-field identifiers (`watchedCount`, `toggleWatched`, CSS classes, UI copy) untouched.)
+round 1: oracle GREEN
+single call 12: accept  (The `watched` field of watchlist items is now `seen` everywhere it occurs. Changes: (1) `WatchItem` in movie.ts — `watched: boolean` -> `seen: boolean`; (2) watchlist-store.ts — `watchedCount` filters on `m.seen`, `add()` stores `seen: false`, `toggleWatched()` maps to `{ ...m, seen: !m.seen }`; (3) watchlist.html — `[class.watched]="movie.seen"`, `[checked]="movie.seen"`, and `{{ movie.seen ? 'Watched' : 'To watch' }}`; (4) watchlist.spec.ts — the single assertion on the item field now reads `.seen`. Oracle is green (tsc exit 0; 28/28 tests pass). Deliberately untouched: the unused `Movie.watched` interface (a plain movie shape, not a watchlist item — the request's "of watchlist items" qualifier points at `WatchItem`), the store/component API names `watchedCount` and `toggleWatched`, CSS classes `.watched`/`.watched-checkbox`, and UI copy like "1 of 2 watched" and the aria-label "Watched: …" — none of these are the item field.)
 
 {
   "target": "watchlist",
@@ -10,18 +13,37 @@ request: Rename the `watched` field of watchlist items to `seen` everywhere.
   "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 58826914-9414-4a12-8450-8dc7367f77fe)\"},\"request_id\":\"req_961864d7fc8d6f178297a4c8\"}",
+  "rounds": 1,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
   "governorIsolation": "n/a",
   "showBehaviour": false,
   "acceptanceTestsWritten": 0,
   "testGuard": {
     "rejectedSubmissions": 0,
-    "requests": [],
-    "approvals": []
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "(no reason given)",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 1,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
@@ -31,17 +53,25 @@ request: Rename the `watched` field of watchlist items to `seen` everywhere.
     "total": 2,
     "failed": 1,
     "failures": [
-      "held-out: rename watched -> seen toggling a movie saves the new field name, not the old one: AssertionError: expected false to be true // Object.is equality"
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
     ]
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 81141,
+    "output": 12240
   },
+  "tokensByRole": {
+    "single": {
+      "calls": 13,
+      "input": 81141,
+      "output": 12240
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 1237,
+    "maxPromptTokens": 8790,
+    "maxEstimate": 10740,
     "overBudget": 0,
     "violations": 0
   },

@@ -33,6 +33,7 @@ describe('Watchlist', () => {
 
   const items = () => el.querySelectorAll<HTMLLIElement>('.watchlist-item');
   const checkbox = (i = 0) => items()[i].querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+  const clearWatchedButton = () => el.querySelector<HTMLButtonElement>('[data-testid="clear-watched"]')!;
 
   it('should create', () => {
     expect(component).toBeTruthy();
@@ -80,6 +81,53 @@ describe('Watchlist', () => {
     await fixture.whenStable();
 
     expect(el.querySelector('.empty-state a')?.getAttribute('href')).toBe('/search');
+  });
+
+  it('renders a Clear watched button that is disabled until a movie is watched', async () => {
+    const button = clearWatchedButton();
+    expect(button.tagName).toBe('BUTTON');
+    expect(button.textContent?.trim()).toBe('Clear watched');
+    expect(button.disabled).toBe(true);
+
+    checkbox().click();
+    await fixture.whenStable();
+    expect(clearWatchedButton().disabled).toBe(false);
+  });
+
+  it('clears watched movies but keeps unwatched ones, announcing how many went', async () => {
+    component.toggleWatched(1);
+    await fixture.whenStable();
+
+    clearWatchedButton().click();
+    await fixture.whenStable();
+
+    expect(items().length).toBe(1);
+    expect(items()[0].textContent).toContain('Movie 2');
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('Removed 1 watched movie from your watchlist');
+  });
+
+  it('clears every watched movie at once and announces the plural count', async () => {
+    component.toggleWatched(1);
+    component.toggleWatched(2);
+    await fixture.whenStable();
+
+    clearWatchedButton().click();
+    await fixture.whenStable();
+
+    expect(items().length).toBe(0);
+    expect(el.querySelector('.empty-state')).toBeTruthy();
+    expect(clearWatchedButton().disabled).toBe(true);
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('Removed 2 watched movies from your watchlist');
+  });
+
+  it('keeps the Clear watched button rendered when the watchlist is empty', async () => {
+    store.remove(1);
+    store.remove(2);
+    await fixture.whenStable();
+
+    const button = clearWatchedButton();
+    expect(button.disabled).toBe(true);
+    expect(button.textContent?.trim()).toBe('Clear watched');
   });
 
   it('has no axe accessibility violations', async () => {

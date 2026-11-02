@@ -1,0 +1,97 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-rename+governor@12000-02
+provider: ollama-cloud (glm-5.3)
+request: Rename the `watched` field of watchlist items to `seen` everywhere.
+
+governor turn 1: plan -> movie, watchlist-store, watchlist, movie-detail, search, app  (Data-field rename on WatchItem, the watchlist-item type: movie re-declares the field as `seen`; watchlist-store creates/toggles/persists it; watchlist renders it; movie-detail/search/app get a conditional scan because plain tsc does not type-check Angular templates (a stale template reference would break silently). Non-field names (toggleWatched, watchedCount, CSS classes, UI text) keep `watched` since the request targets the item field only — say so if you want those renamed too. The store also migrates legacy persisted `watched` flags so saved data survives. Existing tests pinning the old field name will surface as change requests; I will approve them next round.)
+round 1: owners movie=ok watchlist-store=ok watchlist=rejected movie-detail=ok search=ok app=ok; oracle RED
+governor turn 2: plan -> movie, watchlist-store, watchlist  (Round 1 landed the WatchItem rename (movie.ts now exports `seen`) and the store implementation. The remaining red involves exactly three units: watchlist's submission was rejected only because it updated an existing test's `.watched` assertion — that change is required by the rename and is now approved; movie's own spec still reads `.watched` and lost its `withOptionalFields` helper; watchlist-store's own spec dot-accesses an index-signature type (TS4111). No interface changes are needed this round; I re-supply my existing acceptance tests unchanged.)
+round 2: owners movie=fail watchlist-store=ok watchlist=ok; oracle RED
+governor turn 3: plan -> movie  (The oracle shows only two errors left, both in src/app/movie.spec.ts (the movie owner failed with max_tokens last round, so nothing was applied). All other units compiled; target only movie with a concise, minimal instruction.)
+round 3: owners movie=ok; oracle RED
+governor turn 4 failed: prompt of ~32384 tokens exceeds the 12000-token budget
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "over_budget",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist",
+      "movie-detail",
+      "search",
+      "app"
+    ],
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "movie"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 4,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The assertion reads the watchlist item's watched state via `store.items()[0].watched`, but the `WatchItem` field was renamed from `watched` to `seen`. Keeping `.watched` would fail TypeScript compilation and read `undefined` at runtime. Updated the field reference to `.seen`; the test's intent (clicking the title link navigates without changing the watched state) is unchanged.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": true,
+    "total": 2,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 71160,
+    "output": 310878
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 26021,
+      "output": 104933
+    },
+    "owner": {
+      "calls": 18,
+      "input": 45139,
+      "output": 205945
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "budgetStats": {
+    "maxPromptTokens": 6652,
+    "maxEstimate": 32384,
+    "overBudget": 1,
+    "violations": 0
+  },
+  "usd": 0
+}

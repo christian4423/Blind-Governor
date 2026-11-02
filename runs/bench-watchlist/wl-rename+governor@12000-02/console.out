@@ -1,8 +1,14 @@
-run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-01T05-36-43-186Z/wl-rename+governor@12000-02
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-watchlist/wl-rename+governor@12000-02
 provider: ollama-cloud (glm-5.3)
 request: Rename the `watched` field of watchlist items to `seen` everywhere.
 
-governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","message":"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 91e5ad76-5ac2-445e-8d06-8b6f09c177b6)"},"request_id":"req_3ebf407e84619656cc96434a"}
+governor turn 1: plan -> movie, watchlist-store, watchlist  (WatchItem is the watchlist item type, so the rename is WatchItem.watched -> seen, and every producer/consumer of that field must switch: watchlist-store (constructs, toggles, and counts the flag) and the watchlist component (TS + template bindings). Other units only use store methods/signals, not the item field. Deliberately kept unchanged: public API names (toggleWatched, watchedCount), the unrelated Movie.watched field (Movie is not a watchlist item), and user-visible copy — the request renames the data field itself. Existing tests referencing the old field will come to me as test-change requests; they follow directly from the request and will be approved then.)
+round 1: owners movie=ok watchlist-store=ok watchlist=rejected; oracle RED
+governor turn 2: plan -> watchlist  (movie and watchlist-store already applied the field rename. The RED oracle implicates only the watchlist unit: its template still reads the old `watched` field, and the single tsc error is the existing spec's property access `store.items()[0].watched`, which the rename makes impossible. That test edit is approved because it only swaps the field name while preserving the test's name, intent and expected value — precisely what the request calls for.)
+round 2: owners watchlist=ok; oracle RED
+governor turn 3: plan -> watchlist-store, watchlist  (tsc is green, so the watched→seen rename is applied everywhere. Of the 4 failing tests, 3 are faults of my acceptance harness: WatchlistStore's constructor registers an effect() so it must be constructed inside an injection context (NG0203), and the Watchlist template uses routerLink so its TestBed needs router providers (ActivatedRoute, NG0201). The one genuine failure is watchlist-store's own test 'should load previously persisted items using the seen key' (got 0, expected 1), implicating the store's load/count path for the seen flag. I replace both acceptance harnesses and instruct watchlist-store to fix the implementation; watchlist needs no source change.)
+round 3: owners watchlist-store=ok watchlist=ok; oracle GREEN
+governor turn 4: accept  (Rename complete and verified: tsc is clean and all 43 tests pass. WatchItem (movie unit) now declares `seen: boolean` with no `watched` field; watchlist-store constructs, toggles, counts, persists and loads the flag under `seen`; the watchlist component reads `seen` in all TS computations and template bindings. Acceptance tests for movie, watchlist-store and watchlist pin this behaviour. No remaining references to the old field exist anywhere (green tsc confirms), and store/component API names (toggleWatched, watchedCount, etc.) were intentionally preserved since the request renames the item data field, not the public API.)
 
 {
   "target": "watchlist",
@@ -11,18 +17,44 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
   "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
   "provider": "ollama-cloud",
   "model": "glm-5.3",
-  "rounds": 0,
-  "status": "error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"you (cmatsoukis) have reached your session usage limit, upgrade for higher limits: https://ollama.com/upgrade or add usage credits: https://ollama.com/settings (ref: 91e5ad76-5ac2-445e-8d06-8b6f09c177b6)\"},\"request_id\":\"req_3ebf407e84619656cc96434a\"}",
+  "rounds": 3,
+  "status": "accepted",
   "clarifications": 0,
-  "finalOracle": "not run",
-  "instructedUnits": [],
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
   "governorIsolation": "clean",
   "showBehaviour": false,
-  "acceptanceTestsWritten": 0,
+  "acceptanceTestsWritten": 5,
   "testGuard": {
-    "rejectedSubmissions": 0,
-    "requests": [],
-    "approvals": []
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The test read store.items()[0].watched to assert the movie was not toggled when the title link is clicked. WatchItem now exposes `seen` instead of `watched` (and the store stores the flag under `seen`), so the old field no longer exists and the assertion would not type-check/fail. Changed only that property access to `store.items()[0].seen`; the test's intent, name and expected value (false) are unchanged, as instructed.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
   },
   "plantedTest": null,
   "behaviour": null,
@@ -32,17 +64,30 @@ governor turn 1 failed: 429 {"type":"error","error":{"type":"rate_limit_error","
     "total": 2,
     "failed": 1,
     "failures": [
-      "held-out: rename watched -> seen toggling a movie saves the new field name, not the old one: AssertionError: expected false to be true // Object.is equality"
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
     ]
   },
   "tokens": {
-    "input": 0,
-    "output": 0
+    "input": 59457,
+    "output": 169883
   },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 18260,
+      "output": 51451
+    },
+    "owner": {
+      "calls": 12,
+      "input": 41197,
+      "output": 118432
+    }
+  },
+  "repoTokens": 12710,
   "budget": 12000,
   "budgetStats": {
-    "maxPromptTokens": 0,
-    "maxEstimate": 2946,
+    "maxPromptTokens": 6299,
+    "maxEstimate": 7531,
     "overBudget": 0,
     "violations": 0
   },

@@ -33,6 +33,8 @@ describe('Watchlist', () => {
 
   const items = () => el.querySelectorAll<HTMLLIElement>('.watchlist-item');
   const checkbox = (i = 0) => items()[i].querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+  const clearButton = () =>
+    Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find((b) => (b.textContent ?? '').includes('Clear'));
 
   it('should create', () => {
     expect(component).toBeTruthy();
@@ -72,6 +74,30 @@ describe('Watchlist', () => {
 
     expect(items().length).toBe(1);
     expect(el.querySelector('[role="status"]')?.textContent).toContain('Removed Movie 1 from your watchlist');
+  });
+
+  it('clears every watched movie in one click while keeping unwatched ones', async () => {
+    // The Clear button is rendered as soon as the list has movies
+    expect(clearButton()).toBeTruthy();
+
+    store.toggleWatched(1);
+    await fixture.whenStable();
+
+    clearButton()!.click();
+    await fixture.whenStable();
+
+    expect(store.items().map((m) => m.id)).toEqual([2]);
+    expect(items().length).toBe(1);
+    expect(items()[0].textContent).toContain('Movie 2');
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('Cleared 1 watched movie from your watchlist');
+  });
+
+  it('keeps every movie when Clear watched is clicked with nothing watched', async () => {
+    clearButton()!.click();
+    await fixture.whenStable();
+
+    expect(store.items().length).toBe(2);
+    expect(items().length).toBe(2);
   });
 
   it('shows an empty state with a link to search', async () => {

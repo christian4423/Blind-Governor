@@ -1,0 +1,71 @@
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "over_budget",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 1,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The test asserts `store.items()[0].watched`, which reads the WatchItem field being renamed from `watched` to `seen` by the movie unit. Updated the property access to `.seen` as part of the requested rename; without this edit the spec would no longer compile.",
+        "round": 1
+      }
+    ],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 0,
+    "failed": 0,
+    "failures": [
+      "held-out test did not run (build failed)"
+    ]
+  },
+  "tokens": {
+    "input": 16687,
+    "output": 69245
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 2,
+      "input": 6486,
+      "output": 29259
+    },
+    "owner": {
+      "calls": 5,
+      "input": 10201,
+      "output": 39986
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "budgetStats": {
+    "maxPromptTokens": 4011,
+    "maxEstimate": 9435,
+    "overBudget": 1,
+    "violations": 0
+  },
+  "usd": 0
+}

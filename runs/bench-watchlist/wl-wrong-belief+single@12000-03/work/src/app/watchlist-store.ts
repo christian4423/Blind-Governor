@@ -34,4 +34,9 @@ export class WatchlistStore {
             items.map(m => m.id === id ? { ...m, watched: !m.watched } : m)
         );
     }
+
+    /** Removes every movie that has been marked as watched. */
+    clearWatched() {
+        this._items.update(items => items.filter(m => !m.watched));
+    }
 }
