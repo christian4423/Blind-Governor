@@ -2,7 +2,8 @@
 // Usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama|ollama-cloud] [--model <id>] [--out <runDir>]
 //        add --target watchlist to run against ../watchlist (an Angular app) instead of the todo seed
 //        add --heldout <slug> to grade a watchlist run with harness/targets/watchlist/heldout/<slug>.spec.ts
-//        add --effort low|medium|high to set reasoning effort for every agent (ollama-cloud, anthropic)
+//        add --effort low|medium|high to set reasoning effort for every agent (ollama-cloud, anthropic), or
+//        --effort escalate: low by default, provider-default depth for routing and on triggers (see escalation)
 //        add --budget <tokens> to cap every agent's prompt (the harness's stand-in for a small context window)
 //        add --interactive to answer the governor's clarifying questions from stdin
 //        add --single to run one agent that sees and edits the whole repo (control for the governor/owner split)
@@ -51,7 +52,8 @@ interface Config {
   cost: { inputTokens: number; outputTokens: number; usd: number };
   byRole: Record<string, { calls: number; input: number; output: number }>; // instrumentation: where tokens go
   budget?: number; // max prompt tokens per call; see --budget
-  effort?: "low" | "medium" | "high"; // see --effort; unset = the provider's default
+  effort?: "low" | "medium" | "high" | "escalate"; // see --effort; unset = the provider's default
+  escalations: Record<string, number>; // --effort escalate: calls made at full depth, by trigger
   budgetStats: { maxPromptTokens: number; maxEstimate: number; overBudget: number; violations: number };
 }
 
@@ -267,7 +269,19 @@ function estimateTokens(system: string, messages: Msg[], tools: Tool[]): number 
   return Math.ceil((system.length + JSON.stringify(messages).length + JSON.stringify(tools).length) / 3.5);
 }
 
-async function callModel(cfg: Config, system: string, messages: Msg[], tools: Tool[], role: Role): Promise<Anthropic.Beta.BetaMessage> {
+type Effort = "low" | "medium" | "high";
+
+/**
+ * Effort for one call. With --effort escalate, calls run at low effort unless a trigger applies (`reason`), in
+ * which case they get the provider's default depth (null), as every call did before --effort existed.
+ */
+function effortFor(cfg: Config, reason: string | null): Effort | null {
+  if (cfg.effort !== "escalate") return cfg.effort ?? null;
+  return reason ? null : "low";
+}
+
+async function callModel(cfg: Config, system: string, messages: Msg[], tools: Tool[], role: Role,
+  effort: Effort | null = effortFor(cfg, null)): Promise<Anthropic.Beta.BetaMessage> {
   const estimate = estimateTokens(system, messages, tools);
   cfg.budgetStats.maxEstimate = Math.max(cfg.budgetStats.maxEstimate, estimate);
   if (cfg.budget && estimate > cfg.budget) {
@@ -277,15 +291,15 @@ async function callModel(cfg: Config, system: string, messages: Msg[], tools: To
   const base = { model: cfg.model, max_tokens: MAX_OUTPUT[cfg.provider], system, messages, tools, tool_choice: { type: "auto" as const } };
   // On Ollama's cloud, output_config.effort is honoured (glm-5.3: "low" cut a routing answer from 8k+ to 261 output
   // tokens), while thinking: disabled only moves the reasoning into visible text (2026-11-02).
-  const effort = cfg.effort ? { output_config: { effort: cfg.effort } } : {};
+  const effortParam = effort ? { output_config: { effort } } : {};
   const stream = cfg.provider === "anthropic"
     ? client(cfg).beta.messages.stream({
         ...base,
-        output_config: { effort: cfg.effort ?? "high" },
+        output_config: { effort: effort ?? "high" },
         betas: ["server-side-fallback-2026-07-01"],
         fallbacks: "default",
       })
-    : client(cfg).beta.messages.stream({ ...base, ...(cfg.provider === "ollama-cloud" ? effort : {}) });
+    : client(cfg).beta.messages.stream({ ...base, ...(cfg.provider === "ollama-cloud" ? effortParam : {}) });
   const res = await stream.finalMessage();
 
   const input = res.usage.input_tokens + (res.usage.cache_read_input_tokens ?? 0) + (res.usage.cache_creation_input_tokens ?? 0);
@@ -316,10 +330,11 @@ const isRateLimit = (e: unknown) =>
 const errorStatus = (e: unknown) => (e instanceof OverBudget ? "over_budget" : isRateLimit(e) ? "rate_limited" : `error: ${(e as Error).message}`);
 
 /** callModel, retrying a response that ran out of output tokens (the prompt is unchanged, so this is just another draw). */
-async function callWithRetry(cfg: Config, system: string, messages: Msg[], tools: Tool[], role: Role): Promise<Anthropic.Beta.BetaMessage> {
+async function callWithRetry(cfg: Config, system: string, messages: Msg[], tools: Tool[], role: Role,
+  effort: Effort | null = effortFor(cfg, null)): Promise<Anthropic.Beta.BetaMessage> {
   for (let attempt = 0; ; attempt++) {
     try {
-      return await callModel(cfg, system, messages, tools, role);
+      return await callModel(cfg, system, messages, tools, role, effort);
     } catch (e) {
       if (!(e instanceof MaxTokens) || attempt >= MAX_TOKEN_RETRIES) throw e;
       log(cfg, "max_tokens_retry", { attempt: attempt + 1 });
@@ -415,8 +430,13 @@ The oracle also runs the CLI through a fixed script on fixture data, in a fresh 
 
 async function runGovernor(
   cfg: Config, request: string, clarifications: string[], units: Unit[], oracle: OracleResult | null, history: string[],
-  knownTests: Set<string>, behaviour: { start: string; now: string } | null,
+  knownTests: Set<string>, behaviour: { start: string; now: string } | null, escalation: string | null = null,
 ): Promise<Decision> {
+  const effort = effortFor(cfg, escalation);
+  if (cfg.effort === "escalate" && escalation) {
+    cfg.escalations[`governor: ${escalation}`] = (cfg.escalations[`governor: ${escalation}`] ?? 0) + 1;
+    log(cfg, "escalation", { role: "governor", reason: escalation });
+  }
   const system = governorSystem() + (behaviour ? BEHAVIOUR_SYSTEM : "");
   const manifest = units.map((u) =>
     `## unit: ${u.name} (files: ${u.files.filter((f) => f !== u.testPath).join(", ")}; tests in ${u.testPath})\npurpose: ${u.purpose || "(none given)"}\nimports: ${u.imports.join(", ") || "(none)"}\n\`\`\`ts\n${u.exports}\n\`\`\``,
@@ -450,7 +470,7 @@ async function runGovernor(
 
   let messages: Msg[] = [{ role: "user", content: prompt }];
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await callWithRetry(cfg, system, messages, [DECISION_TOOL], "governor");
+    const res = await callWithRetry(cfg, system, messages, [DECISION_TOOL], "governor", effort);
     log(cfg, "governor_output", { content: res.content, usage: res.usage });
     const call = toolUses(res).find((t) => t.name === "submit_decision");
     const problem = call ? validateDecision(call.input, units, knownTests) : "You must call submit_decision.";
@@ -539,7 +559,13 @@ interface OwnerResult {
   testChangeReasons?: Record<string, string>; // test title -> owner's reason
 }
 
-async function runOwner(cfg: Config, unit: Unit, units: Unit[], steps: Step[], protectedTests: string[], approved: Set<string>): Promise<OwnerResult> {
+async function runOwner(cfg: Config, unit: Unit, units: Unit[], steps: Step[], protectedTests: string[], approved: Set<string>,
+  escalation: string | null = null): Promise<OwnerResult> {
+  const effort = effortFor(cfg, escalation);
+  if (cfg.effort === "escalate" && escalation) {
+    cfg.escalations[`owner: ${escalation}`] = (cfg.escalations[`owner: ${escalation}`] ?? 0) + 1;
+    log(cfg, "escalation", { role: "owner", unit: unit.name, reason: escalation });
+  }
   const read = (p: string) => readOr(join(cfg.workDir, p), "");
   const imported = units
     .filter((u) => unit.imports.includes(u.name))
@@ -560,7 +586,7 @@ async function runOwner(cfg: Config, unit: Unit, units: Unit[], steps: Step[], p
   for (let turn = 0; turn < MAX_OWNER_TURNS; turn++) {
     const dropped = compact(cfg, ownerSystem(), messages, ownerTools(unit), readIds);
     if (dropped) log(cfg, "owner_compaction", { unit: unit.name, turn, dropped });
-    const res = await callWithRetry(cfg, ownerSystem(), messages, ownerTools(unit), "owner");
+    const res = await callWithRetry(cfg, ownerSystem(), messages, ownerTools(unit), "owner", effort);
     log(cfg, "owner_output", { unit: unit.name, turn, content: res.content, usage: res.usage });
     const calls = toolUses(res);
     const submit = calls.find((c) => c.name === "submit_files");
@@ -1194,7 +1220,7 @@ async function main(
   const runDir = out ? resolve(out) : join(ROOT, "runs", new Date().toISOString().replace(/[:.]/g, "-"));
   mkdirSync(runDir, { recursive: true });
   const cfg: Config = {
-    provider, model, runDir, workDir: target.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, byRole: {}, budget, effort, budgetStats: newStats(),
+    provider, model, runDir, workDir: target.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, byRole: {}, budget, effort, escalations: {}, budgetStats: newStats(),
   };
   log(cfg, "run_start", { request, provider, model, interactive, scenario, showBehaviour, single, frame, budget, effort, target: target.name, heldout });
   if (frame && (!single || !(frame in SINGLE_FRAMES))) throw new Error(`--frame needs --single and one of: ${Object.keys(SINGLE_FRAMES).join(", ")}`);
@@ -1224,6 +1250,7 @@ async function main(
   const testRequests: (TestChange & { round: number })[] = [];
   const approvals: { round: number; title: string }[] = [];
   let rejectedSubmissions = 0;
+  let lastRoundTestRequests = false; // an owner asked to change an existing test in the latest round
   const probeBefore = target.hasCli ? probe(cfg.workDir) : null;
   const behaviour = showBehaviour ? { start: snapshot(cfg.workDir), now: "" } : null;
   if (behaviour) { behaviour.now = behaviour.start; log(cfg, "behaviour_snapshot", { round: 0, snapshot: behaviour.start }); }
@@ -1260,7 +1287,9 @@ async function main(
   for (let turn = 1; !single && turn <= MAX_ROUNDS + 1; turn++) {
     let decision: Decision;
     try {
-      decision = await runGovernor(cfg, request, clarifications, units, oracle, history, knownTests, behaviour);
+      // Escalation triggers (only used with --effort escalate): the routing decision, red tests, a test-change request.
+      const govTrigger = turn === 1 ? "routing" : oracle && !oracle.pass ? "red oracle" : lastRoundTestRequests ? "test-change request" : null;
+      decision = await runGovernor(cfg, request, clarifications, units, oracle, history, knownTests, behaviour, govTrigger);
     } catch (e) {
       status = errorStatus(e);
       log(cfg, "governor_error", { turn, error: String(e) });
@@ -1298,10 +1327,12 @@ async function main(
     const byUnit = Map.groupBy(decision.steps, (s) => s.unit);
     instructedUnits.push([...byUnit.keys()]);
     const results = await Promise.all([...byUnit].map(([name, steps]) =>
-      runOwner(cfg, units.find((u) => u.name === name)!, units, steps, [...baselineTests.get(name)!.keys()], approved)
+      runOwner(cfg, units.find((u) => u.name === name)!, units, steps, [...baselineTests.get(name)!.keys()], approved,
+        steps.some((s) => s.interfaceChange.trim()) ? "interface change" : rounds > 1 && oracle && !oracle.pass ? "red oracle" : null)
         .catch((e: Error): OwnerResult => ({ unit: name, ok: false, files: {}, note: `owner error: ${e.message}` }))));
 
     const ownerReport: string[] = [];
+    lastRoundTestRequests = false;
     for (const r of results) {
       const unit = units.find((u) => u.name === r.unit)!;
       const newTest = r.files[unit.testPath];
@@ -1309,6 +1340,7 @@ async function main(
         ? unapprovedTestChanges(r.unit, baselineTests.get(r.unit)!, newTest, approved, r.testChangeReasons) : [];
       if (blocked.length) {
         rejectedSubmissions++;
+        lastRoundTestRequests = true;
         testRequests.push(...blocked.map((b) => ({ ...b, round: rounds })));
         log(cfg, "test_change_request", { round: rounds, unit: r.unit, changes: blocked });
         ownerReport.push(`- ${r.unit}: REJECTED, nothing applied. It changes existing tests without approval:\n${
@@ -1354,7 +1386,7 @@ async function main(
     tokens: { input: cfg.cost.inputTokens, output: cfg.cost.outputTokens },
     tokensByRole: cfg.byRole,
     repoTokens, // estimated size of every editable source file at the start (chars / 3.5)
-    budget: budget ?? null, effort: effort ?? null, budgetStats: cfg.budgetStats,
+    budget: budget ?? null, effort: effort ?? null, escalations: cfg.escalations, budgetStats: cfg.budgetStats,
     usd: Number(cfg.cost.usd.toFixed(3)),
   };
   await unloadLocalModel(cfg);
@@ -1371,7 +1403,7 @@ function selftest(): void {
   rmSync(runDir, { recursive: true, force: true });
   mkdirSync(runDir, { recursive: true });
   const cfg: Config = {
-    provider: "anthropic", model: "-", runDir, workDir: TARGETS.todo.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, byRole: {}, budgetStats: newStats(),
+    provider: "anthropic", model: "-", runDir, workDir: TARGETS.todo.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, byRole: {}, escalations: {}, budgetStats: newStats(),
   };
   const check = (name: string, ok: boolean, detail = "") => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}${ok || !detail ? "" : `  (${detail})`}`); if (!ok) process.exitCode = 1; };
 
@@ -1444,7 +1476,7 @@ function selftestWatchlist(): void {
   rmSync(runDir, { recursive: true, force: true });
   mkdirSync(runDir, { recursive: true });
   const workDir = target.prepare(runDir);
-  const cfg: Config = { provider: "anthropic", model: "-", runDir, workDir, cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, byRole: {}, budgetStats: newStats() };
+  const cfg: Config = { provider: "anthropic", model: "-", runDir, workDir, cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, byRole: {}, escalations: {}, budgetStats: newStats() };
   const check = (name: string, ok: boolean, detail = "") => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}${ok || !detail ? "" : `  (${detail})`}`); if (!ok) process.exitCode = 1; };
   const edit = (path: string, from: string | RegExp, to: string) => {
     const abs = join(workDir, path);
@@ -1533,9 +1565,9 @@ if (args.includes("--selftest")) {
   const request = args.join(" ").trim();
   const effort = effortArg as Config["effort"];
   if (!request || unknown.length || !(provider in DEFAULT_MODEL) || !(targetName in TARGETS) || (budget !== undefined && !(budget > 0))
-    || (effort !== undefined && !["low", "medium", "high"].includes(effort))) {
+    || (effort !== undefined && !["low", "medium", "high", "escalate"].includes(effort))) {
     if (unknown.length) console.error(`unknown flag(s): ${unknown.join(" ")}`);
-    console.error('usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama|ollama-cloud] [--model id] [--target todo|watchlist] [--heldout slug] [--budget tokens] [--effort low|medium|high] [--interactive] [--out runDir] [--scenario dir] [--behaviour] [--single [--frame interfaces|data]]');
+    console.error('usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama|ollama-cloud] [--model id] [--target todo|watchlist] [--heldout slug] [--budget tokens] [--effort low|medium|high|escalate] [--interactive] [--out runDir] [--scenario dir] [--behaviour] [--single [--frame interfaces|data]]');
     process.exit(2);
   }
   await main(request, provider, model, interactive, out, scenario, showBehaviour, single, frame, budget, targetName, heldout, effort);

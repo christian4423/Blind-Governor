@@ -28,6 +28,7 @@ interface Summary {
   tokens?: { input: number; output: number };
   tokensByRole?: Record<string, { calls: number; input: number; output: number }>;
   repoTokens?: number;
+  escalations?: Record<string, number>;
 }
 
 // The existing owner test that the planted governor test contradicts.
@@ -155,6 +156,7 @@ const ARM_ARGS: Record<string, string[]> = {
   "single-interfaces": ["--single", "--frame", "interfaces"],
   "single-data": ["--single", "--frame", "data"],
   "governor-low": ["--effort", "low"],
+  "governor-escalate": ["--effort", "escalate"],
   "single-low": ["--single", "--effort", "low"],
 };
 
@@ -207,6 +209,10 @@ function report(benchDir: string): void {
       // Tokens per successful change: everything spent (failed runs included) divided by the runs that passed.
       `- tokens per successful change: ${passes ? Math.round(sums.reduce((a, s) => a + (s.tokens?.input ?? 0) + (s.tokens?.output ?? 0), 0) / passes).toLocaleString("en-US") : "n/a (no passes)"}` +
         (sums.some((s) => s.repoTokens) ? ` (repo ~${Math.max(...sums.map((s) => s.repoTokens ?? 0)).toLocaleString("en-US")} tokens)` : ""),
+      ...(sums.some((s) => s.escalations && Object.keys(s.escalations).length) ? [`- full-depth calls per run by trigger: ${Object.entries(sums.reduce<Record<string, number>>((m, s) => {
+        for (const [k, n] of Object.entries(s.escalations ?? {})) m[k] = (m[k] ?? 0) + n;
+        return m;
+      }, {})).map(([k, n]) => `${k} ${(n / sums.length).toFixed(1)}`).join(", ")}`] : []),
       ...(sums.some((s) => s.tokensByRole) ? [`- output tokens per run by role: ${Object.entries(sums.reduce<Record<string, number>>((m, s) => {
         for (const [role, r] of Object.entries(s.tokensByRole ?? {})) m[role] = (m[role] ?? 0) + r.output;
         return m;

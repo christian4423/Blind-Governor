@@ -310,3 +310,19 @@ Tokens per successful change (all tokens over all runs ÷ passes): **default ~29
 **What broke:** on sort the low-effort governor routed the change to `watchlist-store` (5/6 runs) instead of the `watchlist` component (default effort: 6/6 component). The resulting behaviour was right (held-out spec passed in 5/6), but moving the order into the store broke the component's existing tests, and three repair rounds at low effort didn't recover. The decision that needed depth was *where* a change belongs; the edits themselves were cheap. Wrong-belief (a contained feature) held at 2/3 at both budgets.
 
 **Next (pre-declared):** escalation, not low effort everywhere. Low by default; full depth for the governor's routing turn and on triggers (red oracle after a round, a test-change request, an ask, a cross-unit interface change). And since input is now the bigger cost, compiler-based relevance with a pruned manifest (step 2) moves up in value.
+
+---
+
+# Token savings, step 2: escalation (predictions, written before running)
+
+**Change under test (one change vs the low-effort bench):** `--effort escalate`. Every call runs at low effort unless a trigger applies, in which case it gets the provider's default depth (as every call had in `bench-watchlist`):
+- **Governor:** its first turn (the routing decision); any turn after red tests; any turn after an owner asked to change an existing test. An accept-only turn after green stays low.
+- **Owners:** an instruction carrying an interface change; any round after red tests.
+Each escalation is logged with its trigger. Same 18-run shape: rename/sort/wrong-belief × 12k/6k × 3, governor setup, glm-5.3. Comparisons: `bench-watchlist` governor arms (default, 11/18, ~140k output/run, ~293k tokens per success) and `bench-effort-low` (4/18, ~11k, ~246k).
+
+**Predictions (Claude):**
+- **Sort recovers** to 4–6/6, because the routing turn (where low effort chose the store) is at full depth.
+- **Overall pass rate 8–11/18**, between low and default; rename's old-data case stays the weakest (0–2/6).
+- **Output tokens ~40–70k per run** (2–3.5× below default): the routing turn alone is a full-depth governor call (~60k on watchlist), and failed rounds escalate again.
+- **Tokens per successful change ~1.5–2.5× better than default** (~120k–200k). Input stays ~40k/run, so it bounds the gain; step 3 (compiler-based relevance) targets that.
+- Most escalations: governor "routing" (1 per run) and "red oracle" (about 1 per run); owner "interface change" mostly on rename.
