@@ -21,9 +21,9 @@ Start here. Findings with numbers are in [`RESULTS.md`](RESULTS.md); this file h
 
 **Where the thesis stands.** On a 5,700-character repo the split costs more and graded quality is the same. Its one real edge is noticing contracts nobody wrote down (the on-disk format), and about half of that comes from wording. The claim that remains untested is the one about scale: one model's context grows with the codebase while the governor's grows with interfaces. That needs a bigger codebase.
 
-## In progress (2026-11-01)
+## Latest result (2026-11-01)
 
-- **Watchlist bench** on branch `watchlist-budget`: governor vs single on `../watchlist`, `glm-5.3` via Ollama cloud, 12k and 6k token budgets, 3 runs × 3 requests × 4 setups. Quota-limited, so `harness/resume-loop.sh` resumes it every 20 minutes (the Ollama session quota resets every 5 hours; weekly quota was at 18.4% on 2026-11-01). Check progress: `tail runs/bench-watchlist/resume.log`. Stop it: `kill <pid from the first line of that log>`. When it says DONE: `cd harness && npx tsx bench.ts --report ../runs/bench-watchlist`, then write up against the predictions in RESULTS.md.
+**Watchlist bench done** (`runs/bench-watchlist`, RESULTS.md "Watchlist bench: results"): at a 6k budget, below the ~12.7k-token repo, the governor setup passed 7/9 and the single agent 1/9 (6/9 ran out of context). That's the first result supporting the thesis. The cost: the governor setup used ~140k output tokens per run vs ~8–11k. Next: the token-saving plan below, starting with thinking depth by role, measured as tokens per successful change at equal pass rate.
 
 ## Token savings: plan (user ideas, 2026-11-01)
 
