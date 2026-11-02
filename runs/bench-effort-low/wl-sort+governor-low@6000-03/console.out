@@ -1,0 +1,80 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T18-03-48-532Z/wl-sort+governor-low@6000-03
+provider: ollama-cloud (glm-5.3)
+request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
+
+governor turn 1: plan -> watchlist-store, watchlist  (Unwatched-before-watched ordering is a list-ordering concern; expose it from the store as a derived signal so the watchlist view can consume it.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist-store, watchlist  (OrderedItems feature is right, but the store's effect() breaks outside an injection context and the watchlist toggle test regressed. Fix persistence without effect and keep toggle behaviour intact.)
+round 2: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 3: plan -> watchlist  (The watchlist component uses `computed` without importing it from '@angular/core'; that single compile error is blocking everything.)
+round 3: owners watchlist=ok; oracle RED
+governor turn 4: plan -> watchlist  (tsc is green; only the two watchlist toggle tests fail. The component's checkbox/row click handlers must be double-toggling or toggling by wrong id. Pin the exact behaviour with an acceptance test.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "cap_hit",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 1,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 43601,
+    "output": 16562
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 6,
+      "input": 22348,
+      "output": 4479
+    },
+    "owner": {
+      "calls": 8,
+      "input": 21253,
+      "output": 12083
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "effort": "low",
+  "budgetStats": {
+    "maxPromptTokens": 4827,
+    "maxEstimate": 5228,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

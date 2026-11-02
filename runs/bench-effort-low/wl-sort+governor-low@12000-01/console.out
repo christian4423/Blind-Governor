@@ -1,0 +1,81 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T18-03-48-532Z/wl-sort+governor-low@12000-01
+provider: ollama-cloud (glm-5.3)
+request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
+
+governor turn 1: plan -> watchlist-store, watchlist  (The watchlist should display unwatched movies before watched ones. The store is the shared source of truth, so add a sorted view there and have the watchlist component consume it.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist-store, watchlist  (Red oracle: watchlist-store's constructor effect() throws NG0203 outside an injection context, and watchlist's change broke two existing toggle tests.)
+round 2: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 3: plan -> watchlist-store, watchlist  (sortedItems still returns unsorted items and watchlist toggle tests still fail; re-instruct both units on the exact failing behaviours.)
+round 3: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 4: plan -> watchlist-store, watchlist  (sortedItems still unsorted and watchlist toggle tests still failing after three rounds; give the store owner an exact implementation and pin the component's toggle behaviour with an acceptance test.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "cap_hit",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 1,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 59311,
+    "output": 18426
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 7,
+      "input": 27797,
+      "output": 5810
+    },
+    "owner": {
+      "calls": 10,
+      "input": 31514,
+      "output": 12616
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "low",
+  "budgetStats": {
+    "maxPromptTokens": 6911,
+    "maxEstimate": 8450,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

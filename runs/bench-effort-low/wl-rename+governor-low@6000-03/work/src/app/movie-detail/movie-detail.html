@@ -1,0 +1,115 @@
+<div class="container">
+    <a routerLink="/search" class="back-link"><span aria-hidden="true">←</span> Back to search</a>
+
+    @if (movie(); as m) {
+        <article class="movie-detail" aria-labelledby="movie-title">
+            @if (m.backdrop_path) {
+                <div class="backdrop" aria-hidden="true"
+                    [style.background-image]="'url(' + imageBase + '/w1280' + m.backdrop_path + ')'"></div>
+            }
+
+            <div class="movie-detail-body">
+                @if (m.poster_path) {
+                    <img class="poster" [src]="imageBase + '/w500' + m.poster_path"
+                        [alt]="'Poster for ' + m.title" width="300" height="450">
+                }
+
+                <div class="info">
+                    <h1 id="movie-title">
+                        {{ m.title }}
+                        @if (releaseYear()) {
+                            <span class="year">({{ releaseYear() }})</span>
+                        }
+                    </h1>
+                    @if (m.tagline) {
+                        <p class="tagline">{{ m.tagline }}</p>
+                    }
+
+                    <button type="button" class="btn watchlist-toggle" [class.btn-primary]="!onList()" (click)="toggleList()">
+                        @if (onList()) {
+                            <span aria-hidden="true">✓</span> On your watchlist<span class="visually-hidden">, remove</span>
+                        } @else {
+                            <span aria-hidden="true">+</span> Add to watchlist
+                        }
+                    </button>
+
+                    <ul class="facts" aria-label="Quick facts">
+                        @if (m.release_date) {
+                            <li>Released {{ m.release_date }}</li>
+                        }
+                        @if (runtime()) {
+                            <li>{{ runtime() }}</li>
+                        }
+                        @if (m.vote_count) {
+                            <li>
+                                <span aria-hidden="true">⭐ </span>
+                                {{ m.vote_average | number: '1.1-1' }} out of 10
+                                ({{ m.vote_count | number }} votes)
+                            </li>
+                        }
+                    </ul>
+
+                    @if (m.genres.length) {
+                        <ul class="genres" aria-label="Genres">
+                            @for (genre of m.genres; track genre.id) {
+                                <li class="chip">{{ genre.name }}</li>
+                            }
+                        </ul>
+                    }
+
+                    <section aria-labelledby="overview-heading">
+                        <h2 id="overview-heading">Overview</h2>
+                        <p>{{ m.overview || 'No overview available.' }}</p>
+                    </section>
+
+                    <section aria-labelledby="details-heading">
+                        <h2 id="details-heading">Details</h2>
+                        <dl class="details">
+                            <div><dt>Status</dt><dd>{{ m.status }}</dd></div>
+                            @if (language()) {
+                                <div><dt>Original language</dt><dd>{{ language() }}</dd></div>
+                            }
+                            @if (m.budget) {
+                                <div><dt>Budget</dt><dd>{{ m.budget | currency: 'USD' : 'symbol' : '1.0-0' }}</dd></div>
+                            }
+                            @if (m.revenue) {
+                                <div><dt>Revenue</dt><dd>{{ m.revenue | currency: 'USD' : 'symbol' : '1.0-0' }}</dd></div>
+                            }
+                        </dl>
+                        @if (m.homepage) {
+                            <a [href]="m.homepage" target="_blank" rel="noopener noreferrer">
+                                Official website<span class="visually-hidden"> (opens in a new tab)</span>
+                            </a>
+                        }
+                    </section>
+                </div>
+            </div>
+
+            @if (topCast().length) {
+                <section aria-labelledby="cast-heading" class="cast-section">
+                    <h2 id="cast-heading">Top cast</h2>
+                    <ul class="cast">
+                        @for (person of topCast(); track person.id) {
+                            <li class="cast-member">
+                                @if (person.profile_path) {
+                                    <img [src]="imageBase + '/w185' + person.profile_path" alt=""
+                                        width="92" height="138" loading="lazy">
+                                } @else {
+                                    <div class="no-photo" aria-hidden="true">👤</div>
+                                }
+                                <strong>{{ person.name }}</strong>
+                                @if (person.character) {
+                                    <span class="character">as {{ person.character }}</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+        </article>
+    } @else if (movie() === null) {
+        <p class="empty-state" role="alert">Sorry, we couldn't load this movie. Please try again later.</p>
+    } @else {
+        <p class="loading" role="status">Loading movie…</p>
+    }
+</div>

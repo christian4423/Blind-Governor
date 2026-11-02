@@ -1,0 +1,81 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T18-03-48-532Z/wl-wrong-belief+governor-low@6000-03
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (Clearing seen movies requires a store-level operation and UI buttons. Store gets a new clearWatched method; watchlist (and app header, if it has a button area) render a button wired to it.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist-store, watchlist  (My acceptance test passed an invalid `watched` property to store.add (TmdbMovie has no such field). I'm fixing the test itself; the units' implementations were fine.)
+round 2: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 3: plan -> watchlist-store, watchlist  (Only my acceptance test for watchlist was invalid (it passed a `watched` property to store.add, which takes TmdbMovie). Fixing the test; the units themselves are done.)
+round 3: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 4: plan -> watchlist-store, watchlist  (Only my acceptance test was broken (it added a `watched` property not in TmdbMovie); owners need no changes. The test now seeds via add() + toggleWatched().)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "cap_hit",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 39090,
+    "output": 8515
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 17627,
+      "output": 4215
+    },
+    "owner": {
+      "calls": 8,
+      "input": 21463,
+      "output": 4300
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "effort": "low",
+  "budgetStats": {
+    "maxPromptTokens": 4291,
+    "maxEstimate": 5047,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

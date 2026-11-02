@@ -1,0 +1,69 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T18-03-48-532Z/wl-wrong-belief+governor-low@12000-02
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (Add a clear-watched capability to the store and a button in the watchlist UI.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle GREEN
+governor turn 2: accept  (Oracle is green: watchlist-store now exposes clearWatched (pinned by acceptance tests) and the watchlist component adds the "Clear watched" button wired to it, with all 33 tests passing.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 1,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 17601,
+    "output": 5128
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 8674,
+      "output": 1228
+    },
+    "owner": {
+      "calls": 3,
+      "input": 8927,
+      "output": 3900
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "low",
+  "budgetStats": {
+    "maxPromptTokens": 3948,
+    "maxEstimate": 4650,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

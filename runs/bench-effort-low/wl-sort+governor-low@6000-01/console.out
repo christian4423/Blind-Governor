@@ -1,0 +1,80 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T18-03-48-532Z/wl-sort+governor-low@6000-01
+provider: ollama-cloud (glm-5.3)
+request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
+
+governor turn 1: plan -> watchlist-store, watchlist  (The request only concerns ordering of the watchlist, owned by the store. Add a sorted view in watchlist-store and have the watchlist component display it.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist, watchlist-store  (tsc is green. The NG0203 failure is caused by my acceptance test constructing WatchlistStore outside an injection context; I'll fix the test itself. The watchlist component tests broke after switching to sortedItems — the component owner must restore toggle/click behaviour while keeping unwatched-first ordering.)
+round 2: owners watchlist=ok watchlist-store=ok; oracle RED
+governor turn 3: plan -> watchlist-store  (Only remaining failure is NG0203 in my own acceptance test, which constructs WatchlistStore outside an injection context. The store itself is fine; fix the test to use TestBed.inject.)
+round 3: owners watchlist-store=ok; oracle GREEN
+governor turn 4: accept  (Oracle is green: tsc passes and all 33 tests pass, including acceptance tests pinning that the watchlist displays unwatched movies before watched ones via store.sortedItems. The request is satisfied.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist",
+      "watchlist-store"
+    ],
+    [
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 3,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 41175,
+    "output": 22578
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 6,
+      "input": 19797,
+      "output": 3294
+    },
+    "owner": {
+      "calls": 8,
+      "input": 21378,
+      "output": 19284
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "effort": "low",
+  "budgetStats": {
+    "maxPromptTokens": 4234,
+    "maxEstimate": 5146,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

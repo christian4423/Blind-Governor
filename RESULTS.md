@@ -285,3 +285,28 @@ The 18 governor runs were moved to `bench-watchlist/_dropped/governor-retry-bug/
 - Pass rate drops somewhat: from 11/18 to roughly **7–10/18**. Sort (one unit, simple) holds; rename suffers most, since keeping old saved data loading takes deliberate thought, and I expect **0–1/6** old-data passes vs 2/6.
 - More rounds per run (low effort makes more first-round mistakes), but tokens per successful change still fall by at least **3×**.
 - If pass rate drops below ~7/18, the next bench is escalation (low by default, full depth on red tests, test-change requests, ambiguity, cross-unit interface changes) rather than low everywhere.
+
+# Token savings, step 1: low reasoning effort (results)
+
+`runs/bench-effort-low/`: 18 runs, governor setup with `--effort low` for every agent, compared with the governor arms of `runs/bench-watchlist` (same harness, model, requests, budgets and held-out tests).
+
+| Passes (of 3) | Default 12k | Low 12k | Default 6k | Low 6k |
+|---|---|---|---|---|
+| Rename | 0 | 0 | 2 | 0 |
+| Sort | 2 | 0 | 3 | 0 |
+| Wrong belief | 2 | 2 | 2 | 2 |
+| **Total** | 4/9 | **2/9** | 7/9 | **2/9** |
+| Output tokens per run | ~140k | **~11k** | ~140k | **~12k** |
+| Input tokens per run | ~44k | ~44k | ~34k | ~43k |
+
+Tokens per successful change (all tokens over all runs ÷ passes): **default ~293k, low ~246k**, only ~1.2× better.
+
+**Against the predictions:**
+- Output tokens: predicted 5–10× fewer, **got 13×**.
+- Pass rate: predicted 7–10/18, **got 4/18**, below the bar I set for moving to escalation.
+- Tokens per success: predicted at least 3× better, **got ~1.2×**: passes collapsed, and input tokens (~44k/run, unchanged) now dominate.
+- Rename's old-data case: predicted 0–1/6, got 0/6 (1 held-out pass, but that run didn't end green).
+
+**What broke:** on sort the low-effort governor routed the change to `watchlist-store` (5/6 runs) instead of the `watchlist` component (default effort: 6/6 component). The resulting behaviour was right (held-out spec passed in 5/6), but moving the order into the store broke the component's existing tests, and three repair rounds at low effort didn't recover. The decision that needed depth was *where* a change belongs; the edits themselves were cheap. Wrong-belief (a contained feature) held at 2/3 at both budgets.
+
+**Next (pre-declared):** escalation, not low effort everywhere. Low by default; full depth for the governor's routing turn and on triggers (red oracle after a round, a test-change request, an ask, a cross-unit interface change). And since input is now the bigger cost, compiler-based relevance with a pruned manifest (step 2) moves up in value.

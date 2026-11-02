@@ -1,0 +1,80 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T18-03-48-532Z/wl-wrong-belief+governor-low@12000-03
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (Add a "clear watched" capability to the store and surface it as a button in the watchlist component. The existing `watched` flag is the movie's seen flag.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist-store  (The store's own spec file references the global `jasmine`, which does not exist under the vitest runner and breaks compilation (TS2304). Fix the test file only.)
+round 2: owners watchlist-store=ok; oracle RED
+governor turn 3: plan -> watchlist-store, watchlist  (Remaining failures: my acceptance test instantiated WatchlistStore outside an injection context (NG0203), the store's own spec sees null items after clearWatched, and the watchlist component spec can't find the clear button. Fix the implementation/tests accordingly; my acceptance test is rewritten to use TestBed.)
+round 3: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 4: plan -> watchlist-store  (Only the watchlist-store owner's own spec still fails: clearWatched leaves items() as null instead of the filtered WatchItem[]. Target that unit again with a precise instruction; the component and oracle types are otherwise green.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "cap_hit",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 52998,
+    "output": 11115
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 8,
+      "input": 30117,
+      "output": 3990
+    },
+    "owner": {
+      "calls": 9,
+      "input": 22881,
+      "output": 7125
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "low",
+  "budgetStats": {
+    "maxPromptTokens": 5393,
+    "maxEstimate": 5982,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

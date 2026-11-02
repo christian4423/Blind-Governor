@@ -1,0 +1,78 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T18-03-48-532Z/wl-sort+governor-low@12000-03
+provider: ollama-cloud (glm-5.3)
+request: In the watchlist, show movies I haven't watched yet before the ones I've watched.
+
+governor turn 1: plan -> watchlist-store  (Sorting belongs in the store so all consumers (watchlist component etc.) see unwatched movies first with one change.)
+round 1: owners watchlist-store=ok; oracle RED
+governor turn 2: plan -> watchlist-store  (Implementation reorders but is not stable within groups and broke the watchlist component toggle tests; my prior acceptance test also wrongly required toggle-order instead of stable order, so I'm replacing it.)
+round 2: owners watchlist-store=ok; oracle RED
+governor turn 3: plan -> watchlist-store  (The store still fails: the owner is reordering the underlying list itself. The correct model is to keep the master list untouched and derive a stable partition in items().)
+round 3: owners watchlist-store=ok; oracle RED
+governor turn 4: plan -> watchlist  (tsc is green and the store now orders unwatched before watched, but two existing watchlist component tests still fail. The remaining work is in the watchlist unit.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "cap_hit",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist-store"
+    ],
+    [
+      "watchlist-store"
+    ],
+    [
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 36508,
+    "output": 15311
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 7,
+      "input": 29052,
+      "output": 7817
+    },
+    "owner": {
+      "calls": 4,
+      "input": 7456,
+      "output": 7494
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "low",
+  "budgetStats": {
+    "maxPromptTokens": 5378,
+    "maxEstimate": 5784,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

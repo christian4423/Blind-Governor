@@ -1,0 +1,69 @@
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "cap_hit",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 1,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 59311,
+    "output": 18426
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 7,
+      "input": 27797,
+      "output": 5810
+    },
+    "owner": {
+      "calls": 10,
+      "input": 31514,
+      "output": 12616
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "low",
+  "budgetStats": {
+    "maxPromptTokens": 6911,
+    "maxEstimate": 8450,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

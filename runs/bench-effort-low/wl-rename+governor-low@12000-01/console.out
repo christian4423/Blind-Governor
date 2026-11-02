@@ -1,0 +1,99 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T18-03-48-532Z/wl-rename+governor-low@12000-01
+provider: ollama-cloud (glm-5.3)
+request: Rename the `watched` field of watchlist items to `seen` everywhere.
+
+governor turn 1: plan -> movie, watchlist-store, watchlist, movie-detail, search, app  (Rename the watched field to seen; movie.ts owns the interfaces, so its change must be coordinated with all importing units in one round.)
+round 1: owners movie=ok watchlist-store=ok watchlist=ok movie-detail=ok search=ok app=ok; oracle RED
+governor turn 2: plan -> watchlist  (Rename applied; remaining errors: stale `watched` reference in watchlist unit's own spec, and an unused directive in my acceptance test. Fix the acceptance test and instruct watchlist owner to update its spec to use `seen`.)
+round 2: owners watchlist=rejected; oracle RED
+governor turn 3: plan -> watchlist, movie  (Two remaining errors: the watchlist owner's spec update to the renamed field needs approval, and my own movie acceptance test's @ts-expect-error directive is now unused (the component code no longer references watched, so the directive trips). I'll fix both.)
+round 3: owners watchlist=ok movie=ok; oracle RED
+governor turn 4: plan -> movie  (Only remaining error is a stale @ts-expect-error in my own acceptance test for movie; replacing that test.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "cap_hit",
+  "clarifications": 0,
+  "finalOracle": "red",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist",
+      "movie-detail",
+      "search",
+      "app"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist",
+      "movie"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 4,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The WatchItem field `watched` was renamed to `seen`; the existing assertion using `.watched` no longer compiles, so it was updated to use `.seen` as the instruction requested.",
+        "round": 2
+      }
+    ],
+    "approvals": [
+      {
+        "round": 3,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 2,
+    "failed": 1,
+    "failures": [
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
+    ]
+  },
+  "tokens": {
+    "input": 53096,
+    "output": 8694
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 19365,
+      "output": 3609
+    },
+    "owner": {
+      "calls": 12,
+      "input": 33731,
+      "output": 5085
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "low",
+  "budgetStats": {
+    "maxPromptTokens": 4796,
+    "maxEstimate": 5790,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

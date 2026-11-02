@@ -1,0 +1,79 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T18-03-48-532Z/wl-wrong-belief+governor-low@12000-01
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (Request needs a store method to clear watched items and UI to expose it in the watchlist view.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist-store  (Oracle shows WatchlistStore now throws NG0203 when instantiated outside an injection context and items() can return null; only watchlist-store needs fixing.)
+round 2: owners watchlist-store=ok; oracle RED
+governor turn 3: plan -> watchlist-store  (Red oracle is caused by cross-test state leakage through localStorage, not by a bug in clearWatched: the second/third tests see items persisted by the first. I am updating the watchlist-store acceptance test to reset localStorage before each test; no unit changes are needed.)
+round 3: owners watchlist-store=ok; oracle GREEN
+governor turn 4: accept  (Oracle is green (tsc clean, 34 tests passing) and the feature is in place: WatchlistStore.clearWatched() removes watched items and the watchlist component exposes a 'Clear watched' button wired to it, as pinned by the acceptance tests.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ],
+    [
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 4,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 28772,
+    "output": 7378
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 14839,
+      "output": 2790
+    },
+    "owner": {
+      "calls": 6,
+      "input": 13933,
+      "output": 4588
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "low",
+  "budgetStats": {
+    "maxPromptTokens": 4549,
+    "maxEstimate": 4956,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

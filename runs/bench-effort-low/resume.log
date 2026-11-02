@@ -1,0 +1,20 @@
+pid 52043 started Mon Nov  2 13:12:55 EST 2026
+node:fs:436
+    return binding.readFileUtf8(path, stringToFlags(options.flag));
+                   ^
+
+Error: ENOENT: no such file or directory, open '/Users/cmatsoukis/Desktop/Apps/experiment-1/harness/Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T18-03-48-532Z/bench.json'
+    at readFileSync (node:fs:436:20)
+    at <anonymous> (/Users/cmatsoukis/Desktop/Apps/experiment-1/harness/bench.ts:237:28)
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:642:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/cmatsoukis/Desktop/Apps/experiment-1/harness/Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T18-03-48-532Z/bench.json'
+}
+
+Node.js v26.0.0
+attempt 1 finished Mon Nov  2 13:12:56 EST 2026: 0 run(s) left
+DONE Mon Nov  2 13:12:56 EST 2026

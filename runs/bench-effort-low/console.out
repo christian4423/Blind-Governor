@@ -1,0 +1,100 @@
+bench: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T18-03-48-532Z
+[1/18] wl-wrong-belief+governor-low@12000 #1
+[2/18] wl-rename+governor-low@12000 #1
+[3/18] wl-rename+governor-low@6000 #1
+[4/18] wl-sort+governor-low@12000 #1
+[5/18] wl-wrong-belief+governor-low@6000 #1
+[6/18] wl-rename+governor-low@12000 #2
+[7/18] wl-wrong-belief+governor-low@12000 #2
+[8/18] wl-sort+governor-low@6000 #1
+[9/18] wl-sort+governor-low@12000 #2
+[10/18] wl-rename+governor-low@6000 #2
+[11/18] wl-wrong-belief+governor-low@6000 #2
+[12/18] wl-sort+governor-low@6000 #2
+[13/18] wl-rename+governor-low@12000 #3
+[14/18] wl-sort+governor-low@12000 #3
+[15/18] wl-wrong-belief+governor-low@12000 #3
+[16/18] wl-rename+governor-low@6000 #3
+[17/18] wl-wrong-belief+governor-low@6000 #3
+[18/18] wl-sort+governor-low@6000 #3
+# Bench bench-2026-11-02T18-03-48-532Z
+
+## wl-rename+governor-low@12000 — "Rename the `watched` field of watchlist items to `seen` everywhere."
+- **pass: 0/3** (accepted green; held-out: saves `seen`, and a watchlist saved before the rename still shows what was watched)
+- status: 2× cap_hit/red; 1× accepted/green
+- rounds: 2× 3; 1× 2
+- round-1 units: 2× app+movie+movie-detail+search+watchlist+watchlist-store; 1× app+movie+movie-detail+movie.service+search+watchlist+watchlist-store
+- test-change requests: 3/3 runs; approvals given: 3/3 runs; rejected submissions: 4
+- held-out tests pass: 0/3; failures: 3× held-out
+- budget 12000 tokens: over-budget runs 0/3; largest prompt seen 5857 tokens; estimate undercounts: 0
+- tokens per run: in 57541, out 9966
+- tokens per successful change: n/a (no passes) (repo ~12,710 tokens)
+- output tokens per run by role: governor 3,916, owner 6,050
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-rename+governor-low@6000 — "Rename the `watched` field of watchlist items to `seen` everywhere."
+- **pass: 0/3** (accepted green; held-out: saves `seen`, and a watchlist saved before the rename still shows what was watched)
+- status: 2× accepted/green; 1× cap_hit/red
+- rounds: 2× 3; 1× 2
+- round-1 units: 3× app+movie+movie-detail+search+watchlist+watchlist-store
+- test-change requests: 3/3 runs; approvals given: 3/3 runs; rejected submissions: 3
+- held-out tests pass: 1/3; failures: 2× held-out
+- budget 6000 tokens: over-budget runs 0/3; largest prompt seen 4791 tokens; estimate undercounts: 0
+- tokens per run: in 57713, out 8826
+- tokens per successful change: n/a (no passes) (repo ~12,710 tokens)
+- output tokens per run by role: governor 2,760, owner 6,066
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-sort+governor-low@12000 — "In the watchlist, show movies I haven't watched yet before the ones I've watched."
+- **pass: 0/3** (accepted green; held-out: unwatched first, stable; exactly one unit in every round)
+- status: 3× cap_hit/red
+- rounds: 3× 3
+- round-1 units: 2× watchlist-store; 1× watchlist+watchlist-store
+- test-change requests: 0/3 runs; approvals given: 0/3 runs; rejected submissions: 0
+- held-out tests pass: 3/3
+- budget 12000 tokens: over-budget runs 0/3; largest prompt seen 6911 tokens; estimate undercounts: 0
+- tokens per run: in 40168, out 14524
+- tokens per successful change: n/a (no passes) (repo ~12,710 tokens)
+- output tokens per run by role: governor 7,048, owner 7,476
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-sort+governor-low@6000 — "In the watchlist, show movies I haven't watched yet before the ones I've watched."
+- **pass: 0/3** (accepted green; held-out: unwatched first, stable; exactly one unit in every round)
+- status: 2× cap_hit/red; 1× accepted/green
+- rounds: 3× 3
+- round-1 units: 2× watchlist+watchlist-store; 1× watchlist
+- test-change requests: 0/3 runs; approvals given: 0/3 runs; rejected submissions: 0
+- held-out tests pass: 2/3; failures: 1× held-out
+- budget 6000 tokens: over-budget runs 0/3; largest prompt seen 4827 tokens; estimate undercounts: 0
+- tokens per run: in 39130, out 18337
+- tokens per successful change: n/a (no passes) (repo ~12,710 tokens)
+- output tokens per run by role: governor 4,760, owner 13,578
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-wrong-belief+governor-low@12000 — "Add a button that clears every movie whose `seen` flag is true from the watchlist."
+- **pass: 2/3** (accepted green; held-out: a clear button removes watched movies and the saved field stays `watched`)
+- status: 2× accepted/green; 1× cap_hit/red
+- rounds: 2× 3; 1× 1
+- round-1 units: 3× watchlist+watchlist-store
+- test-change requests: 0/3 runs; approvals given: 0/3 runs; rejected submissions: 0
+- held-out tests pass: 3/3
+- budget 12000 tokens: over-budget runs 0/3; largest prompt seen 5393 tokens; estimate undercounts: 0
+- tokens per run: in 33124, out 7874
+- tokens per successful change: 61,496 (repo ~12,710 tokens)
+- output tokens per run by role: governor 2,669, owner 5,204
+- isolation leaks: 0; cost: $0.00 ($0.000/run)
+
+## wl-wrong-belief+governor-low@6000 — "Add a button that clears every movie whose `seen` flag is true from the watchlist."
+- **pass: 2/3** (accepted green; held-out: a clear button removes watched movies and the saved field stays `watched`)
+- status: 2× accepted/green; 1× cap_hit/red
+- rounds: 3× 3
+- round-1 units: 3× watchlist+watchlist-store
+- test-change requests: 0/3 runs; approvals given: 0/3 runs; rejected submissions: 0
+- held-out tests pass: 3/3
+- budget 6000 tokens: over-budget runs 0/3; largest prompt seen 5127 tokens; estimate undercounts: 0
+- tokens per run: in 33656, out 7616
+- tokens per successful change: 61,907 (repo ~12,710 tokens)
+- output tokens per run by role: governor 3,242, owner 4,374
+- isolation leaks: 1; cost: $0.00 ($0.000/run)
+
+Total cost: $0.00
