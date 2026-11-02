@@ -1,4 +1,4 @@
-# Bench bench-2026-11-01T03-45-09-559Z
+# Bench bench-calibration-glm
 
 ## rename — "Rename Todo.done to Todo.completed everywhere."
 - **pass: 2/5** (accepted green in ≤2 rounds, list behaviour unchanged)
@@ -8,6 +8,7 @@
 - test-change requests: 4/5 runs; approvals given: 4/5 runs; rejected submissions: 16
 - list behaviour unchanged: 5/5; saved fields: 4× completed,due,id,title; 1× done,due,id,title; seed-format saved file still loads: 1/5
 - tokens per run: in 29315, out 36816
+- tokens per successful change: 165,328
 - isolation leaks: 0; cost: $0.00 ($0.000/run)
 
 ## sort — "Items with due dates sort before items without."
@@ -18,6 +19,7 @@
 - test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
 - list behaviour unchanged: 5/5; saved fields: 5× done,due,id,title; seed-format saved file still loads: 5/5
 - tokens per run: in 10008, out 22119
+- tokens per successful change: 80,319
 - isolation leaks: 0; cost: $0.00 ($0.000/run)
 
 ## wrong-belief — "Add a clear command that removes todos whose completed field is true."
@@ -28,6 +30,7 @@
 - test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
 - list behaviour unchanged: 5/5; saved fields: 5× done,due,id,title; seed-format saved file still loads: 5/5
 - tokens per run: in 9644, out 13339
+- tokens per successful change: 22,983
 - isolation leaks: 0; cost: $0.00 ($0.000/run)
 
 ## rename+single — "Rename Todo.done to Todo.completed everywhere."
@@ -38,6 +41,7 @@
 - test-change requests: 5/5 runs; approvals given: 5/5 runs; rejected submissions: 0
 - list behaviour unchanged: 5/5; saved fields: 5× completed,due,id,title; seed-format saved file still loads: 0/5
 - tokens per run: in 14620, out 5714
+- tokens per successful change: 20,334
 - isolation leaks: 0; cost: $0.00 ($0.000/run)
 
 ## sort+single — "Items with due dates sort before items without."
@@ -48,6 +52,7 @@
 - test-change requests: 0/5 runs; approvals given: 0/5 runs; rejected submissions: 0
 - list behaviour unchanged: 5/5; saved fields: 5× done,due,id,title; seed-format saved file still loads: 5/5
 - tokens per run: in 14299, out 6004
+- tokens per successful change: 20,303
 - isolation leaks: 0; cost: $0.00 ($0.000/run)
 
 ## wrong-belief+single — "Add a clear command that removes todos whose completed field is true."
@@ -58,6 +63,7 @@
 - test-change requests: 4/5 runs; approvals given: 4/5 runs; rejected submissions: 0
 - list behaviour unchanged: 5/5; saved fields: 5× done,due,id,title; seed-format saved file still loads: 5/5
 - tokens per run: in 16651, out 5824
+- tokens per successful change: 22,475
 - isolation leaks: 0; cost: $0.00 ($0.000/run)
 
 Total cost: $0.00

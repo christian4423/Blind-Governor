@@ -154,6 +154,8 @@ const ARM_ARGS: Record<string, string[]> = {
   single: ["--single"],
   "single-interfaces": ["--single", "--frame", "interfaces"],
   "single-data": ["--single", "--frame", "data"],
+  "governor-low": ["--effort", "low"],
+  "single-low": ["--single", "--effort", "low"],
 };
 
 /** "single@6000" -> --single --budget 6000; unknown names become a flag of the same name. */

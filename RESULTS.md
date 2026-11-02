@@ -269,3 +269,19 @@ The 18 governor runs were moved to `bench-watchlist/_dropped/governor-retry-bug/
 - **This is the first result that supports the thesis**: when one agent can't hold the repo (6k vs a ~12.7k-token repo), the split keeps working (7/9) and the single agent doesn't (1/9). At 12k, where the whole repo nearly fits, the gap is smaller (4/9 vs 2/9) and partly about the single agent's loop.
 - **It costs far more.** The governor setup produced ~140k output tokens per run (mostly thinking) vs ~8–11k for the single agent. Tokens per successful change: governor 84k–392k, single 168k–291k where it passed at all. The token-saving plan in NOTES.md (thinking depth by role, compiler-based relevance) is the next lever.
 - **Caveats:** n=3 per cell; one model (glm-5.3); one small repo; the single agent's tools and loop were redesigned during this bench (search/edit, compaction, 40-call cap), and several harness fixes landed between smoke runs, all recorded above.
+
+---
+
+# Token savings, step 1: low reasoning effort (predictions, written before running)
+
+**Provider check (2026-11-02, one call each, same routing question on glm-5.3):** default → 8,000 output tokens and no answer (hit the cap); `thinking: {type: "disabled"}` → 7,116 tokens with the reasoning moved into visible text; **`output_config: {effort: "low"}` → 261 tokens, 1.7 s, same answer**; Ollama's native `think: false` → reasoning leaks into the reply; native `think: "low"` → ignored (9,831 tokens). So `--effort low` (Anthropic-compatible endpoint) is the lever.
+
+**Change under test (one change):** `--effort low` for every agent in the governor setup (governor and owners). Same harness, model, requests, budgets and held-out tests as the watchlist bench; the comparison is its governor arms (`runs/bench-watchlist`, governor@12000 4/9, governor@6000 7/9, ~140k output tokens per run). 3 requests × 2 budgets × 3 runs = 18 runs.
+
+**Metric:** tokens per successful change at a pass rate that doesn't drop, plus output tokens by role.
+
+**Predictions (Claude):**
+- Output tokens per run drop by **5–10×** (from ~140k to ~15–30k); not the 30× of the single routing call, because owners still write whole files and failed rounds cost extra turns.
+- Pass rate drops somewhat: from 11/18 to roughly **7–10/18**. Sort (one unit, simple) holds; rename suffers most, since keeping old saved data loading takes deliberate thought, and I expect **0–1/6** old-data passes vs 2/6.
+- More rounds per run (low effort makes more first-round mistakes), but tokens per successful change still fall by at least **3×**.
+- If pass rate drops below ~7/18, the next bench is escalation (low by default, full depth on red tests, test-change requests, ambiguity, cross-unit interface changes) rather than low everywhere.

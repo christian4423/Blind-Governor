@@ -2,6 +2,7 @@
 // Usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama|ollama-cloud] [--model <id>] [--out <runDir>]
 //        add --target watchlist to run against ../watchlist (an Angular app) instead of the todo seed
 //        add --heldout <slug> to grade a watchlist run with harness/targets/watchlist/heldout/<slug>.spec.ts
+//        add --effort low|medium|high to set reasoning effort for every agent (ollama-cloud, anthropic)
 //        add --budget <tokens> to cap every agent's prompt (the harness's stand-in for a small context window)
 //        add --interactive to answer the governor's clarifying questions from stdin
 //        add --single to run one agent that sees and edits the whole repo (control for the governor/owner split)
@@ -50,6 +51,7 @@ interface Config {
   cost: { inputTokens: number; outputTokens: number; usd: number };
   byRole: Record<string, { calls: number; input: number; output: number }>; // instrumentation: where tokens go
   budget?: number; // max prompt tokens per call; see --budget
+  effort?: "low" | "medium" | "high"; // see --effort; unset = the provider's default
   budgetStats: { maxPromptTokens: number; maxEstimate: number; overBudget: number; violations: number };
 }
 
@@ -273,14 +275,17 @@ async function callModel(cfg: Config, system: string, messages: Msg[], tools: To
     throw new OverBudget(`prompt of ~${estimate} tokens exceeds the ${cfg.budget}-token budget`);
   }
   const base = { model: cfg.model, max_tokens: MAX_OUTPUT[cfg.provider], system, messages, tools, tool_choice: { type: "auto" as const } };
+  // On Ollama's cloud, output_config.effort is honoured (glm-5.3: "low" cut a routing answer from 8k+ to 261 output
+  // tokens), while thinking: disabled only moves the reasoning into visible text (2026-11-02).
+  const effort = cfg.effort ? { output_config: { effort: cfg.effort } } : {};
   const stream = cfg.provider === "anthropic"
     ? client(cfg).beta.messages.stream({
         ...base,
-        output_config: { effort: "high" },
+        output_config: { effort: cfg.effort ?? "high" },
         betas: ["server-side-fallback-2026-07-01"],
         fallbacks: "default",
       })
-    : client(cfg).beta.messages.stream(base);
+    : client(cfg).beta.messages.stream({ ...base, ...(cfg.provider === "ollama-cloud" ? effort : {}) });
   const res = await stream.finalMessage();
 
   const input = res.usage.input_tokens + (res.usage.cache_read_input_tokens ?? 0) + (res.usage.cache_creation_input_tokens ?? 0);
@@ -1179,6 +1184,7 @@ function lineReader(): () => Promise<string | null> {
 async function main(
   request: string, provider: Config["provider"], model: string, interactive: boolean, out?: string, scenario?: string,
   showBehaviour = false, single = false, frame?: string, budget?: number, targetName: Target["name"] = "todo", heldout?: string,
+  effort?: Config["effort"],
 ): Promise<void> {
   const started = Date.now();
   target = TARGETS[targetName];
@@ -1188,9 +1194,9 @@ async function main(
   const runDir = out ? resolve(out) : join(ROOT, "runs", new Date().toISOString().replace(/[:.]/g, "-"));
   mkdirSync(runDir, { recursive: true });
   const cfg: Config = {
-    provider, model, runDir, workDir: target.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, byRole: {}, budget, budgetStats: newStats(),
+    provider, model, runDir, workDir: target.prepare(runDir), cost: { inputTokens: 0, outputTokens: 0, usd: 0 }, byRole: {}, budget, effort, budgetStats: newStats(),
   };
-  log(cfg, "run_start", { request, provider, model, interactive, scenario, showBehaviour, single, frame, budget, target: target.name, heldout });
+  log(cfg, "run_start", { request, provider, model, interactive, scenario, showBehaviour, single, frame, budget, effort, target: target.name, heldout });
   if (frame && (!single || !(frame in SINGLE_FRAMES))) throw new Error(`--frame needs --single and one of: ${Object.keys(SINGLE_FRAMES).join(", ")}`);
   if (single && (interactive || showBehaviour)) throw new Error("--single does not support --interactive or --behaviour");
 
@@ -1348,7 +1354,7 @@ async function main(
     tokens: { input: cfg.cost.inputTokens, output: cfg.cost.outputTokens },
     tokensByRole: cfg.byRole,
     repoTokens, // estimated size of every editable source file at the start (chars / 3.5)
-    budget: budget ?? null, budgetStats: cfg.budgetStats,
+    budget: budget ?? null, effort: effort ?? null, budgetStats: cfg.budgetStats,
     usd: Number(cfg.cost.usd.toFixed(3)),
   };
   await unloadLocalModel(cfg);
@@ -1517,6 +1523,7 @@ if (args.includes("--selftest")) {
   const frame = flag("--frame");
   const targetName = (flag("--target") ?? "todo") as Target["name"];
   const heldout = flag("--heldout");
+  const effortArg = flag("--effort");
   const budgetArg = flag("--budget");
   const budget = budgetArg ? Number(budgetArg) : undefined;
   const interactive = bool("--interactive");
@@ -1524,11 +1531,13 @@ if (args.includes("--selftest")) {
   const single = bool("--single");
   const unknown = args.filter((a) => a.startsWith("--"));
   const request = args.join(" ").trim();
-  if (!request || unknown.length || !(provider in DEFAULT_MODEL) || !(targetName in TARGETS) || (budget !== undefined && !(budget > 0))) {
+  const effort = effortArg as Config["effort"];
+  if (!request || unknown.length || !(provider in DEFAULT_MODEL) || !(targetName in TARGETS) || (budget !== undefined && !(budget > 0))
+    || (effort !== undefined && !["low", "medium", "high"].includes(effort))) {
     if (unknown.length) console.error(`unknown flag(s): ${unknown.join(" ")}`);
-    console.error('usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama|ollama-cloud] [--model id] [--target todo|watchlist] [--heldout slug] [--budget tokens] [--interactive] [--out runDir] [--scenario dir] [--behaviour] [--single [--frame interfaces|data]]');
+    console.error('usage: npx tsx harness.ts "<request>" [--provider anthropic|ollama|ollama-cloud] [--model id] [--target todo|watchlist] [--heldout slug] [--budget tokens] [--effort low|medium|high] [--interactive] [--out runDir] [--scenario dir] [--behaviour] [--single [--frame interfaces|data]]');
     process.exit(2);
   }
-  await main(request, provider, model, interactive, out, scenario, showBehaviour, single, frame, budget, targetName, heldout);
+  await main(request, provider, model, interactive, out, scenario, showBehaviour, single, frame, budget, targetName, heldout, effort);
   process.exit(process.exitCode ?? 0); // the stdin reader would otherwise keep the process alive
 }
