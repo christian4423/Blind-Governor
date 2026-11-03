@@ -8,7 +8,7 @@
 // The bench stops launching runs at the first rate-limited one (provider quota), so a later --resume can finish it.
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -237,9 +237,9 @@ const flag = (name: string) => { const i = args.indexOf(name); return i >= 0 ? a
 const existing = flag("--report");
 const resume = flag("--resume");
 if (existing) {
-  report(join(process.cwd(), existing));
+  report(resolve(existing));
 } else if (resume) {
-  const benchDir = join(process.cwd(), resume);
+  const benchDir = resolve(resume); // resolve, not join: the resume loop passes an absolute path
   const saved = JSON.parse(readFileSync(join(benchDir, "bench.json"), "utf8")) as { args: string[] };
   console.log(`resuming ${benchDir} with: ${saved.args.join(" ")}`);
   args.splice(0, args.length, ...saved.args);
