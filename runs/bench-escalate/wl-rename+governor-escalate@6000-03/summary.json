@@ -1,0 +1,89 @@
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The WatchItem field 'watched' was renamed to 'seen'; the assertion store.items()[0].watched must become store.items()[0].seen to compile and remain correct.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 2,
+    "failed": 1,
+    "failures": [
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
+    ]
+  },
+  "tokens": {
+    "input": 35315,
+    "output": 75399
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 15228,
+      "output": 64717
+    },
+    "owner": {
+      "calls": 8,
+      "input": 20087,
+      "output": 10682
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "owner: interface change": 1,
+    "governor: red oracle": 2,
+    "owner: red oracle": 2
+  },
+  "budgetStats": {
+    "maxPromptTokens": 4685,
+    "maxEstimate": 5173,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

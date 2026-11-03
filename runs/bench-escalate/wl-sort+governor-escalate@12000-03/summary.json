@@ -1,0 +1,95 @@
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when the checkbox is clicked",
+        "kind": "modified",
+        "reason": "Kind: modification (nothing removed or weakened; one re-query re-targeted, one assertion added). Genuine conflict with the required unwatched-before-watched ordering: the current production code already meets every stated requirement — `movies` is a `Signal<WatchItem[]>` computed as `[...this.store.items()].sort((a, b) => Number(a.watched) - Number(b.watched))` (no map/clone, store objects returned), the `@for` already uses `track movie.id`, and the original `(change)`/row-click guard semantics are intact. The toggle happens exactly once, but after Movie 1 becomes watched its row correctly moves behind Movie 2's unwatched row (requirement 4), so the test's post-click `checkbox()` helper — which re-queries `.watchlist-item` index 0 — returns Movie 2's unchecked checkbox and the unchanged test fails with 'expected false to be true'. No production change can make the unchanged test pass, because row index 0 is by definition a different movie once rows reorder at runtime. Minimal intent-preserving fix: capture the clicked checkbox node before the click (`const box = checkbox(); box.click();`) and assert `box.checked` on that same node after the reorder, plus assert it is still labelled 'Watched: Movie 1' (same DOM row stays bound to the same movie, per requirement 4). The `watchedCount()` and subtitle assertions are byte-identical.",
+        "round": 2
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when blank space on the row is clicked",
+        "kind": "modified",
+        "reason": "Kind: modification (nothing removed or weakened; the index-0 re-query re-targeted to the captured node, one assertion added). Same root cause as the checkbox test: clicking blank space on Movie 1's row toggles it exactly once (the `closest('a, button, input')` guard is unchanged), but the row then correctly moves into the watched group, so the unchanged test's post-click `checkbox()` query hits row index 0 — now Movie 2's unchecked checkbox — and fails with 'expected false to be true'. This is a latent index-coupling in the test that the required runtime reordering exposes, not a code regression. Minimal intent-preserving fix: capture the row and its checkbox before the click and assert on the captured checkbox afterwards, plus `expect(items()[1]).toBe(row)` to pin requirement 4 — the very same DOM row moves to the watched group while remaining bound to the same movie. All other tests are untouched.",
+        "round": 2
+      }
+    ],
+    "approvals": [
+      {
+        "round": 3,
+        "title": "Watchlist > toggles watched when the checkbox is clicked"
+      },
+      {
+        "round": 3,
+        "title": "Watchlist > toggles watched when blank space on the row is clicked"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 39498,
+    "output": 79540
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 5,
+      "input": 22497,
+      "output": 36176
+    },
+    "owner": {
+      "calls": 4,
+      "input": 17001,
+      "output": 43364
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "governor: red oracle": 2,
+    "owner: red oracle": 2
+  },
+  "budgetStats": {
+    "maxPromptTokens": 6444,
+    "maxEstimate": 7766,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

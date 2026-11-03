@@ -1,0 +1,101 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T23-54-36-808Z/wl-rename+governor-escalate@6000-03
+provider: ollama-cloud (glm-5.3)
+request: Rename the `watched` field of watchlist items to `seen` everywhere.
+
+governor turn 1: plan -> movie, watchlist-store, watchlist  (The request renames the data field of watchlist items: WatchItem.watched becomes WatchItem.seen, everywhere it appears. Three units are implicated: movie (exports the type), watchlist-store (creates/toggles/persists the field), and watchlist (renders it). Only the field is renamed; API names (toggleWatched, watchedCount), UI text, and the unrelated Movie/Tmdb* interfaces stay unchanged. Other units consume only membership checks (onList/isOnList/count), so they are untouched unless the oracle implicates them.)
+round 1: owners movie=ok watchlist-store=ok watchlist=rejected; oracle RED
+governor turn 2: plan -> watchlist  (All remaining errors (three TS2339s in the Watchlist template and the assertion at watchlist.spec.ts:66) are confined to the watchlist unit. Round 1's watchlist submission was rejected only because it updated one existing test that asserts the renamed field; since the request is a global rename of `watched` to `seen`, that test modification is exactly what it calls for. I approve that test change and re-instruct watchlist to apply the rename, now including the test update.)
+round 2: owners watchlist=ok; oracle RED
+governor turn 3: plan -> watchlist-store  (The watched→seen rename is complete in production: tsc is green and all owner tests pass. The only red tests are my own acceptance tests for watchlist-store, which construct the store outside an injection context (NG0203) even though its constructor legitimately uses effect(). The test must be fixed, not the code: replace it with a version that creates the store via TestBed.)
+round 3: owners watchlist-store=ok; oracle GREEN
+governor turn 4: accept  (tsc is green and all 34 tests pass, including the acceptance tests pinning the seen field contract (items added with seen:false, no watched property, persistence round-trip). The rename is complete.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The WatchItem field 'watched' was renamed to 'seen'; the assertion store.items()[0].watched must become store.items()[0].seen to compile and remain correct.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 2,
+    "failed": 1,
+    "failures": [
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
+    ]
+  },
+  "tokens": {
+    "input": 35315,
+    "output": 75399
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 15228,
+      "output": 64717
+    },
+    "owner": {
+      "calls": 8,
+      "input": 20087,
+      "output": 10682
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "owner: interface change": 1,
+    "governor: red oracle": 2,
+    "owner: red oracle": 2
+  },
+  "budgetStats": {
+    "maxPromptTokens": 4685,
+    "maxEstimate": 5173,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

@@ -1,0 +1,102 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T23-54-36-808Z/wl-rename+governor-escalate@6000-01
+provider: ollama-cloud (glm-5.3)
+request: Rename the `watched` field of watchlist items to `seen` everywhere.
+
+governor turn 1: plan -> movie, watchlist-store, watchlist, search, movie-detail, app  (Pure data-field rename: the item field `watched` becomes `seen`. `movie` declares the new `Movie`/`WatchItem` shapes, `watchlist-store` updates item creation/toggling/counting/persistence to `seen`, and consumer units update any field references in code/templates. Public API names (`toggleWatched`, `watchedCount`) and UI text are untouched since the request targets only the item field. Acceptance tests pin the new field name in the type declarations and in the store's add/toggle/count/persist behaviour.)
+round 1: owners movie=ok watchlist-store=ok watchlist=rejected search=ok movie-detail=ok app=ok; oracle RED
+governor turn 2: plan -> watchlist  (Only the watchlist unit is still red: its template (3 bindings) and one existing test still use the old `watched` field. The owner's requested test edit is a mechanical consequence of the approved rename (assertion must read `.seen`), so approve it and re-issue the rename instruction.)
+round 2: owners watchlist=ok; oracle RED
+governor turn 3: plan -> watchlist-store  (tsc is green and every unit test passes except my watchlist-store acceptance test: in-memory behaviour is already correct (items carry `seen`, toggleWatched flips it, watchedCount follows), but the persistence round-trip still loses the field — a freshly constructed WatchlistStore returns the saved item with `seen === undefined`. Only the watchlist-store unit is implicated: its persisted payload and/or load path still uses the old key. No exported signatures change, so no other unit needs instruction.)
+round 3: owners watchlist-store=ok; oracle GREEN
+governor turn 4: accept  (Oracle is green (tsc clean, 45/45 tests pass). Acceptance tests for movie and watchlist-store pin the `watched` -> `seen` rename through add, toggle, persistence, and reload; earlier rounds already migrated the dependent units.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist",
+      "search",
+      "movie-detail",
+      "app"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The instruction states the WatchItem field `watched` was renamed to `seen`; the test's assertion `store.items()[0].watched` must read `.seen` to compile against the updated type. No behaviour or assertion semantics changed.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": true,
+    "total": 2,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 56081,
+    "output": 170465
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 6,
+      "input": 20010,
+      "output": 113734
+    },
+    "owner": {
+      "calls": 12,
+      "input": 36071,
+      "output": 56731
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "owner: interface change": 1,
+    "governor: red oracle": 2,
+    "owner: red oracle": 2
+  },
+  "budgetStats": {
+    "maxPromptTokens": 4889,
+    "maxEstimate": 5908,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

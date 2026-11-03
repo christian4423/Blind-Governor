@@ -1,0 +1,80 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T23-54-36-808Z/wl-wrong-belief+governor-escalate@6000-02
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (The request's "seen" flag is the watchlist's existing `watched` flag (WatchItem.watched) — the only such flag in the codebase. Plan: WatchlistStore gains a bulk clearWatched() operation (removes watched items, keeps unwatched order, updates signals, persists), and the watchlist view gains a "Clear watched" button wired to it, disabled when watchedCount() is 0. Both changes are purely additive; search, movie-detail, app and all other units are unaffected.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist-store  (tsc is clean and 42/43 tests pass; the only failure is my acceptance test pinning persistence: after clearWatched(), a freshly constructed WatchlistStore loads an empty list even though unwatched movies remained. In-memory behaviour of clearWatched is correct (the other acceptance tests pass), so the bug is purely in what clearWatched writes to storage — the entry ends up empty/removed instead of holding the remaining items. Only watchlist-store needs to change; the watchlist component is already wired correctly.)
+round 2: owners watchlist-store=ok; oracle GREEN
+governor turn 3: accept  (Oracle is green (tsc clean, 44/44 tests pass). WatchlistStore.clearWatched now persists correctly, and the watchlist component exposes a Clear watched button wired to the store, matching the acceptance tests. The request is satisfied.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 20404,
+    "output": 140655
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 12742,
+      "output": 70527
+    },
+    "owner": {
+      "calls": 3,
+      "input": 7662,
+      "output": 70128
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "owner: interface change": 2,
+    "governor: red oracle": 1,
+    "owner: red oracle": 1
+  },
+  "budgetStats": {
+    "maxPromptTokens": 4207,
+    "maxEstimate": 5154,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

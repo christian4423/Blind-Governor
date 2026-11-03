@@ -326,3 +326,34 @@ Each escalation is logged with its trigger. Same 18-run shape: rename/sort/wrong
 - **Output tokens ~40–70k per run** (2–3.5× below default): the routing turn alone is a full-depth governor call (~60k on watchlist), and failed rounds escalate again.
 - **Tokens per successful change ~1.5–2.5× better than default** (~120k–200k). Input stays ~40k/run, so it bounds the gain; step 3 (compiler-based relevance) targets that.
 - Most escalations: governor "routing" (1 per run) and "red oracle" (about 1 per run); owner "interface change" mostly on rename.
+
+# Token savings, step 2: escalation (results)
+
+`runs/bench-escalate/`: 18 runs, `--effort escalate`. (Two runs were delayed a day by a `--resume` path bug, since fixed; they completed normally.)
+
+| Governor setup, watchlist, 18 runs each | Passes | Output tokens/run | Input tokens/run | Tokens per successful change |
+|---|---|---|---|---|
+| Default depth (`bench-watchlist`) | 11 | ~140k | ~39k | ~293k |
+| Low everywhere (`bench-effort-low`) | 4 | ~11k | ~44k | ~246k |
+| **Escalation** | **10** | **~120k** | **~40k** | **~287k** |
+
+Per request (12k / 6k, of 3): rename 0 / 1, sort 1 / 2, wrong belief 3 / 3.
+
+Full-depth calls per run, by trigger: governor routing 1.0, governor after red tests 1.0–2.3, owners after red tests 0.7–2.0, owners with an interface change 1.0–2.0 (rename, wrong belief).
+
+**Against the predictions:**
+- Sort recovers to 4–6/6: **got 3/6** (low: 0/6, default: 5/6). Partly right.
+- Overall 8–11/18: **got 10/18**. Right.
+- Output 40–70k per run: **got ~120k**. Wrong.
+- Tokens per success 1.5–2.5× better than default: **got ~1.02×** (287k vs 293k). Wrong.
+
+**Why it saved so little:** the triggers fire almost every run. A low-effort first round usually leaves something red, the "red tests" trigger then puts every later governor and owner turn at full depth, and repair rounds are where most tokens go anyway. Escalation turned into the default.
+
+**What the three benches say together:**
+- Depth is needed for **deciding where a change goes** (routing) and for **repairing a failure**; without it (low everywhere) sort collapsed.
+- A cheap first attempt doesn't pay off when it causes a repair round: the repair costs more than the attempt saved. The cheapest path is getting round 1 right.
+- Input tokens (~40k per run, unchanged by any effort setting) are now about a quarter of all tokens and the part no effort setting touches.
+
+**Next candidates:**
+1. **Compiler-based relevance with a pruned manifest** (step 3): attacks input directly and should make routing easier, not harder.
+2. A narrower escalation: full depth for routing and for round 1 owners, low only for confirmations (accepting green work, re-running unchanged units), so the expensive repair rounds become rarer instead of cheaper.

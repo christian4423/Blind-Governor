@@ -1,0 +1,95 @@
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "In the watchlist, show movies I haven't watched yet before the ones I've watched.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 1,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when the checkbox is clicked",
+        "kind": "modified",
+        "reason": "Step 1 verification (no component/template defect): the template passes each row's own movie.id - not a loop index - to (change)=\"toggleWatched(movie.id)\", and the bubbled row click is a no-op because onRowClick returns early when the target is inside 'a, button, input', so a checkbox click toggles exactly one movie exactly once (no double-toggle/net no-op). I added a test with unwatched ids 10/20/30: clicking the checkbox on the LAST rendered row marks only Movie 30 watched, and another test confirms the toggled movie re-orders behind the remaining unwatched movies. The failure is therefore purely positional, exactly the case you described: with ids 1 and 2 both unwatched the rows render [Movie 1, Movie 2]; after the click Movie 1 is watched and re-renders behind the still-unwatched Movie 2 as [Movie 2, Movie 1], so the old assertion `checkbox().checked` re-queried the FIRST rendered row - Movie 2's unchecked checkbox - yielding 'expected false to be true'. The store-level assertions in the same test (watchedCount() === 1, subtitle '1 of 2 watched') still pass, proving the toggle happened once. Requested minimal, intent-preserving update: the same real DOM click on the checkbox is kept, the watchedCount and subtitle assertions are kept verbatim, and the only change is that the clicked movie's checkbox is found by its stable title (checkboxFor('Movie 1')) instead of by list position. Nothing was weakened or removed - the assertion is now strictly stronger since it pins the toggled movie's identity.",
+        "round": 2
+      },
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > toggles watched when blank space on the row is clicked",
+        "kind": "modified",
+        "reason": "Step 1 verification (no component/template defect): onRowClick($event, movie.id) receives the clicked row's own id and toggles only that row's movie; clicking a row's blank space toggles once (target is the li or a non-interactive child, so the closest('a, button, input') guard does not bail). Verified with a new test using unwatched ids 10/20/30: a blank-space click on the LAST rendered row marks only Movie 30 watched and leaves Movies 10/20 untouched. The failure is purely positional: after items()[0].click() toggles Movie 1 to watched, Movie 1 re-orders behind the still-unwatched Movie 2 ([Movie 2, Movie 1]), so the old assertion `checkbox().checked` - which re-queries the first rendered row - read Movie 2's unchecked checkbox ('expected false to be true'). Requested minimal, intent-preserving update: keep the identical blank-space DOM click on the first row and keep asserting that the clicked movie becomes watched, but identify that movie by its stable title (checkboxFor('Movie 1')) rather than by list position. Same assertion strength, position-independent.",
+        "round": 2
+      }
+    ],
+    "approvals": [
+      {
+        "round": 3,
+        "title": "Watchlist > toggles watched when the checkbox is clicked"
+      },
+      {
+        "round": 3,
+        "title": "Watchlist > toggles watched when blank space on the row is clicked"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "sort",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 67537,
+    "output": 156929
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 8,
+      "input": 29902,
+      "output": 62151
+    },
+    "owner": {
+      "calls": 9,
+      "input": 37635,
+      "output": 94778
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "governor: red oracle": 2,
+    "owner: red oracle": 2
+  },
+  "budgetStats": {
+    "maxPromptTokens": 4474,
+    "maxEstimate": 5442,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

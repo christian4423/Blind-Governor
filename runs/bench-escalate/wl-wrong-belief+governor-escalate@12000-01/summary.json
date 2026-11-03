@@ -1,0 +1,70 @@
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ]
+  ],
+  "governorIsolation": "LEAK",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 3,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 28936,
+    "output": 126562
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 13157,
+      "output": 37505
+    },
+    "owner": {
+      "calls": 5,
+      "input": 15779,
+      "output": 89057
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "owner: interface change": 2,
+    "governor: red oracle": 1,
+    "owner: red oracle": 1
+  },
+  "budgetStats": {
+    "maxPromptTokens": 5882,
+    "maxEstimate": 6623,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

@@ -1,0 +1,89 @@
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist",
+      "search",
+      "movie-detail",
+      "app"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The test asserted `store.items()[0].watched`, but WatchItem now exposes `seen` instead of `watched`. Updated the assertion to `store.items()[0].seen` as instructed.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 2,
+    "failed": 1,
+    "failures": [
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
+    ]
+  },
+  "tokens": {
+    "input": 40163,
+    "output": 39095
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 12457,
+      "output": 30069
+    },
+    "owner": {
+      "calls": 9,
+      "input": 27706,
+      "output": 9026
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "owner: interface change": 1,
+    "governor: red oracle": 1,
+    "owner: red oracle": 1
+  },
+  "budgetStats": {
+    "maxPromptTokens": 5029,
+    "maxEstimate": 5967,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

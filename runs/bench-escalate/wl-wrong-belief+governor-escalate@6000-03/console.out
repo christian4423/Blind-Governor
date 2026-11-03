@@ -1,0 +1,80 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T23-54-36-808Z/wl-wrong-belief+governor-escalate@6000-03
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (The request's 'seen' flag corresponds to WatchItem.watched. The behaviour belongs in the store (remove all watched items) with a watchlist-page button wired to it; additive interface change only, no other units involved.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist  (tsc is green and all owner-owned specs pass. The only 2 failures are in my own acceptance test for the watchlist unit: its TestBed lacked router providers, so rendering watchlist.html (which uses routerLink) threw NG0201 for ActivatedRoute. The owners' round-1 submissions are fine; I am re-issuing just that acceptance test with provideRouter([]) and expect no code changes.)
+round 2: owners watchlist=ok; oracle GREEN
+governor turn 3: accept  (The oracle is green (tsc clean, 40 tests passing, including acceptance tests for both WatchlistStore.clearWatched() and the watchlist component's Clear-watched button, which removes all watched movies and is disabled when nothing has been watched). The request is satisfied.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 3,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 20469,
+    "output": 60903
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 10798,
+      "output": 31522
+    },
+    "owner": {
+      "calls": 3,
+      "input": 9671,
+      "output": 29381
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "owner: interface change": 2,
+    "governor: red oracle": 1,
+    "owner: red oracle": 1
+  },
+  "budgetStats": {
+    "maxPromptTokens": 4435,
+    "maxEstimate": 5235,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

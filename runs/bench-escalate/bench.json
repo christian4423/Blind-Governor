@@ -1,0 +1,26 @@
+{
+  "args": [
+    "--target",
+    "watchlist",
+    "--only",
+    "wl-rename,wl-sort,wl-wrong-belief",
+    "--arms",
+    "governor-escalate@12000,governor-escalate@6000",
+    "--n",
+    "3",
+    "--concurrency",
+    "3",
+    "--extra",
+    "--provider ollama-cloud --model glm-5.3"
+  ],
+  "extra": [
+    "--provider",
+    "ollama-cloud",
+    "--model",
+    "glm-5.3"
+  ],
+  "arms": [
+    "governor-escalate@12000",
+    "governor-escalate@6000"
+  ]
+}

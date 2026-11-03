@@ -1,0 +1,137 @@
+[
+  {
+    "name": "app",
+    "path": "src/app/app.ts",
+    "testPath": "src/app/app.spec.ts",
+    "files": [
+      "src/app/app.ts",
+      "src/app/app.html",
+      "src/app/app.scss",
+      "src/app/app.spec.ts"
+    ],
+    "purpose": "",
+    "exports": "import { WatchlistStore } from './watchlist-store';\nexport declare class App {\n    protected readonly store: WatchlistStore;\n    skipToMain(event: Event): void;\n}",
+    "imports": [
+      "watchlist-store"
+    ]
+  },
+  {
+    "name": "app.config",
+    "path": "src/app/app.config.ts",
+    "testPath": "src/app/app.config.spec.ts",
+    "files": [
+      "src/app/app.config.ts",
+      "src/app/app.config.spec.ts"
+    ],
+    "purpose": "",
+    "exports": "import { ApplicationConfig } from '@angular/core';\nexport declare const appConfig: ApplicationConfig;",
+    "imports": [
+      "app.routes"
+    ]
+  },
+  {
+    "name": "app.routes",
+    "path": "src/app/app.routes.ts",
+    "testPath": "src/app/app.routes.spec.ts",
+    "files": [
+      "src/app/app.routes.ts",
+      "src/app/app.routes.spec.ts"
+    ],
+    "purpose": "",
+    "exports": "import { Routes } from '@angular/router';\nexport declare const routes: Routes;",
+    "imports": []
+  },
+  {
+    "name": "movie",
+    "path": "src/app/movie.ts",
+    "testPath": "src/app/movie.spec.ts",
+    "files": [
+      "src/app/movie.ts",
+      "src/app/movie.spec.ts"
+    ],
+    "purpose": "",
+    "exports": "export interface Movie {\n    id: number;\n    title: string;\n    releaseDate: string;\n    rating: number;\n    watched: boolean;\n}\nexport interface TmdbMovie {\n    id: number;\n    title: string;\n    release_date: string;\n    poster_path: string | null;\n    overview: string;\n}\nexport interface TmdbGenre {\n    id: number;\n    name: string;\n}\nexport interface TmdbCastMember {\n    id: number;\n    name: string;\n    character: string;\n    profile_path: string | null;\n}\nexport interface TmdbMovieDetail extends TmdbMovie {\n    tagline: string;\n    backdrop_path: string | null;\n    runtime: number | null;\n    vote_average: number;\n    vote_count: number;\n    genres: TmdbGenre[];\n    status: string;\n    original_language: string;\n    budget: number;\n    revenue: number;\n    homepage: string;\n    credits?: {\n        cast: TmdbCastMember[];\n    };\n}\nexport interface WatchItem {\n    id: number;\n    title: string;\n    seen: boolean;\n    poster_path?: string | null;\n    release_date?: string;\n}",
+    "imports": []
+  },
+  {
+    "name": "movie-detail",
+    "path": "src/app/movie-detail/movie-detail.ts",
+    "testPath": "src/app/movie-detail/movie-detail.spec.ts",
+    "files": [
+      "src/app/movie-detail/movie-detail.ts",
+      "src/app/movie-detail/movie-detail.html",
+      "src/app/movie-detail/movie-detail.scss",
+      "src/app/movie-detail/movie-detail.spec.ts"
+    ],
+    "purpose": "",
+    "exports": "import { TmdbMovieDetail } from '../movie';\nimport { WatchlistStore } from '../watchlist-store';\nexport declare class MovieDetail {\n    private route;\n    private movieService;\n    private title;\n    readonly imageBase = \"https://image.tmdb.org/t/p\";\n    store: WatchlistStore;\n    movie: import(\"@angular/core\").Signal<TmdbMovieDetail | null | undefined>;\n    releaseYear: import(\"@angular/core\").Signal<string>;\n    runtime: import(\"@angular/core\").Signal<string>;\n    constructor();\n    topCast: import(\"@angular/core\").Signal<import(\"../movie\").TmdbCastMember[]>;\n    onList: import(\"@angular/core\").Signal<boolean>;\n    toggleList(): void;\n    language: import(\"@angular/core\").Signal<string>;\n}",
+    "imports": [
+      "movie.service",
+      "movie",
+      "watchlist-store"
+    ]
+  },
+  {
+    "name": "movie.service",
+    "path": "src/app/movie.service.ts",
+    "testPath": "src/app/movie.service.spec.ts",
+    "files": [
+      "src/app/movie.service.ts",
+      "src/app/movie.service.spec.ts"
+    ],
+    "purpose": "",
+    "exports": "import { TmdbMovie, TmdbMovieDetail } from \"./movie\";\nexport declare class MovieService {\n    private http;\n    private base;\n    getTrending(): import(\"rxjs\").Observable<{\n        results: TmdbMovie[];\n    }>;\n    getMovie(id: number): import(\"rxjs\").Observable<TmdbMovieDetail>;\n    searchMovies(query: string): import(\"rxjs\").Observable<TmdbMovie[]>;\n}",
+    "imports": [
+      "movie"
+    ]
+  },
+  {
+    "name": "search",
+    "path": "src/app/search/search.ts",
+    "testPath": "src/app/search/search.spec.ts",
+    "files": [
+      "src/app/search/search.ts",
+      "src/app/search/search.html",
+      "src/app/search/search.scss",
+      "src/app/search/search.spec.ts"
+    ],
+    "purpose": "",
+    "exports": "import { TmdbMovie } from '../movie';\nimport { FormControl } from '@angular/forms';\nimport { WatchlistStore } from '../watchlist-store';\nexport declare class Search {\n    private movieService;\n    store: WatchlistStore;\n    readonly imageBase = \"https://image.tmdb.org/t/p/w342\";\n    searchControl: FormControl<string>;\n    private state;\n    movies: import(\"@angular/core\").Signal<TmdbMovie[]>;\n    query: import(\"@angular/core\").Signal<string>;\n    loading: import(\"@angular/core\").Signal<boolean>;\n    error: import(\"@angular/core\").Signal<boolean>;\n    heading: import(\"@angular/core\").Signal<string>;\n    statusMessage: import(\"@angular/core\").Signal<string>;\n    isOnList(id: number): boolean;\n    toggleList(movie: TmdbMovie): void;\n}",
+    "imports": [
+      "movie.service",
+      "movie",
+      "watchlist-store"
+    ]
+  },
+  {
+    "name": "watchlist",
+    "path": "src/app/watchlist/watchlist.ts",
+    "testPath": "src/app/watchlist/watchlist.spec.ts",
+    "files": [
+      "src/app/watchlist/watchlist.ts",
+      "src/app/watchlist/watchlist.html",
+      "src/app/watchlist/watchlist.scss",
+      "src/app/watchlist/watchlist.spec.ts"
+    ],
+    "purpose": "",
+    "exports": "import { WatchItem } from '../movie';\nimport { WatchlistStore } from '../watchlist-store';\nexport declare class Watchlist {\n    store: WatchlistStore;\n    movies: import(\"@angular/core\").Signal<WatchItem[]>;\n    readonly imageBase = \"https://image.tmdb.org/t/p/w92\";\n    watchedCount: import(\"@angular/core\").Signal<number>;\n    progress: import(\"@angular/core\").Signal<number>;\n    announcement: import(\"@angular/core\").WritableSignal<string>;\n    toggleWatched(id: number): void;\n    onRowClick(event: MouseEvent, id: number): void;\n    remove(movie: WatchItem): void;\n}",
+    "imports": [
+      "movie",
+      "watchlist-store"
+    ]
+  },
+  {
+    "name": "watchlist-store",
+    "path": "src/app/watchlist-store.ts",
+    "testPath": "src/app/watchlist-store.spec.ts",
+    "files": [
+      "src/app/watchlist-store.ts",
+      "src/app/watchlist-store.spec.ts"
+    ],
+    "purpose": "",
+    "exports": "import { TmdbMovie, WatchItem } from './movie';\nexport declare class WatchlistStore {\n    private readonly KEY;\n    private _items;\n    items: import(\"@angular/core\").Signal<WatchItem[]>;\n    count: import(\"@angular/core\").Signal<number>;\n    watchedCount: import(\"@angular/core\").Signal<number>;\n    constructor();\n    add(movie: TmdbMovie): void;\n    remove(id: number): void;\n    toggleWatched(id: number): void;\n}",
+    "imports": [
+      "movie"
+    ]
+  }
+]

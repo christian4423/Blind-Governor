@@ -1,0 +1,99 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T23-54-36-808Z/wl-rename+governor-escalate@12000-01
+provider: ollama-cloud (glm-5.3)
+request: Rename the `watched` field of watchlist items to `seen` everywhere.
+
+governor turn 1: plan -> movie, watchlist-store, watchlist, search, movie-detail, app  (Field rename only: watchlist items (Movie and WatchItem) now carry `seen: boolean` instead of `watched: boolean`. movie redefines the types; watchlist-store updates every read/write of the field (add, toggleWatched, watchedCount, persistence); watchlist updates logic and template bindings; search, movie-detail and app get audit-only steps in case they reference the field. Exported names such as toggleWatched and watchedCount are method/signal names, not the data field, and stay unchanged. Acceptance tests pin the new field on the types and on store behavior.)
+round 1: owners movie=ok watchlist-store=ok watchlist=rejected search=ok movie-detail=ok app=ok; oracle RED
+governor turn 2: plan -> watchlist  (Round 1 is red only because of the watchlist unit: its template still references the old `watched` field (TS2339 x3) and its existing spec asserts `store.items()[0].watched`. The watchlist owner already produced the correct fix but it was auto-rejected solely for modifying that existing test. That modification is exactly what this rename requires (the field is now `seen`), so I approve it and re-instruct only the watchlist unit. All other units are green or unaffected.)
+round 2: owners watchlist=ok; oracle GREEN
+governor turn 3: accept  (The rename from `watched` to `seen` is complete: tsc is clean and all 32 tests pass, including the acceptance tests pinning the new `seen` field on Movie, WatchItem, and the store's persisted/toggled state. The watchlist owner's test modification (asserting `seen` instead of `watched`) was part of the requested rename and is approved.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Rename the `watched` field of watchlist items to `seen` everywhere.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "movie",
+      "watchlist-store",
+      "watchlist",
+      "search",
+      "movie-detail",
+      "app"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 1,
+    "requests": [
+      {
+        "unit": "watchlist",
+        "title": "Watchlist > navigates via the title link without toggling watched",
+        "kind": "modified",
+        "reason": "The test asserted `store.items()[0].watched`, but WatchItem now exposes `seen` instead of `watched`. Updated the assertion to `store.items()[0].seen` as instructed.",
+        "round": 1
+      }
+    ],
+    "approvals": [
+      {
+        "round": 2,
+        "title": "Watchlist > navigates via the title link without toggling watched"
+      }
+    ]
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "rename",
+    "pass": false,
+    "total": 2,
+    "failed": 1,
+    "failures": [
+      "held-out: rename watched -> seen a watchlist saved before the rename still shows which movies were watched: AssertionError: expected [ false, false ] to deeply equal [ true, false ]"
+    ]
+  },
+  "tokens": {
+    "input": 40163,
+    "output": 39095
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 12457,
+      "output": 30069
+    },
+    "owner": {
+      "calls": 9,
+      "input": 27706,
+      "output": 9026
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "owner: interface change": 1,
+    "governor: red oracle": 1,
+    "owner: red oracle": 1
+  },
+  "budgetStats": {
+    "maxPromptTokens": 5029,
+    "maxEstimate": 5967,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

@@ -1,0 +1,73 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T23-54-36-808Z/wl-wrong-belief+governor-escalate@12000-02
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (The request's "seen" flag maps to the existing `watched` boolean on WatchItem. Plan: teach the store to bulk-remove watched items (new `clearWatched()` returning the removed count), then surface a "Clear watched" button on the watchlist view that calls it, rendered disabled when nothing is watched. Acceptance tests pin the store semantics and the button wiring.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle GREEN
+governor turn 2: accept  (All units implemented as planned; tsc passes and all 41 tests (including acceptance tests for WatchlistStore.clearWatched and the Watchlist "Clear watched" button) pass green.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 1,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 2,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 11643,
+    "output": 74518
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 2,
+      "input": 6424,
+      "output": 22988
+    },
+    "owner": {
+      "calls": 2,
+      "input": 5219,
+      "output": 51530
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "owner: interface change": 2
+  },
+  "budgetStats": {
+    "maxPromptTokens": 3947,
+    "maxEstimate": 4776,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

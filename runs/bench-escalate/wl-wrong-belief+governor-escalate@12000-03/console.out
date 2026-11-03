@@ -1,0 +1,85 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T23-54-36-808Z/wl-wrong-belief+governor-escalate@12000-03
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (The request's "seen" flag is the WatchItem.watched boolean (no other seen-like flag exists). Plan: WatchlistStore gains clearWatched(): number that removes every watched item, keeps unwatched order, persists like remove(); the watchlist page gains a always-rendered "Clear watched" button (data-testid="clear-watched"), disabled exactly when watchedCount()===0, wired to a new component clearWatched() that announces the removed count. Acceptance tests pin both contracts.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist-store  (All 7 failures trace to the effect() that WatchlistStore's constructor creates for persistence: NG0203 when the store is constructed with plain `new` outside an injection context (acceptance tests, Watchlist test setup) and NG0201 when the injector has no ChangeDetectionScheduler (owner's new persistence test). The clearWatched semantics and the exported interface are correct; persistence must become synchronous, injector-free localStorage writes. watchlist needs no changes — its failures were only store construction in setup, and tsc is green.)
+round 2: owners watchlist-store=ok; oracle RED
+governor turn 3: plan -> watchlist  (Round 2 fixed the store; the only remaining failures are in my own acceptance harness. The Watchlist template legitimately uses routerLink (existing behaviour, its own spec passes with a proper TestBed), but my acceptance test provided no router, so RouterLink could not inject ActivatedRoute (NG0201) and rendering failed before the button ever appeared. I am replacing that acceptance test with an identical specification plus provideRouter([]), and requiring zero changes to any unit's code.)
+round 3: owners watchlist=ok; oracle GREEN
+governor turn 4: accept  (Oracle is green (tsc clean, 46/46 tests pass). The store's clearWatched(), the Watchlist clear-watched button with disabled/announcement behaviour, and all acceptance tests confirm the request is satisfied.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 3,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist-store"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 4,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 52963,
+    "output": 204218
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 4,
+      "input": 21355,
+      "output": 40916
+    },
+    "owner": {
+      "calls": 9,
+      "input": 31608,
+      "output": 163302
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 12000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "owner: interface change": 2,
+    "governor: red oracle": 2,
+    "owner: red oracle": 2
+  },
+  "budgetStats": {
+    "maxPromptTokens": 7698,
+    "maxEstimate": 9300,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}

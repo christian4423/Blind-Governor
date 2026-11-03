@@ -1,0 +1,80 @@
+run: /Users/cmatsoukis/Desktop/Apps/experiment-1/runs/bench-2026-11-02T23-54-36-808Z/wl-wrong-belief+governor-escalate@6000-01
+provider: ollama-cloud (glm-5.3)
+request: Add a button that clears every movie whose `seen` flag is true from the watchlist.
+
+governor turn 1: plan -> watchlist-store, watchlist  (The request's "seen" flag is the existing WatchItem.watched boolean. I'll add WatchlistStore.clearWatched() (removes all watched items, persists like other mutations) and a "Clear watched" button on the watchlist page wired to it, shown only when watchedCount() > 0.)
+round 1: owners watchlist-store=ok watchlist=ok; oracle RED
+governor turn 2: plan -> watchlist  (The red round was caused by the acceptance-test harness, not owner code: the watchlist acceptance test configured TestBed without the Angular Router, so the template's routerLink directive failed to inject ActivatedRoute (NG0201) before any behavioural assertion ran. tsc is clean and every other test passes, including both units' own specs and the watchlist-store acceptance tests. I am replacing the watchlist acceptance test with a corrected harness (provideRouter with a wildcard route, store seeded via WatchlistStore's public API, change detection driven by TestBed.tick(), which works in both zone and zoneless setups) and instructing the watchlist owner to make no implementation changes unless the corrected test exposes a genuine behavioural gap.)
+round 2: owners watchlist=ok; oracle GREEN
+governor turn 3: accept  (Oracle is green (tsc clean, 45 tests passing). The "Clear watched" button is implemented: it renders only while watchedCount > 0, removes exactly the watched items via store.clearWatched(), keeps unwatched items, updates the screen-reader announcement, and disappears once nothing is watched. Acceptance tests for both the store and the component pass, satisfying the request.)
+
+{
+  "target": "watchlist",
+  "mode": "governor",
+  "frame": null,
+  "request": "Add a button that clears every movie whose `seen` flag is true from the watchlist.",
+  "provider": "ollama-cloud",
+  "model": "glm-5.3",
+  "rounds": 2,
+  "status": "accepted",
+  "clarifications": 0,
+  "finalOracle": "green",
+  "instructedUnits": [
+    [
+      "watchlist-store",
+      "watchlist"
+    ],
+    [
+      "watchlist"
+    ]
+  ],
+  "governorIsolation": "clean",
+  "showBehaviour": false,
+  "acceptanceTestsWritten": 3,
+  "testGuard": {
+    "rejectedSubmissions": 0,
+    "requests": [],
+    "approvals": []
+  },
+  "plantedTest": null,
+  "behaviour": null,
+  "heldout": {
+    "slug": "wrong-belief",
+    "pass": true,
+    "total": 1,
+    "failed": 0,
+    "failures": []
+  },
+  "tokens": {
+    "input": 31805,
+    "output": 113252
+  },
+  "tokensByRole": {
+    "governor": {
+      "calls": 3,
+      "input": 11385,
+      "output": 37381
+    },
+    "owner": {
+      "calls": 6,
+      "input": 20420,
+      "output": 75871
+    }
+  },
+  "repoTokens": 12710,
+  "budget": 6000,
+  "effort": "escalate",
+  "escalations": {
+    "governor: routing": 1,
+    "owner: interface change": 2,
+    "governor: red oracle": 1,
+    "owner: red oracle": 1
+  },
+  "budgetStats": {
+    "maxPromptTokens": 4674,
+    "maxEstimate": 5521,
+    "overBudget": 0,
+    "violations": 0
+  },
+  "usd": 0
+}
